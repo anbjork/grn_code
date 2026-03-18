@@ -213,6 +213,14 @@ data_paths = {
 # Refiltering the Replogle data for comparison, to make sure
 # results are consistent
 nadata = ad.read_h5ad(data_paths['replogle'])
+
+# Got this from preprocess.py
+def add_gene_names_to_observation_metadata(adata):	
+	gene_names = [elem.split(sep = '_')[1] for elem in adata.obs.index]
+	adata.obs.insert(loc = 0, column = 'gene_name', value = gene_names)
+add_gene_names_to_observation_metadata(nadata)
+
+
 adata = filter_data(nadata)
 
 

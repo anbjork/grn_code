@@ -39,7 +39,7 @@ def get_Y_and_P(
 
 
 all_adata = anton_util.unpickle_object(
-	output_dir / 'replogle_log-norm_dspin_filters.pkl')
+	output_dir / 'replogle_with_dspin_filters.pkl')
 adata = all_adata['500']
 
 
