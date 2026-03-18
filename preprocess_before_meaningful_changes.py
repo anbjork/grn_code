@@ -216,7 +216,7 @@ nadata = ad.read_h5ad(data_paths['replogle'])
 adata = filter_data(nadata)
 
 
-# anton_util.pickle_object(adata, output_dir / 'replogle_with_dspin_filters.pkl')
+anton_util.pickle_object(adata, output_dir / 'replogle_with_dspin_filters.pkl')
 
 
 

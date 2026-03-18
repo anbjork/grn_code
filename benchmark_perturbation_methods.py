@@ -24,29 +24,29 @@ estimated_networks = anton_util.unpickle_object(
 	benchmark_output_dir / 'estimated_networks.pkl')
 
 
-# Dspin takes 3 days to run, so using the results from before.
-# I copied them over from version 13 of Replogle data analysis,
-# see separate script for details on that.
-dspin_network_dir = benchmark_output_dir
-cur_j = anton_util.unpickle_object(dspin_network_dir / 'cur_j_500.pkl')
-# model = anton_util.unpickle_object(dspin_network_dir / 'model_500.pkl')
-genes = anton_util.unpickle_object(dspin_network_dir / 'gene_names_500.pkl')
-dspin_network = pd.DataFrame(
-	index = genes,
-	columns = genes,
-	data = cur_j,
-	)
-estimated_networks['dspin'] = dspin_network
+# # Dspin takes 3 days to run, so using the results from before.
+# # I copied them over from version 13 of Replogle data analysis,
+# # see separate script for details on that.
+# dspin_network_dir = benchmark_output_dir
+# cur_j = anton_util.unpickle_object(dspin_network_dir / 'cur_j_500.pkl')
+# # model = anton_util.unpickle_object(dspin_network_dir / 'model_500.pkl')
+# genes = anton_util.unpickle_object(dspin_network_dir / 'gene_names_500.pkl')
+# dspin_network = pd.DataFrame(
+# 	index = genes,
+# 	columns = genes,
+# 	data = cur_j,
+# 	)
+# estimated_networks['dspin'] = dspin_network
 
 # Add randomly reweighted networks
-m = 'dspin'
-net = estimated_networks[m]
-for ii in range(3):
-	estimated_networks[f'{m}_random_{str(ii)}'] = pd.DataFrame(
-		data = np.random.random_sample(size = net.shape),
-		index = deepcopy(net.index),
-		columns = deepcopy(net.columns)
-		)
+# m = 'dspin'
+# net = estimated_networks[m]
+# for ii in range(3):
+# 	estimated_networks[f'{m}_random_{str(ii)}'] = pd.DataFrame(
+# 		data = np.random.random_sample(size = net.shape),
+# 		index = deepcopy(net.index),
+# 		columns = deepcopy(net.columns)
+# 		)
 
 true_network_pickle = 'data/Non-specific-ChIP-seq-network_with_weights.pkl'
 reference_network_unfiltered = anton_util.unpickle_object(true_network_pickle)
@@ -100,6 +100,6 @@ for method, estimated_network in estimated_networks.items():
 df = pd.DataFrame(stats).T
 df.index.name = r'method \ metric'
 df.to_csv(benchmark_output_dir / 'perturbation_methods_stats.csv')
-
+anton_util.pickle_object(df, benchmark_output_dir / 'perturbation_methods_stats.pkl')
 
 
