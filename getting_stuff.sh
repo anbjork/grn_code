@@ -23,7 +23,7 @@
 # links from the paper
 
 mkdir -p data/beeline/networks
-mkdir data/beeline/data
+mkdir -p data/beeline/data
 
 wget -O data/beeline/networks/BEELINE-Networks.zip 'https://zenodo.org/records/3701939/files/BEELINE-Networks.zip?download=1'
 wget -O data/beeline/data/BEELINE-data.zip 'https://zenodo.org/records/3701939/files/BEELINE-data.zip?download=1'

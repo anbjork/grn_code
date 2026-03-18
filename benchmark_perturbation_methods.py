@@ -84,7 +84,7 @@ for method, estimated_network in estimated_networks.items():
 
 	tmp = gs.benchmarking.benchmark(
 		estimated_network = harmonised_estimated_network,
-		reference_network = harmonised_reference_network,
+		reference_network = harmonised_reference_network.astype(bool),
 		plot_dir = benchmark_output_dir / 'individual_perturbation_methods',
 		method_name = method
 		)
