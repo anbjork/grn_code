@@ -5,12 +5,17 @@
 # URL to human interface downloads page at time of writing:
 # https://plus.figshare.com/articles/dataset/_Mapping_information-rich_genotype-phenotype_landscapes_with_genome-scale_Perturb-seq_Replogle_et_al_2022_processed_Perturb-seq_datasets/20029387
 
-wget https://plus.figshare.com/ndownloader/files/35773217
-mkdir -p data/replogle
-mv 35773217 data/replogle/K562_gwps_normalized_bulk_01.h5ad
-
-wget https://plus.figshare.com/ndownloader/files/35774443
-mv 35774443 data/replogle/K562_gwps_raw_bulk_01.h5ad
+# # Yeah, this did not work. Claude thinks I need a browser session for it
+# # to work. Verified that file sizes are right in browser, then
+# # (3.13_glob) anbjork@eris:~/shortcuts/replogle_33/data$ cp -r replogle/ ~/projects/replogle_round_2/data/
+# # to get then here from a previous download. Not sure how I did it the first time.
+# # Either I circumvented this code manually, or figshare has changed behavior since.
+# wget https://plus.figshare.com/ndownloader/files/35773217
+# mkdir -p data/replogle
+# mv 35773217 data/replogle/K562_gwps_normalized_bulk_01.h5ad
+#
+# wget https://plus.figshare.com/ndownloader/files/35774443
+# mv 35774443 data/replogle/K562_gwps_raw_bulk_01.h5ad
 
 
 
@@ -37,9 +42,9 @@ rm -r data/beeline/data/BEELINE-data/inputs/Synthetic/
 
 
 
-# Get the raw single cell data, ie not pseudo bulk
-wget https://plus.figshare.com/ndownloader/files/35775507
-
+# # Get the raw single cell data, ie not pseudo bulk
+# wget https://plus.figshare.com/ndownloader/files/35775507
+#
 
 
 
