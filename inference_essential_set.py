@@ -12,9 +12,6 @@ pseudo_bulk_path = Path(f'data/replogle/{data_set_name}_pseudo_bulk.h5ad')
 
 adata = ad.read_h5ad(pseudo_bulk_path)
 
-# sc.get.aggregate stores results in layers, not X
-# Move the 'sum' layer to X
-adata.X = adata.layers['sum']
 
 def get_Y_and_P(adata, knockdown_value=-1):
     Y = adata.to_df()
