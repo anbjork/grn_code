@@ -3,18 +3,25 @@ import pandas as pd
 import anndata as ad
 from pathlib import Path
 import genesnake as gs
+import anton_util
 
 output_dir = Path('inferences')
 output_dir.mkdir(exist_ok=True)
 
 data_set_name = 'K562_essential_raw_singlecell_01'
-pseudo_bulk_path = Path(f'data/replogle/{data_set_name}_pseudo_bulk.h5ad')
 
-adata = ad.read_h5ad(pseudo_bulk_path)
+anton_util.log_timestamp('Loading data...')
+# pseudo_bulk_path = Path(f'data/replogle/{data_set_name}_pseudo_bulk.h5ad')
+# adata = ad.read_h5ad(pseudo_bulk_path)
+
+preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed.h5ad')
+adata = ad.read_h5ad(preprocessed_path)
+anton_util.log_timestamp('Data loaded.')
 
 
 def get_Y_and_P(adata, knockdown_value=-1):
     Y = adata.to_df()
+    Y.index = adata.obs['gene']
     Y.index.name = 'perturbations'
     Y.columns = adata.var['gene_name']
     Y.columns.name = 'genes'
@@ -37,10 +44,7 @@ def get_Y_and_P(adata, knockdown_value=-1):
     return {'Y': Y, 'P': P}
 
 
-ynp = get_Y_and_P(adata)
-
-
-def shuffle_ynp():
+def shuffle_ynp(ynp):
     import random
     shuffled_ynp = {}
     for df_name, df in ynp.items():
@@ -56,57 +60,74 @@ def shuffle_ynp():
     return shuffled_ynp
 
 
+anton_util.log_timestamp('Building Y and P...')
+ynp = get_Y_and_P(adata)
+anton_util.log_timestamp('Y and P built.')
+
+
 data_sources = {'regular': ynp}
-for ii in range(3):
-    dn = f'shuffled_{ii}'
-    data_sources[dn] = shuffle_ynp()
+# for ii in range(3):
+#     dn = f'shuffled_{ii}'
+#     data_sources[dn] = shuffle_ynp(ynp)
 
 
 estimated_networks = {}
 for data_source, data in data_sources.items():
 
+    anton_util.log_timestamp(f'Processing data source: {data_source}')
+
     P = data['P']
     Y = data['Y']
-
 
     # Get expression relative to controls.
     # The lsco* methods expect that.
     nt = 'non-targeting'
     nt_bool = (Y.index == nt)
     P_no_control = P.loc[~nt_bool, :]
-    log2_fold_changes = (
-            np.log2(np.array(Y.loc[~nt_bool, :] + 1)) -
-            np.log2(np.array(Y.loc[nt_bool, :] + 1))
-            )
+    anton_util.log_timestamp('Computing log fold changes...')
+    control = np.log2(Y.loc[nt_bool, :].values + 1).mean(axis=0)
+    log2_fold_changes = pd.DataFrame(
+        np.log2(Y.loc[~nt_bool, :].values + 1) - control,
+        index=Y.loc[~nt_bool, :].index,
+        columns=Y.columns
+    )
+    anton_util.log_timestamp('Log fold changes computed.')
 
     m = 'lsco'
+    anton_util.log_timestamp(f'Running {m}...')
     try:
         en = gs.inference.infer_networks(
             Y=log2_fold_changes,
             P=P_no_control,
             method=m)
         estimated_networks[f'{m}_{data_source}'] = en
+        anton_util.log_timestamp(f'{m} finished.')
     except Exception as e:
         print(f'{m} failed with:')
         print(e)
 
     m = 'zscore_ab'
+    anton_util.log_timestamp(f'Running {m}...')
     en = gs.inference.infer_networks(
         Y=Y, P=P,
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[f'{m}_{data_source}'] = en
+    anton_util.log_timestamp(f'{m} finished.')
 
     print(en)
 
     m = 'zscore_dream3'
+    anton_util.log_timestamp(f'Running {m}...')
     en = gs.inference.infer_networks(
         Y=Y, P=P,
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[f'{m}_{data_source}'] = en
+    anton_util.log_timestamp(f'{m} finished.')
 
-import anton_util
+anton_util.log_timestamp('Saving estimated networks...')
 anton_util.pickle_object(
     estimated_networks,
     output_dir / f'estimated_networks.pkl')
+anton_util.log_timestamp('Estimated networks saved.')
