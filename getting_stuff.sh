@@ -16,7 +16,10 @@
 #
 # wget https://plus.figshare.com/ndownloader/files/35774443
 # mv 35774443 data/replogle/K562_gwps_raw_bulk_01.h5ad
-
+#
+# For these files, just copied previously downloaded files, from version 30
+# of the replogle analysis I think. Might have a note about it elsewhere as well,
+# but don't see it right now, so writing here just in case.
 
 
 # Same here, if links expire you can find your way following 
