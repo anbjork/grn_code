@@ -26,6 +26,8 @@ reference_network_unfiltered = anton_util.unpickle_object(true_network_pickle)
 stats = {}
 for method, estimated_network in estimated_networks.items():
 
+    anton_util.log_timestamp(f'Benchmarking {method}...')
+
     if filter_reference:
         conditions = []
         for axis in range(len(reference_network_unfiltered.shape)):
@@ -55,6 +57,7 @@ for method, estimated_network in estimated_networks.items():
         'method': method,
         **tmp
         }
+    anton_util.log_timestamp(f'Finished benchmarking {method}.')
 
 df = pd.DataFrame(stats).T
 df.index.name = r'method \ metric'
