@@ -4,6 +4,6 @@ old
 data
 genesnake
 old_from_30
-
+*.log
 
 .aider*
