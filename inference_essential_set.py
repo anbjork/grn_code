@@ -71,17 +71,18 @@ for data_source, data in data_sources.items():
 	P = data['P']
 	Y = data['Y']
 
-	# Get expression relative to controls.
-	# The lsco* methods expect that.
-	nt = 'non-targeting'
-	control_expression = Y.loc[nt, :].mean(axis=0)
-	log2_fold_changes = np.log2(Y / control_expression)
-	nt_bool = (Y.index != nt)
-	log2_fold_changes = log2_fold_changes.loc[nt_bool, :]
-	P_no_control = P.loc[nt_bool, :]
 
-	Y = log2_fold_changes
-	P = P_no_control
+	# # Get expression relative to controls.
+	# # The lsco* methods expect that.
+	# nt = 'non-targeting'
+	# control_expression = Y.loc[nt, :].mean(axis=0)
+	# log2_fold_changes = np.log2(Y / control_expression)
+	# nt_bool = (Y.index != nt)
+	# log2_fold_changes = log2_fold_changes.loc[nt_bool, :]
+	# P_no_control = P.loc[nt_bool, :]
+    #
+	# Y = log2_fold_changes
+	# P = P_no_control
 
 	m = 'lsco'
 	try:
