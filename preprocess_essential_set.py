@@ -3,7 +3,6 @@ import pandas as pd
 import anndata as ad
 import matplotlib.pyplot as plt
 import scanpy as sc
-import genesnake as gs
 
 import pickle
 from pathlib import Path
@@ -12,17 +11,11 @@ import traceback
 
 import anton_util
 
-
-essential_raw_single_cell_dataset = '/home/anbjork/projects/replogle_round_2/data/replogle/K562_essential_raw_singlecell_01.h5ad'
+data_set_name = 'K562_essential_raw_singlecell_01.h5ad'
+essential_raw_single_cell_dataset = f'data/replogle/{data_set_name}'
 fp = Path(essential_raw_single_cell_dataset)
 
 adata = ad.read_h5ad(fp)
-
-
-
-
-gene_excel = 'tmp/41467_2025_64353_MOESM4_ESM.xlsx'
-excel = pd.read_excel(gene_excel, sheet_name = None)
 
 # The top most occurring genes in the dataset
 from collections import Counter
@@ -31,10 +24,14 @@ df.sort_values(by = 1)
 df.sort_values(by = 0)
 
 
+# From
+# Large-scale causal discovery using interventional data sheds light on gene network structure in k562 cells
+# https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-025-64353-7/MediaObjects/41467_2025_64353_MOESM4_ESM.xlsx
+# Run download_gene_set_excel.py first to download the file
 
+gene_excel_path = Path('data/replogle/gene_set_from_tuuli.xlsx')
 
-gene_excel = 'tmp/41467_2025_64353_MOESM4_ESM.xlsx'
-excel = pd.read_excel(gene_excel, sheet_name = None, header = 1)
+excel = pd.read_excel(gene_excel_path, sheet_name=None, header=1)
 dfg = excel['Supplementary Data 2']
 genes = dfg['gene_name']
 
@@ -61,7 +58,8 @@ sc.pp.filter_cells(wip, min_counts=500)     # Remove cells with too few total co
 wip = wip[wip.obs.mitopercent < 20].copy()
 
 # Save checkpoint before doublet detection, which is memory intensive
-checkpoint_path = Path('tmp/wip_pre_scrublet.h5ad')
+checkpoint_path = Path(f'data/replogle/{data_set_name.split('.')[0]}_preprocessed.h5ad')
+checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 print(f'Saving checkpoint to {checkpoint_path} ...')
 wip.write_h5ad(checkpoint_path)
 print('Checkpoint saved.')
