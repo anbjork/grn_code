@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import pandas as pd
 import anndata as ad
@@ -13,27 +11,6 @@ import copy
 import traceback
 
 import anton_util
-
-
-# # Old version. REMOVE when fixed
-# #
-# # Messy import since GeneSnake package is not packaged correctly.
-# # According to docs
-# # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-# import importlib.util
-# import sys
-# def import_from_path(module_name, file_path):
-# 	spec = importlib.util.spec_from_file_location(module_name, file_path)
-# 	module = importlib.util.module_from_spec(spec)
-# 	sys.modules[module_name] = module
-# 	spec.loader.exec_module(module)
-# 	return module
-# s = '../../genesnake_install/genesnake/methods/grn_inference.py'
-# gsi = import_from_path('grn_inference', file_path = s)
-
-
-
-
 
 
 def filter_data(nadata):
@@ -199,12 +176,6 @@ def filter_data(nadata):
 
 
 
-# output_dir = Path('outputs')
-# scanpy_retard_dir = Path('figures')
-# [d.mkdir(exist_ok = True) for d in (output_dir, scanpy_retard_dir)]
-#
-
-
 essential_raw_single_cell_dataset = '/home/anbjork/projects/replogle_round_2/data/replogle/K562_essential_raw_singlecell_01.h5ad'
 fp = Path(essential_raw_single_cell_dataset)
 
@@ -232,40 +203,15 @@ genes = dfg['gene_name']
 
 wip = adata[:, np.isin(adata.var.gene_name, genes)]
 
+# Calculate QC metrics
+sc.pp.calculate_qc_metrics(wip, inplace=True)
 
+# Cell filtering
+sc.pp.filter_cells(wip, min_genes=200)      # Remove cells with too few genes detected
+sc.pp.filter_cells(wip, min_counts=500)     # Remove cells with too few total counts
 
-
-
-
-
-
-
-
-
-
-
-
-
-# # # Got this from preprocess.py
-# # def add_gene_names_to_observation_metadata(adata):	
-# # 	gene_names = [elem.split(sep = '_')[1] for elem in adata.obs.index]
-# # 	adata.obs.insert(loc = 0, column = 'gene_name', value = gene_names)
-# # add_gene_names_to_observation_metadata(nadata)
-#
-#
-# adata = filter_data(nadata)
-#
-#
-# anton_util.pickle_object(adata, output_dir / 'replogle_with_dspin_filters.pkl')
-#
-#
-#
-# # # Now the new data
-# # nadata = pd.read_csv(
-# # 	data_paths['beeline_hESC'],
-# # 	index_col = 0)
-# # nadata.T
-#
-#
-#
-#
+# Filter out cells with high mitochondrial content (likely dying/damaged cells)
+# Mitochondrial genes typically start with "MT-" in human data
+wip.var['mt'] = wip.var.gene_name.str.startswith('MT-')
+sc.pp.calculate_qc_metrics(wip, qc_vars=['mt'], inplace=True)
+wip = wip[wip.obs.pct_counts_mt < 20].copy()
