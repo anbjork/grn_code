@@ -72,22 +72,21 @@ for data_source, data in data_sources.items():
     Y = data['Y']
 
 
-    # # Get expression relative to controls.
-    # # The lsco* methods expect that.
-    # nt = 'non-targeting'
-    # control_expression = Y.loc[nt, :].mean(axis=0)
-    # log2_fold_changes = np.log2(Y / control_expression)
-    # nt_bool = (Y.index != nt)
-    # log2_fold_changes = log2_fold_changes.loc[nt_bool, :]
-    # P_no_control = P.loc[nt_bool, :]
-    #
-    # Y = log2_fold_changes
-    # P = P_no_control
+    # Get expression relative to controls.
+    # The lsco* methods expect that.
+    nt = 'non-targeting'
+    nt_bool = (Y.index == nt)
+    P_no_control = P.loc[~nt_bool, :]
+    log2_fold_changes = (
+            np.log2(np.array(Y.loc[~nt_bool, :] + 1)) -
+            np.log2(np.array(Y.loc[nt_bool, :] + 1))
+            )
 
     m = 'lsco'
     try:
         en = gs.inference.infer_networks(
-            Y=Y, P=P,
+            Y=log2_fold_changes,
+            P=P_no_control,
             method=m)
         estimated_networks[f'{m}_{data_source}'] = en
     except Exception as e:
@@ -100,6 +99,8 @@ for data_source, data in data_sources.items():
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[f'{m}_{data_source}'] = en
+
+    print(en)
 
     m = 'zscore_dream3'
     en = gs.inference.infer_networks(
