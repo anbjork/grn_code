@@ -57,7 +57,7 @@ for method, estimated_network in estimated_networks.items():
         'method': method,
         **tmp
         }
-    anton_util.log_timestamp(f'Finished benchmarking {method}.')
+    anton_util.log_timestamp(f'Finished benchmarking {method}')
 
 df = pd.DataFrame(stats).T
 df.index.name = r'method \ metric'
