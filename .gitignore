@@ -2,12 +2,16 @@
 /outputs/
 /old/
 /data/
-/genesnake/
 /old_from_30/
 *.log
 /inferences/
 /benchmarks/
 /figures/
+
+
+/genesnake/
+/ground-truth-grns/
+/getting_networks/
 
 
 .aider*

@@ -66,9 +66,9 @@ anton_util.log_timestamp('Y and P built.')
 
 
 data_sources = {'regular': ynp}
-# for ii in range(3):
-#     dn = f'shuffled_{ii}'
-#     data_sources[dn] = shuffle_ynp(ynp)
+for ii in range(3):
+    dn = f'shuffled_{ii}'
+    data_sources[dn] = shuffle_ynp(ynp)
 
 
 estimated_networks = {}
