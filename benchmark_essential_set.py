@@ -30,16 +30,23 @@ true_network_pickle = 'data/Non-specific-ChIP-seq-network_with_weights.pkl'
 reference_network_unfiltered = anton_util.unpickle_object(true_network_pickle)
 reference_networks['Non-specific-ChIP-seq-network_with_weights'] = reference_network_unfiltered
 
-reference_networks_path = Path('getting_networks/ground-truth-grns/data/processed/minaeva')
+reference_networks_path = Path('ground-truth-grns/data/processed/minaeva')
 for file in reference_networks_path.iterdir():
     if not file.name.endswith('.gitkeep'):
         refnet = pd.read_csv(file)
         refnet_matrix = gs.util.edgelist_to_matrix(np.array(refnet))
         reference_networks[file.name] = refnet_matrix
 
-cistrome_network = Path('getting_networks/ground-truth-grns/data/processed/cistrome/k562_cistrome_regpotential_geq_0.61.csv')
-df = pd.read_csv(cistrome_network).drop(['median_regpotential'], axis=1)
-reference_networks[cistrome_network.name] = gs.util.edgelist_to_matrix(np.array(df))
+reference_networks_path = Path('ground-truth-grns/data/processed/cistrome')
+for file in reference_networks_path.iterdir():
+    if not file.name.endswith('.gitkeep'):
+        refnet = pd.read_csv(file).drop(['median_regpotential'], axis=1)
+        refnet_matrix = gs.util.edgelist_to_matrix(np.array(refnet))
+        reference_networks[file.name] = refnet_matrix
+
+# cistrome_network = Path('getting_networks/ground-truth-grns/data/processed/cistrome/k562_cistrome_regpotential_geq_0.61.csv')
+# df = pd.read_csv(cistrome_network).drop(['median_regpotential'], axis=1)
+# reference_networks[cistrome_network.name] = gs.util.edgelist_to_matrix(np.array(df))
 
 
 
