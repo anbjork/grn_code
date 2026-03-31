@@ -44,13 +44,6 @@ for file in reference_networks_path.iterdir():
         refnet_matrix = gs.util.edgelist_to_matrix(np.array(refnet))
         reference_networks[file.name] = refnet_matrix
 
-# cistrome_network = Path('getting_networks/ground-truth-grns/data/processed/cistrome/k562_cistrome_regpotential_geq_0.61.csv')
-# df = pd.read_csv(cistrome_network).drop(['median_regpotential'], axis=1)
-# reference_networks[cistrome_network.name] = gs.util.edgelist_to_matrix(np.array(df))
-
-
-
-
 
 stats = {}
 for method, estimated_network in estimated_networks.items():
@@ -83,10 +76,14 @@ for method, estimated_network in estimated_networks.items():
             plot_dir=benchmark_output_dir / method,
             method_name=id,
             )
+        ntps = np.nonzero(harmonised_reference_network)[0].shape[0]
+        n_genes_after_harmonisation = harmonised_reference_network.shape[0]
         stats[id] = {
             'dataset': 'replogle_essential',
             'method': method,
             'reference_network': ref_name,
+            'n_TPs': ntps,
+            'n_genes_after_harmonisation': n_genes_after_harmonisation,
             **tmp
             }
         anton_util.log_timestamp(f'Finished benchmarking {method} against {ref_name}')
