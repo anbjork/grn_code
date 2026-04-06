@@ -8,6 +8,7 @@
 /benchmarks/
 /figures/
 
+__*
 
 /genesnake/
 /ground-truth-grns/

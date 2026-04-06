@@ -1,97 +1,50 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import genesnake as gs
-import pickle
 from pathlib import Path
-from copy import deepcopy
 import anton_util
 
 
-filter_reference = True
-
-
-inference_dir = Path('inferences')
-benchmark_output_dir = Path('benchmarks')
+benchmark_output_dir = Path('benchmarks/replogle')
 [d.mkdir(exist_ok=True) for d in [benchmark_output_dir]]
 
-### Load networks
 
+inference_dir = Path('inferences/replogle')
+anton_util.log_timestamp('Loading estimated networks...')
 estimated_networks = anton_util.unpickle_object(
     inference_dir / 'estimated_networks.pkl')
-
-
-
-
+anton_util.log_timestamp('Estimated networks loaded.')
 
 reference_networks = {}
+anton_util.log_timestamp('Loading reference networks...')
+reference_networks = anton_util.unpickle_object(
+    'data/replogle/compiled_reference_networks.pkl'
+    )
+anton_util.log_timestamp('Reference networks loaded.')
 
-true_network_pickle = 'data/Non-specific-ChIP-seq-network_with_weights.pkl'
-reference_network_unfiltered = anton_util.unpickle_object(true_network_pickle)
-reference_networks['Non-specific-ChIP-seq-network_with_weights'] = reference_network_unfiltered
+from functions import benchmark_method_against_reference
+stats = []
+for data_source in estimated_networks:
+    # Not the clearest naming. Structure of estimated networks is a list
+    # of data sources, with dicts of methods
+    mstats = {}
+    for method, estimated_network in data_source.items():
+        mstats[method] = {}
+        for ref_name, ref_net in reference_networks.items():
+            anton_util.log_timestamp(f'Benchmarking {method} against {ref_name}...')
 
-reference_networks_path = Path('ground-truth-grns/data/processed/minaeva')
-for file in reference_networks_path.iterdir():
-    if not file.name.endswith('.gitkeep'):
-        refnet = pd.read_csv(file)
-        refnet_matrix = gs.util.edgelist_to_matrix(np.array(refnet))
-        reference_networks[file.name] = refnet_matrix
-
-reference_networks_path = Path('ground-truth-grns/data/processed/cistrome')
-for file in reference_networks_path.iterdir():
-    if not file.name.endswith('.gitkeep'):
-        refnet = pd.read_csv(file).drop(['median_regpotential'], axis=1)
-        refnet_matrix = gs.util.edgelist_to_matrix(np.array(refnet))
-        reference_networks[file.name] = refnet_matrix
-
-
-stats = {}
-for method, estimated_network in estimated_networks.items():
-    for ref_name, reference_network_unfiltered_current in reference_networks.items():
-
-        anton_util.log_timestamp(f'Benchmarking {method} against {ref_name}...')
-
-        if filter_reference:
-            conditions = []
-            for axis in range(len(reference_network_unfiltered_current.shape)):
-                conditions.append(np.isin(
-                    np.array(reference_network_unfiltered_current.axes[axis]),
-                    np.array(estimated_network.axes[axis])
-                    ))
-            reference_network = (
-                reference_network_unfiltered_current.loc[tuple(conditions)]
+            mstats[method][ref_name] = benchmark_method_against_reference(
+                method = method,
+                estimated_network = estimated_network,
+                ref_name = ref_name,
+                reference_network = ref_net,
+                benchmark_output_dir = benchmark_output_dir,
                 )
-        else:
-            reference_network = reference_network_unfiltered_current
 
-        tmp = gs.util.harmonise_networks((
-            estimated_network,
-            reference_network))
-        harmonised_estimated_network, harmonised_reference_network = tmp
+            anton_util.log_timestamp(f'Finished {method} against {ref_name}')
+    stats.append(mstats)
 
-        id = f'{method}_{ref_name}'
-        tmp = gs.benchmarking.benchmark(
-            estimated_network=harmonised_estimated_network,
-            reference_network=harmonised_reference_network.astype(bool),
-            plot_dir=benchmark_output_dir / method,
-            method_name=id,
-            )
-        ntps = np.nonzero(harmonised_reference_network)[0].shape[0]
-        n_genes_after_harmonisation = harmonised_reference_network.shape[0]
-        stats[id] = {
-            'dataset': 'replogle_essential',
-            'method': method,
-            'reference_network': ref_name,
-            'n_TPs': ntps,
-            'n_genes_after_harmonisation': n_genes_after_harmonisation,
-            **tmp
-            }
-        anton_util.log_timestamp(f'Finished benchmarking {method} against {ref_name}')
+anton_util.log_timestamp('Saving stats...')
+anton_util.pickle_object(stats, benchmark_output_dir / 'stats.pkl')
+anton_util.log_timestamp('Stats saved.')
 
-df = pd.DataFrame(stats).T
-df.index.name = r'method \ metric'
-df.to_csv(benchmark_output_dir / 'perturbation_methods_stats.csv')
-anton_util.pickle_object(df, benchmark_output_dir / 'perturbation_methods_stats.pkl')
 
 
 
