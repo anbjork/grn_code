@@ -23,13 +23,13 @@ for data_source, estimated_networks, stats in zip(data_sources, inferred, benchm
             'method': method,
             'dataset': data_source['index'],
             'shuffle': data_source['shuffle'],
-            'pseudo_bulk': data_source['pseudo_bulk'],
+            'pseudo_bulks': data_source['pseudo_bulk'],
             **stats[method],
         })
 
 df = pd.DataFrame(all)
 df['is_shuffled'] = [elem is not False for elem in df.shuffle]
-df = df.sort_values(by = ['is_shuffled', 'method', 'dataset'])
+df = df.sort_values(by = ['is_shuffled', 'method', 'pseudo_bulk'])
 df.to_csv(benchmark_output_dir / 'stats_df.csv')
 anton_util.pickle_object(df, benchmark_output_dir / 'stats_df.pkl')
 

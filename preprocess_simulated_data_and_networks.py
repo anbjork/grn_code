@@ -31,7 +31,7 @@ data_raw = anton_util.unpickle_object(path)
 data_sources = data_raw
 
 
-data_sources = data_sources[:1]  # Debug
+# data_sources = data_sources[:1]  # Debug
 
 
 anton_util.log_timestamp('shuffling...')
