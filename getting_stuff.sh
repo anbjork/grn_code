@@ -20,7 +20,8 @@
 # For these files, just copied previously downloaded files, from version 30
 # of the replogle analysis I think. Might have a note about it elsewhere as well,
 # but don't see it right now, so writing here just in case.
-
+#
+# There is other code available to download the replogle datasets now. See other files.
 
 # Same here, if links expire you can find your way following 
 # links from the paper
