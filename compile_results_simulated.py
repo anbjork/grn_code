@@ -21,8 +21,9 @@ for data_source, estimated_networks, stats in zip(data_sources, inferred, benchm
     for method, estimated_network in estimated_networks.items():
         all.append({
             'method': method,
-            'shuffle': data_source['shuffle'],
             'dataset': data_source['index'],
+            'shuffle': data_source['shuffle'],
+            'pseudo_bulk': data_source['pseudo_bulk'],
             **stats[method],
         })
 

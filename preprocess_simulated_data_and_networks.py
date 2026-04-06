@@ -5,7 +5,7 @@ import anton_util
 import functions
 import copy
 
-
+anton_util.log_timestamp('loading...')
 data_set_name = 'simulated'
 path = Path(
         '/home/anbjork/projects/replogle_round_2/versions/2/replogle_round_2/simulate_data/simulated_single_cell_benchmark/data_cases/outputs/gathered_simulations.pkl'
@@ -31,6 +31,10 @@ data_raw = anton_util.unpickle_object(path)
 data_sources = data_raw
 
 
+data_sources = data_sources[:1]  # Debug
+
+
+anton_util.log_timestamp('shuffling...')
 with_shuffles = []
 for ii, simulation in enumerate(data_sources):
     with_shuffles.append({
@@ -50,8 +54,38 @@ for ii, simulation in enumerate(data_sources):
         })
 
 
+
+
+anton_util.log_timestamp('pseudo bulking...')
+with_pseudo_bulks = []
+for ii, simulation in enumerate(with_shuffles):
+    with_pseudo_bulks.append({
+        'pseudo_bulk': False,
+        **simulation,
+    })
+    n_pseudo_bulk_options = [1, 2, 3, 5, 10]
+    for n_pseudo_bulks in n_pseudo_bulk_options:
+        mats = {k: v for k, v in simulation.items() if k in ['Y', 'P', 'SCC']}
+        pseudo_bulks = functions.pseudo_bulk(
+            mats,
+            n_pseudo_bulks = n_pseudo_bulks,
+            )
+        data_updated = copy.deepcopy(simulation)
+        data_updated.update(pseudo_bulks)
+        with_pseudo_bulks.append({
+            'pseudo_bulk': n_pseudo_bulks,
+            **data_updated,
+        })
+
+
+
+
+
+
+
+anton_util.log_timestamp('calculating log fold changes...')
 data_out = []
-for elem in with_shuffles:
+for elem in with_pseudo_bulks:
 
     Y = elem['Y']
     P = elem['P']
@@ -65,6 +99,11 @@ for elem in with_shuffles:
         }
     data_out.append(elem)
 
+
+
+
+
+anton_util.log_timestamp('saving...')
 outdir = Path('data/simulated')
 outdir.mkdir(exist_ok=True, parents=True)
 anton_util.pickle_object(data_out, f'{outdir}/preprocessed.pkl')

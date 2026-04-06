@@ -129,7 +129,7 @@ def run_inference_on_data(data):
             P = data['log_fold_changes']['P'],
             method=m)
         estimated_networks[m] = en
-        anton_util.log_timestamp(f'{m} finished.')
+        # anton_util.log_timestamp(f'{m} finished.')
     except Exception as e:
         print(f'{m} failed with:')
         print(e)
@@ -144,7 +144,7 @@ def run_inference_on_data(data):
             P = data['log_fold_changes']['P'],
             method=m)
         estimated_networks[m_name] = en.T
-        anton_util.log_timestamp(f'{m_name} finished.')
+        # anton_util.log_timestamp(f'{m_name} finished.')
     except Exception as e:
         print(f'{m_name} failed with:')
         print(e)
@@ -163,7 +163,7 @@ def run_inference_on_data(data):
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[m] = en
-    anton_util.log_timestamp(f'{m} finished.')
+    # anton_util.log_timestamp(f'{m} finished.')
 
     # print(en)
 
@@ -174,9 +174,87 @@ def run_inference_on_data(data):
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[m] = en
-    anton_util.log_timestamp(f'{m} finished.')
+    # anton_util.log_timestamp(f'{m} finished.')
 
     return estimated_networks
+
+
+
+
+
+def pseudo_bulk_group(Y, n_pseudo_bulks):
+
+    from math import floor
+    smallest_bin = 5
+    chunk_size = floor(Y.shape[0] / n_pseudo_bulks)
+    if chunk_size < smallest_bin:
+        print(f'not enough cells for {smallest_bin} cells per bin')
+        n_pseudo_bulks = floor(Y.shape[0] / smallest_bin)
+        print(f'using {n_pseudo_bulks} pseudo bulks instead')
+    chunk_indices = chunk_size * np.array(range(n_pseudo_bulks))
+    chunks = []
+    for ii in chunk_indices:
+        chunk = Y.iloc[ii : ii + chunk_size, :]
+        chunks.append(chunk)
+    # Redo the last chunk to include the remainder.
+    # A chunk that is slightly bigger at the end should be much
+    # better than a small remainder chunk, for the statistical properties
+    # of the pseudo bulks. Size difference should be negligible too
+    chunks.pop()
+    chunks.append(Y.iloc[chunk_indices[-1] : , :])
+    #
+    # Probably a smarter way, except that the last chunk is not handled.
+    # Maybe inspiration for improvement
+    # //AB
+    # chunks = [
+    #     Y[i : i + chunk_size, :]
+    #     for i in range(0, Y.shape[0], chunk_size)
+    #     ]
+
+    tmp = [f'psb{i}' for i in range(n_pseudo_bulks)]
+    pseudo_bulk = {l: list(chunk.sum(axis = 0)) for l, chunk in zip(tmp, chunks)}
+    return pseudo_bulk
+
+
+
+
+
+
+
+
+def pseudo_bulk(matrices, n_pseudo_bulks = 5):
+    import pandas as pd
+
+    # Based on initial testing, pseudo bulking (like this) is a
+    # significant part of the runtime for the lsco method
+
+    pseudo_bulks = {matrix: [] for matrix in matrices}
+    P = matrices['P']
+    for perturbed_gene in P:
+        perturbed_cell_indices = np.nonzero(P[perturbed_gene])[0]
+        if len(perturbed_cell_indices) == 0:
+            print(f'Gene {perturbed_gene} has no perturbations, skipping.')
+            continue
+        for matrix in matrices:
+            tmp = matrices[matrix].iloc[perturbed_cell_indices, :]
+            tmp2 = pseudo_bulk_group(tmp, n_pseudo_bulks = n_pseudo_bulks)
+            for _, psb in tmp2.items():
+                pseudo_bulks[matrix].append(psb)
+
+    dfs = {}
+    for matrix in matrices:
+        df = pd.DataFrame(pseudo_bulks[matrix])
+        df.columns = P.columns
+        dfs[matrix] = df
+
+    return dfs
+
+
+
+
+
+
+
 
 
 

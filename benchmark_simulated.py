@@ -26,7 +26,7 @@ for data_source, estimated_networks in zip(data_sources, inferred):
             reference_network = reference_network,
             benchmark_output_dir = benchmark_output_dir,
             )
-        anton_util.log_timestamp(f'Finished benchmarking {method} for {data_id}')
+        # anton_util.log_timestamp(f'Finished benchmarking {method} for {data_id}')
     stats.append(mstats)
 
 anton_util.pickle_object(stats, benchmark_output_dir / 'stats.pkl')
