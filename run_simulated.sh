@@ -1,3 +1,4 @@
+set -e
 
 python preprocess_simulated_data_and_networks.py
 python inference_simulated.py

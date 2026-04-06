@@ -27,9 +27,9 @@ for data_source, estimated_networks, stats in zip(data_sources, inferred, benchm
         })
 
 df = pd.DataFrame(all)
+df['is_shuffled'] = [elem is not False for elem in df.shuffle]
+df = df.sort_values(by = ['is_shuffled', 'method', 'dataset'])
 df.to_csv(benchmark_output_dir / 'stats_df.csv')
 anton_util.pickle_object(df, benchmark_output_dir / 'stats_df.pkl')
-dfd = df.drop('f1_scores', axis = 1)
-dfd['is_shuffled'] = [elem is not False for elem in dfd.shuffle]
-dfd = dfd.sort_values(by = ['is_shuffled', 'method', 'dataset'])
 
+df = df.drop('f1_scores', axis = 1)

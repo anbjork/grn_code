@@ -165,7 +165,7 @@ def run_inference_on_data(data):
     estimated_networks[m] = en
     anton_util.log_timestamp(f'{m} finished.')
 
-    print(en)
+    # print(en)
 
     m = 'zscore_dream3'
     anton_util.log_timestamp(f'Running {m}...')
