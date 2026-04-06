@@ -135,6 +135,23 @@ def run_inference_on_data(data):
         print(e)
 
 
+    m = 'lsco'
+    m_name = f'{m}.T'
+    anton_util.log_timestamp(f'Running {m_name}...')
+    try:
+        en = gs.inference.infer_networks(
+            Y = data['log_fold_changes']['Y'],
+            P = data['log_fold_changes']['P'],
+            method=m)
+        estimated_networks[m_name] = en.T
+        anton_util.log_timestamp(f'{m_name} finished.')
+    except Exception as e:
+        print(f'{m_name} failed with:')
+        print(e)
+
+
+
+
 
     P = data['P']
     Y = data['Y']
