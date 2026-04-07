@@ -182,15 +182,32 @@ def run_inference_on_data(data):
 
 
 
-def pseudo_bulk_group(Y, n_pseudo_bulks):
+def pseudo_bulk_group(Y, n_pseudo_bulks, verbose = True):
+
+    complain = False
+    complain_more = False
 
     from math import floor
-    smallest_bin = 5
+    smallest_intended_bin = 5
+    intended_n_pseudo_bulks = n_pseudo_bulks
     chunk_size = floor(Y.shape[0] / n_pseudo_bulks)
-    if chunk_size < smallest_bin:
-        print(f'not enough cells for {smallest_bin} cells per bin')
-        n_pseudo_bulks = floor(Y.shape[0] / smallest_bin)
-        print(f'using {n_pseudo_bulks} pseudo bulks instead')
+    if chunk_size < smallest_intended_bin:
+        complain = True
+        n_pseudo_bulks = floor(Y.shape[0] / smallest_intended_bin)
+        if n_pseudo_bulks == 0:
+            complain_more = True
+            n_pseudo_bulks = 1
+        chunk_size = floor(Y.shape[0] / n_pseudo_bulks)
+        if verbose:
+            print(f'smallest bin size is {smallest_intended_bin}')
+            print(f'cells in group is {Y.shape[0]}')
+            print(f'not enough cells for {intended_n_pseudo_bulks} pseudo bulks')
+            print(f'using {n_pseudo_bulks} pseudo bulks instead')
+            print(f'set chunk size to {chunk_size}')
+            print('remaining cells go with the last chunk')
+            if complain_more:
+                print(f'not enough cells for even 1 pseudo bulk of intended size, so using 1 pseudo bulk with all cells')
+            print()
     chunk_indices = chunk_size * np.array(range(n_pseudo_bulks))
     chunks = []
     for ii in chunk_indices:
@@ -213,7 +230,7 @@ def pseudo_bulk_group(Y, n_pseudo_bulks):
 
     tmp = [f'psb{i}' for i in range(n_pseudo_bulks)]
     pseudo_bulk = {l: list(chunk.mean(axis = 0)) for l, chunk in zip(tmp, chunks)}
-    return pseudo_bulk
+    return pseudo_bulk, complain
 
 
 
@@ -222,25 +239,61 @@ def pseudo_bulk_group(Y, n_pseudo_bulks):
 
 
 
-def pseudo_bulk(matrices, n_pseudo_bulks = 5):
+def pseudo_bulk(matrices, n_pseudo_bulks = 5, verbose = False):
     import pandas as pd
 
     # Based on initial testing, pseudo bulking (like this) is a
     # significant part of the runtime for the lsco method
 
+    max_complaints = 3
+    complaints_count = 0
+    verbose_sub_function = True
+    have_stopped_warning = False
+
     pseudo_bulks = {matrix: [] for matrix in matrices}
     P = matrices['P']
+    P_bulk = []
     for perturbed_gene in P:
         perturbed_cell_indices = np.nonzero(P[perturbed_gene])[0]
         if len(perturbed_cell_indices) == 0:
             print(f'Gene {perturbed_gene} has no perturbations, skipping.')
             continue
+        # ..indices[0] is arbitrary
+        # The code assumes single perturbations, so all rows pointed to by the
+        # indices should be identical
+        #
+        # Actually worth checking!
+        # Not unthinkable that this or some other dataset will include
+        # multi target perturbations, and if so we want to know
+        #
+        # Actually, the way P is extracted, that shouldn't happpen.
+        # So such checks would need to be before extracting P
+        #
+        # Remember to REMOVE this when verified, it might add extra runtime
+        # first = P.iloc[perturbed_cell_indices[0], :]
+        # for ii in perturbed_cell_indices:
+        #     if not (P.iloc[ii, :] == first).all():
+        #         raise ValueError(f'Perturbed cell indices for gene {perturbed_gene} do not point to identical rows in P.')
+        #
+        # Ran it some times with check above. Never triggered, so assumptions
+        # seem correct.
+        P_bulk.append(P.iloc[perturbed_cell_indices[0], :])
         for matrix in matrices:
             tmp = matrices[matrix].iloc[perturbed_cell_indices, :]
-            tmp2 = pseudo_bulk_group(tmp, n_pseudo_bulks = n_pseudo_bulks)
+            tmp2, warn = pseudo_bulk_group(
+                tmp, n_pseudo_bulks = n_pseudo_bulks, verbose = verbose_sub_function)
+            if warn:
+                complaints_count = complaints_count + 1
+            if (
+                    complaints_count >= max_complaints and
+                    not have_stopped_warning and
+                    not verbose
+                    ):
+                print(f'Reached warning count limit of {max_complaints}, so will stop warning. To print all warnings, call with verbose = True')
+                verbose_sub_function = False
+                have_stopped_warning = True
             for _, psb in tmp2.items():
                 pseudo_bulks[matrix].append(psb)
-
     dfs = {}
     for matrix in matrices:
         df = pd.DataFrame(pseudo_bulks[matrix])
