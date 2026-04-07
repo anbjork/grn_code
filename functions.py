@@ -212,7 +212,7 @@ def pseudo_bulk_group(Y, n_pseudo_bulks):
     #     ]
 
     tmp = [f'psb{i}' for i in range(n_pseudo_bulks)]
-    pseudo_bulk = {l: list(chunk.sum(axis = 0)) for l, chunk in zip(tmp, chunks)}
+    pseudo_bulk = {l: list(chunk.mean(axis = 0)) for l, chunk in zip(tmp, chunks)}
     return pseudo_bulk
 
 
