@@ -14,7 +14,11 @@ anton_util.log_timestamp(f'Loading {data_set_name}...')
 # pseudo_bulk_path = Path(f'data/replogle/{data_set_name}_pseudo_bulk.h5ad')
 # adata = ad.read_h5ad(pseudo_bulk_path)
 preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed.h5ad')
+# Debug, use subset for speed
+preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
 adata = ad.read_h5ad(preprocessed_path)
+
+
 
 anton_util.log_timestamp('Building Y and P...')
 Y = functions.Y_from_adata(adata)
@@ -70,8 +74,8 @@ for ii, dataset in enumerate(datasets):
     n_pseudo_bulk_options = [1, 2, 3, 5, 10]
 
     # Debug versions
-    # n_pseudo_bulk_options = [5]
-    n_pseudo_bulk_options = [2, 5, 10]
+    n_pseudo_bulk_options = [5]
+    # n_pseudo_bulk_options = [2, 5, 10]
 
     for n_pseudo_bulks in n_pseudo_bulk_options:
         anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
@@ -79,7 +83,8 @@ for ii, dataset in enumerate(datasets):
         pseudo_bulks = functions.pseudo_bulk(
             mats,
             n_pseudo_bulks = n_pseudo_bulks,
-            )
+            # verbose = True,
+        )
         data_updated = copy.deepcopy(dataset)
         data_updated.update(pseudo_bulks)
         updated.append({
