@@ -4,18 +4,18 @@ import functions
 
 
 indir = Path('data/replogle')
-indir.mkdir(exist_ok=True, parents=True)
 data_set_name = 'K562_essential_raw_singlecell_01'
 
 anton_util.log_timestamp(f'Loading {data_set_name}...')
 data_sources = anton_util.unpickle_object(
     f'{indir}/{data_set_name}_preprocessed_2.pkl')
-anton_util.log_timestamp(f'{data_set_name} loaded.')
 
+# # Debug
+# print(data_sources)
 
 estimated_networks = []
-for data_source in data_sources:
-    anton_util.log_timestamp(f'Processing data source: {data_source["shuffle"]}')
+for ii, data_source in enumerate(data_sources):
+    anton_util.log_timestamp(f'dataset {ii}...')
     estimated_networks.append(functions.run_inference_on_data(data=data_source))
 
 
