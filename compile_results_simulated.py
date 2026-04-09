@@ -23,7 +23,7 @@ for data_source, estimated_networks, stats in zip(data_sources, inferred, benchm
             'method': method,
             'dataset': data_source['index'],
             'shuffle': data_source['shuffle'],
-            'pseudo_bulks': data_source['pseudo_bulk'],
+            'pseudo_bulk': data_source['pseudo_bulk'],
             **stats[method],
         })
 

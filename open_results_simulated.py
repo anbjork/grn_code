@@ -13,5 +13,5 @@ df = df.drop('f1_scores', axis = 1)
 
 dfd = df.reset_index(drop = True)
 
-
+print(dfd)
 

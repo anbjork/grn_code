@@ -10,6 +10,11 @@ data_set_name = 'simulated'
 path = Path(
         '/home/anbjork/projects/replogle_round_2/versions/2/replogle_round_2/simulate_data/simulated_single_cell_benchmark/data_cases/outputs/gathered_simulations.pkl'
         )
+# Debug, subset for speed
+# path = Path(
+#         'data/simulated/subset.pkl'
+#         )
+
 data_raw = anton_util.unpickle_object(path)
 # get_Y_and_P uses the row names of Y, but they are not set on the
 # simulated data, so it doesn't work as expected for those.
@@ -31,7 +36,7 @@ data_raw = anton_util.unpickle_object(path)
 data_sources = data_raw
 
 
-# data_sources = data_sources[:1]  # Debug
+# data_sources = data_sources[:2]  # Debug
 
 
 anton_util.log_timestamp('shuffling...')
@@ -54,29 +59,34 @@ for ii, simulation in enumerate(data_sources):
         })
 
 
+# with_shuffles = with_shuffles[:1]  # Debug
 
 
 anton_util.log_timestamp('pseudo bulking...')
 with_pseudo_bulks = []
 for ii, simulation in enumerate(with_shuffles):
+    anton_util.log_timestamp(f'{ii}...')
     with_pseudo_bulks.append({
         'pseudo_bulk': False,
         **simulation,
     })
     n_pseudo_bulk_options = [1, 2, 3, 5, 10]
     for n_pseudo_bulks in n_pseudo_bulk_options:
+        anton_util.log_timestamp(f'{n_pseudo_bulks} pseudo bulks...')
         mats = {k: v for k, v in simulation.items() if k in ['Y', 'P', 'SCC']}
-        pseudo_bulks = functions.pseudo_bulk(
-            mats,
+        P_bulk, pseudo_bulks = functions.bin_bulk(
+            P = simulation['P'],
+            matrices = mats,
             n_pseudo_bulks = n_pseudo_bulks,
-            )
+            verbose = True,
+        )
+        pseudo_bulks['P'] = P_bulk
         data_updated = copy.deepcopy(simulation)
         data_updated.update(pseudo_bulks)
         with_pseudo_bulks.append({
             'pseudo_bulk': n_pseudo_bulks,
             **data_updated,
         })
-
 
 
 

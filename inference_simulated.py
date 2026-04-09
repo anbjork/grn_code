@@ -6,7 +6,8 @@ path = Path('data/simulated/preprocessed.pkl')
 data = anton_util.unpickle_object(path)
 
 estimated_networks = []
-for elem in data:
+for ii, elem in enumerate(data):
+    anton_util.log_timestamp(f'dataset {ii}...')
     estimated_networks.append(functions.run_inference_on_data(data=elem))
 
 output_dir = Path('inferences/simulated')

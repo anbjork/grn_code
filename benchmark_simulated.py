@@ -12,13 +12,15 @@ path = Path('data/simulated/preprocessed.pkl')
 data_sources = anton_util.unpickle_object(path)
 
 from functions import benchmark_method_against_reference
+anton_util.log_timestamp('benchmarking...')
 stats = []
-for data_source, estimated_networks in zip(data_sources, inferred):
+for ii, (data_source, estimated_networks) in enumerate(zip(data_sources, inferred)):
+    anton_util.log_timestamp(f'dataset {ii}...')
     reference_network = data_source['A']
     mstats = {}
     for method, estimated_network in estimated_networks.items():
         data_id = f'{data_source["index"]}__shuffled_{data_source["shuffle"]}'
-        anton_util.log_timestamp(f'Benchmarking {method} for {data_id}...')
+        anton_util.log_timestamp(f'method {method}...')
         mstats[method] = benchmark_method_against_reference(
             method = method,
             estimated_network = estimated_network,
