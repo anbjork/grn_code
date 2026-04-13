@@ -34,7 +34,8 @@ data_raw = anton_util.unpickle_object(path)
 #     simulation.update(ynp)
 #     data_sources[f'simulated_{ii}'] = simulation
 data_sources = data_raw
-
+for d in data_sources:
+    d.update({'0_fraction': functions.calculate_zero_fraction(d['Y'])})
 
 # data_sources = data_sources[:2]  # Debug
 

@@ -18,7 +18,9 @@ anton_util.log_timestamp(f'Loading {data_set_name}...')
 
 preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed.h5ad')
 # Debug, use subset for speed
-# preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
+preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
+print('using path:')
+print(preprocessed_path)
 
 adata = ad.read_h5ad(preprocessed_path)
 
@@ -27,7 +29,8 @@ adata = ad.read_h5ad(preprocessed_path)
 anton_util.log_timestamp('Building Y and P...')
 Y = functions.Y_from_adata(adata)
 ynp = functions.get_Y_and_P(Y)
-
+dropouts = functions.calculate_zero_fraction(Y)
+ynp.update({'0_fraction': dropouts})
 datasets = [ynp]
 
 

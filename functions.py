@@ -415,7 +415,10 @@ def bin_bulk(P, matrices, n_pseudo_bulks = 5, verbose = False):
 
 
 
-
+def calculate_zero_fraction(df):
+    non_zeros = np.nonzero(df)[0].shape[0]
+    d = 1 - non_zeros / df.size
+    return d
 
 
 
