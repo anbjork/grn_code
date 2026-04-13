@@ -281,11 +281,11 @@ def bin_bulk(P, matrices, n_pseudo_bulks = 5, verbose = False):
         # and part in a function, but didn't find a way that felt good.
         # So just inlined all for now
         if (
-                # == rather than >= makes it trigger exactly once
-                # which is good. Otherwise it constantly complains that 
-                # it has stopped complaining. Feels slightly unintuitive somehow
-                complaints_count == max_complaints and
-                not verbose
+                complaints_count >= max_complaints and
+                not verbose and
+                # This needed to avoid repeatedly entering here and priting
+                # that it'll stop complaining
+                complain
                 ):
             print()
             print(f'Reached warning count limit of {max_complaints}, so will stop warning. To print all warnings, call with verbose = True')
