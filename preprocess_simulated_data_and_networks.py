@@ -33,17 +33,17 @@ data_raw = anton_util.unpickle_object(path)
 #     anton_util.log_timestamp('Y and P built.')
 #     simulation.update(ynp)
 #     data_sources[f'simulated_{ii}'] = simulation
-data_sources = data_raw
-for d in data_sources:
+datasets = data_raw
+for d in datasets:
     d.update({'0_fraction': functions.calculate_zero_fraction(d['Y'])})
 
-# data_sources = data_sources[:2]  # Debug
+# datasets = datasets[:2]  # Debug
 
 
 anton_util.log_timestamp('shuffling...')
-with_shuffles = []
-for ii, simulation in enumerate(data_sources):
-    with_shuffles.append({
+updated = []
+for ii, simulation in enumerate(datasets):
+    updated.append({
         'index': ii,
         'shuffle': False,
         **simulation,
@@ -53,21 +53,21 @@ for ii, simulation in enumerate(data_sources):
         ynp = functions.shuffle_ynp(ynp)
         simulation_shuffled = copy.deepcopy(simulation)
         simulation_shuffled.update(ynp)
-        with_shuffles.append({
+        updated.append({
             'index': ii,
             'shuffle': jj,
             **simulation_shuffled,
         })
+datasets = updated
 
-
-# with_shuffles = with_shuffles[:1]  # Debug
+# datasets = datasets[:1]  # Debug
 
 
 anton_util.log_timestamp('pseudo bulking...')
-with_pseudo_bulks = []
-for ii, simulation in enumerate(with_shuffles):
+updated = []
+for ii, simulation in enumerate(datasets):
     anton_util.log_timestamp(f'{ii}...')
-    with_pseudo_bulks.append({
+    updated.append({
         'pseudo_bulk': False,
         **simulation,
     })
@@ -84,10 +84,11 @@ for ii, simulation in enumerate(with_shuffles):
         pseudo_bulks['P'] = P_bulk
         data_updated = copy.deepcopy(simulation)
         data_updated.update(pseudo_bulks)
-        with_pseudo_bulks.append({
+        updated.append({
             'pseudo_bulk': n_pseudo_bulks,
             **data_updated,
         })
+datasets = updated
 
 
 
@@ -95,8 +96,7 @@ for ii, simulation in enumerate(with_shuffles):
 
 
 anton_util.log_timestamp('calculating log fold changes...')
-data_out = []
-for elem in with_pseudo_bulks:
+for elem in datasets:
 
     Y = elem['Y']
     P = elem['P']
@@ -108,7 +108,6 @@ for elem in with_pseudo_bulks:
         'Y': log2_fold_changes,
         'P': P,
         }
-    data_out.append(elem)
 
 
 
@@ -117,7 +116,7 @@ for elem in with_pseudo_bulks:
 anton_util.log_timestamp('saving...')
 outdir = Path('data/simulated')
 outdir.mkdir(exist_ok=True, parents=True)
-anton_util.pickle_object(data_out, f'{outdir}/preprocessed.pkl')
+anton_util.pickle_object(datasets, f'{outdir}/preprocessed.pkl')
 
 
 
