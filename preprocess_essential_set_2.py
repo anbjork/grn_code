@@ -86,22 +86,15 @@ for ii, dataset in enumerate(datasets):
 
     for n_pseudo_bulks in n_pseudo_bulk_options:
         anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
-        # mats = {k: v for k, v in dataset.items() if k in ['Y']}
-        # P_bulk, pseudo_bulks = functions.bin_bulk(
         mat_bulk = functions.bin_bulk(
             mat = dataset['Y'],
-            # P = dataset['P'],
-            # matrices = mats,
             n_pseudo_bulks = n_pseudo_bulks,
-            # verbose = True,
         )
-        # pseudo_bulks['P'] = P_bulk
 
-        # Could probably be simplified, but sticking to current structure for now
-        data_updated = copy.deepcopy(dataset)
-        data_updated.update({'Y': mat_bulk})
-        data_updated['meta']['pseudo_bulk'] = n_pseudo_bulks
-        updated.append(data_updated)
+        ds = copy.deepcopy(dataset)
+        ds['Y'] = mat_bulk
+        ds['meta']['pseudo_bulk'] = n_pseudo_bulks
+        updated.append(ds)
 datasets = updated
 
 
