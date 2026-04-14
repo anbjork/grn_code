@@ -35,7 +35,7 @@ def shuffle_ynp(ynp):
     return shuffled_ynp
 
 
-def get_Y_and_P(Y, knockdown_value=-1):
+def get_P(Y, knockdown_value=-1):
     rows = np.array(Y.index)
     cols = np.array(Y.columns)
     M, N = Y.shape
@@ -51,7 +51,7 @@ def get_Y_and_P(Y, knockdown_value=-1):
     P.columns = cols
     P.columns.name = 'genes'
 
-    return {'Y': Y, 'P': P}
+    return P
 
 
 
@@ -258,7 +258,12 @@ def chunk_array(arr, n_chunks):
 
 
 
-def bin_bulk(P, matrices, n_pseudo_bulks = 5, verbose = False):
+def bin_bulk(
+        mat,
+        # matrices,
+        n_pseudo_bulks = 5,
+        verbose = False,
+        ):
     import pandas as pd
     import math
 
@@ -272,9 +277,24 @@ def bin_bulk(P, matrices, n_pseudo_bulks = 5, verbose = False):
     complaints_count = 0
     complain = True
 
-    P_bulk = []
-    pseudo_bulk_indices = []
-    for perturbed_gene in P:
+
+    mat_bulk = []
+    mat_indices = []
+    # pseudo_bulk_indices = []
+
+
+
+    groups = np.unique(mat.index)
+    for group in groups:
+        iis = np.nonzero(mat.index == group)[0]
+        # cells = P.iloc[iis, :]
+        n_cells = iis.shape[0]
+
+
+
+
+
+    # for perturbed_gene in P:
         # If it wasn't for counting complaints, I would put all
         # the next paragraph away in a neat and tidy function.
         # Can do workarounds like having part of the logic here
@@ -291,12 +311,15 @@ def bin_bulk(P, matrices, n_pseudo_bulks = 5, verbose = False):
             print(f'Reached warning count limit of {max_complaints}, so will stop warning. To print all warnings, call with verbose = True')
             print()
             complain = False
-        perturbed_cell_indices = np.nonzero(P[perturbed_gene])[0]
-        n_cells = len(perturbed_cell_indices)
-        if n_cells == 0:
-            complaints_count = complaints_count + 1
-            print(f'Gene {perturbed_gene} has no perturbations, skipping.')
-            continue
+
+        # perturbed_cell_indices = np.nonzero(P[perturbed_gene])[0]
+        # n_cells = len(perturbed_cell_indices)
+
+        # if n_cells == 0:
+        #     complaints_count = complaints_count + 1
+        #     print(f'Gene {perturbed_gene} has no perturbations, skipping.')
+        #     continue
+
         n_pseudo_bulks = math.floor(n_cells / smallest_intended_bin)
         if n_pseudo_bulks > n_requested_pseudo_bulks:
             n_pseudo_bulks = n_requested_pseudo_bulks
@@ -315,43 +338,60 @@ def bin_bulk(P, matrices, n_pseudo_bulks = 5, verbose = False):
                 print(f'using {n_pseudo_bulks} pseudo bulks instead')
                 print('remaining cells go with the last pseudo bulk')
 
-        # ..indices[0] is arbitrary
-        # The code assumes single perturbations, so all rows pointed to by the
-        # indices should be identical
-        #
-        # Actually worth checking!
-        # Not unthinkable that this or some other dataset will include
-        # multi target perturbations, and if so we want to know
-        #
-        # Actually, the way P is extracted, that shouldn't happpen.
-        # So such checks would need to be before extracting P
-        #
-        # Can comment this out to save time, if it turns out to be significant
-        first = P.iloc[perturbed_cell_indices[0], :]
-        for ii in perturbed_cell_indices:
-            if not (P.iloc[ii, :] == first).all():
-                raise ValueError(f'Perturbed cell indices for gene {perturbed_gene} do not point to identical rows in P.')
-        #
-        for _ in range(n_pseudo_bulks):
-            P_bulk.append(list(first))
 
-        indices_chunks = chunk_array(perturbed_cell_indices, n_pseudo_bulks)
-        pseudo_bulk_indices.append(indices_chunks)
 
-    P_bulk_df = pd.DataFrame(P_bulk)
-    P_bulk_df.columns = P.columns
 
-    pseudo_bulks = {}
-    for matrix_name, matrix in matrices.items():
-        matbulk = []
-        for gene_pseudo_bulks in pseudo_bulk_indices:
-            for index_array in gene_pseudo_bulks:
-                matbulk.append(list(matrix.iloc[index_array, :].mean(axis = 0)))
-        df = pd.DataFrame(matbulk)
-        df.columns = matrix.columns
-        pseudo_bulks[matrix_name] = df
+        # # ..indices[0] is arbitrary
+        # # The code assumes single perturbations, so all rows pointed to by the
+        # # indices should be identical
+        # #
+        # # Actually worth checking!
+        # # Not unthinkable that this or some other dataset will include
+        # # multi target perturbations, and if so we want to know
+        # #
+        # # Actually, the way P is extracted, that shouldn't happpen.
+        # # So such checks would need to be before extracting P
+        # #
+        # # Can comment this out to save time, if it turns out to be significant
+        # first = P.iloc[perturbed_cell_indices[0], :]
+        # for ii in perturbed_cell_indices:
+        #     if not (P.iloc[ii, :] == first).all():
+        #         raise ValueError(f'Perturbed cell indices for gene {perturbed_gene} do not point to identical rows in P.')
+        # #
+        # for _ in range(n_pseudo_bulks):
+        #     mat_bulk.append(list(first))
 
-    return P_bulk_df, pseudo_bulks
+
+
+        # If this function keeps just dealing with one matrix at a time,
+        # I could rewrite this function to just chunk the matrix directly.
+        # But for now, I have a function that chunks an array (of indices),
+        # so I'll keep using that for now. It does the thing
+        indices_chunks = chunk_array(iis, n_pseudo_bulks)
+
+        for iiis in indices_chunks:
+            mat_indices.append(group)
+            mat_bulk.append(mat.iloc[iiis, :].mean(axis = 0))
+
+
+
+        # pseudo_bulk_indices.append(indices_chunks)
+
+    P_bulk_df = pd.DataFrame(mat_bulk)
+    P_bulk_df.columns = mat.columns
+    P_bulk_df.index = mat_indices
+
+    # pseudo_bulks = {}
+    # for matrix_name, matrix in matrices.items():
+    #     matbulk = []
+    #     for gene_pseudo_bulks in pseudo_bulk_indices:
+    #         for index_array in gene_pseudo_bulks:
+    #             matbulk.append(list(matrix.iloc[index_array, :].mean(axis = 0)))
+    #     df = pd.DataFrame(matbulk)
+    #     df.columns = matrix.columns
+    #     pseudo_bulks[matrix_name] = df
+
+    return P_bulk_df
 
 
 
@@ -362,6 +402,20 @@ def calculate_zero_fraction(df):
     non_zeros = np.nonzero(df)[0].shape[0]
     d = 1 - non_zeros / df.size
     return d
+
+
+
+
+
+def merge_p_into_y(Y, P):
+    for gene in P:
+        perturbed_cell_indices = np.nonzero(P[gene])[0]
+        Y.index[perturbed_cell_indices] = gene
+    return Y
+
+
+
+
 
 
 
