@@ -4,13 +4,13 @@ from pathlib import Path
 import anton_util
 
 
-tmp = Path('data/replogle')
-tmp.mkdir(exist_ok=True, parents=True)
-data_set_name = 'K562_essential_raw_singlecell_01'
-anton_util.log_timestamp(f'Loading {data_set_name}...')
-data_sources = anton_util.unpickle_object(
-    f'{tmp}/{data_set_name}_preprocessed_2.pkl')
-anton_util.log_timestamp(f'{data_set_name} loaded.')
+# tmp = Path('data/replogle')
+# tmp.mkdir(exist_ok=True, parents=True)
+# data_set_name = 'K562_essential_raw_singlecell_01'
+# anton_util.log_timestamp(f'Loading {data_set_name}...')
+# data_sources = anton_util.unpickle_object(
+#     f'{tmp}/{data_set_name}_preprocessed_2.pkl')
+# anton_util.log_timestamp(f'{data_set_name} loaded.')
 
 # Currently not used
 #
@@ -23,17 +23,26 @@ benchmarks = anton_util.unpickle_object(
     benchmark_output_dir / 'stats.pkl')
 
 all = []
-for data_source, benchmark in zip(data_sources, benchmarks):
-    for method, mstats in benchmark.items():
-        for ref_name, stats in mstats.items():
-            all.append({
-                # 'shuffle': data_source['shuffle'],
-                'method': method,
-                'pseudo_bulk': data_source['pseudo_bulk'],
-                # This one already included in stats
-                # 'reference': ref_name,
-                **stats,
-                })
+# for data_source, benchmark in zip(data_sources, benchmarks):
+#     for method, mstats in benchmark.items():
+#         for ref_name, stats in mstats.items():
+#             all.append({
+#                 # 'shuffle': data_source['shuffle'],
+#                 'method': method,
+#                 'pseudo_bulk': data_source['pseudo_bulk'],
+#                 # This one already included in stats
+#                 # 'reference': ref_name,
+#                 **stats,
+#                 })
+
+for benchmark in benchmarks:
+    tmp = {}
+    for d in benchmark.values():
+        tmp.update(d)
+    all.append(tmp)
+
+
+
 
 anton_util.pickle_object(all, benchmark_output_dir / 'compiled_stats.pkl')
 df = pd.DataFrame(all)

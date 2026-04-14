@@ -32,14 +32,18 @@ df = pd.DataFrame(
         columns = adata.var.gene_name,
         )
 dropouts = functions.calculate_zero_fraction(df)
+
 datasets = [{
+    'meta': {
+        '0_fraction': dropouts,
+        },
     'Y': df,
-    '0_fraction': dropouts,
     }]
 
 
 
-
+# Might not be updated
+#
 # anton_util.log_timestamp('shuffling...')
 # updated = []
 # for dataset in datasets:
@@ -67,10 +71,9 @@ anton_util.log_timestamp('pseudo bulking...')
 updated = []
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
-    updated.append({
-        'pseudo_bulk': False,
-        **dataset,
-    })
+    ds = copy.deepcopy(dataset)
+    ds['meta']['pseudo_bulk'] = False
+    updated.append(ds)
     n_pseudo_bulk_options = [1, 2, 3, 5, 10]
 
     # Debug versions
@@ -93,11 +96,8 @@ for ii, dataset in enumerate(datasets):
         # Could probably be simplified, but sticking to current structure for now
         data_updated = copy.deepcopy(dataset)
         data_updated.update({'Y': mat_bulk})
-        updated.append({
-            'pseudo_bulk': n_pseudo_bulks,
-            **data_updated,
-        })
-
+        data_updated['meta']['pseudo_bulk'] = n_pseudo_bulks
+        updated.append(data_updated)
 datasets = updated
 
 
@@ -106,15 +106,17 @@ datasets = updated
 
 
 
-
-
+updated = []
 anton_util.log_timestamp('Computing log fold changes...')
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
 
+    ds = copy.deepcopy(dataset)
+    ds['meta']['transform'] = 'raw'
+    updated.append(ds)
+
     Y = dataset['Y']
     # P = dataset['P']
-
     nt = 'non-targeting'
     nt_bool = (Y.index == nt)
     control_cells = Y.loc[nt_bool, :]
@@ -128,31 +130,33 @@ for ii, dataset in enumerate(datasets):
         columns=Y.columns
     )
 
-    dataset['Y'] = {
-            'raw': dataset['Y'],
-            'log_fold_changes': log2_fold_changes,
-            }
+    ds = copy.deepcopy(dataset)
+    ds['Y'] = log2_fold_changes
+    ds['meta']['transform'] = 'log_fold_changes'
+    updated.append(ds)
+
+    # ds = copy.deepcopy(dataset)
+    # dataset['Y'] = {
+    #         'raw': dataset['Y'],
+    #         'log_fold_changes': log2_fold_changes,
+    #         }
 
     # dataset['log_fold_changes'] = {
     #     'Y': log2_fold_changes,
     #     'P': P,
     #     }
-
+datasets = updated
 
 
 anton_util.log_timestamp('extracting P...')
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
-    P = {}
-    for mname, mat in dataset['Y'].items():
-        # Y = dataset['Y']
-        P[mname] = functions.get_P(mat)
-        dataset['P'] = P
+    dataset['P'] = functions.get_P(dataset['Y'])
 
 
 
 # Debug, for speedy inference
-# datasets = datasets[1:]
+datasets = datasets[2:]
 
 
 anton_util.log_timestamp('saving...')

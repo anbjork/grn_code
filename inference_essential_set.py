@@ -1,7 +1,7 @@
 from pathlib import Path
 import anton_util
 import functions
-
+import copy
 
 indir = Path('data/replogle')
 data_set_name = 'K562_essential_raw_singlecell_01'
@@ -16,8 +16,14 @@ data_sources = anton_util.unpickle_object(
 estimated_networks = []
 for ii, data_source in enumerate(data_sources):
     anton_util.log_timestamp(f'dataset {ii}...')
-    estimated_networks.append(functions.run_inference_on_data(data=data_source))
-
+    ens = functions.run_inference_on_data(data=data_source)
+    for method, en in ens.items():
+        meta = copy.deepcopy(data_source['meta'])
+        meta['method'] = method
+        estimated_networks.append({
+            'meta': meta,
+            'estimated_network': en,
+        })
 
 output_dir = Path('inferences/replogle')
 output_dir.mkdir(exist_ok=True, parents=True)

@@ -58,7 +58,7 @@ def get_P(Y, knockdown_value=-1):
 def benchmark_method_against_reference(
     method,
     estimated_network,
-    ref_name,
+    # ref_name,
     reference_network,
     benchmark_output_dir,
     ):
@@ -101,8 +101,8 @@ def benchmark_method_against_reference(
     ntps = np.nonzero(harmonised_reference_network)[0].shape[0]
     n_genes_after_harmonisation = harmonised_reference_network.shape[0]
     stats = {
-        'method': method,
-        'reference_network': ref_name,
+        # 'method': method,
+        # 'reference_network': ref_name,
         'n_TPs': ntps,
         'n_genes_after_harmonisation': n_genes_after_harmonisation,
         **tmp
@@ -121,40 +121,38 @@ def run_inference_on_data(data):
 
     estimated_networks = {}
 
+    P = data['P']
+    Y = data['Y']
+
     m = 'lsco'
     anton_util.log_timestamp(f'Running {m}...')
-    try:
-        en = gs.inference.infer_networks(
-            Y = data['log_fold_changes']['Y'],
-            P = data['log_fold_changes']['P'],
-            method=m)
-        estimated_networks[m] = en
+    # try:
+    en = gs.inference.infer_networks(
+        Y = Y,
+        P = P,
+        method=m)
+    estimated_networks[m] = en
         # anton_util.log_timestamp(f'{m} finished.')
-    except Exception as e:
-        print(f'{m} failed with:')
-        print(e)
+    # except Exception as e:
+    #     print(f'{m} failed with:')
+    #     print(e)
 
 
     m = 'lsco'
     m_name = f'{m}.T'
     anton_util.log_timestamp(f'Running {m_name}...')
-    try:
-        en = gs.inference.infer_networks(
-            Y = data['log_fold_changes']['Y'],
-            P = data['log_fold_changes']['P'],
-            method=m)
-        estimated_networks[m_name] = en.T
+    # try:
+    en = gs.inference.infer_networks(
+        Y = Y,
+        P = P,
+        method=m)
+    estimated_networks[m_name] = en.T
         # anton_util.log_timestamp(f'{m_name} finished.')
-    except Exception as e:
-        print(f'{m_name} failed with:')
-        print(e)
+    # except Exception as e:
+    #     print(f'{m_name} failed with:')
+    #     print(e)
 
 
-
-
-
-    P = data['P']
-    Y = data['Y']
 
     m = 'zscore_ab'
     anton_util.log_timestamp(f'Running {m}...')
