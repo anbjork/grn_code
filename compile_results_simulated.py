@@ -17,15 +17,23 @@ benchmarks = anton_util.unpickle_object(
     benchmark_output_dir / 'stats.pkl')
 
 all = []
-for data_source, estimated_networks, stats in zip(data_sources, inferred, benchmarks):
-    for method, estimated_network in estimated_networks.items():
-        all.append({
-            'method': method,
-            'dataset': data_source['index'],
-            'shuffle': data_source['shuffle'],
-            'pseudo_bulk': data_source['pseudo_bulk'],
-            **stats[method],
-        })
+# for data_source, estimated_networks, stats in zip(data_sources, inferred, benchmarks):
+#     for method, estimated_network in estimated_networks.items():
+#         all.append({
+#             'method': method,
+#             'dataset': data_source['index'],
+#             'shuffle': data_source['shuffle'],
+#             'pseudo_bulk': data_source['pseudo_bulk'],
+#             **stats[method],
+#         })
+for benchmark in benchmarks:
+    tmp = {}
+    for d in benchmark.values():
+        tmp.update(d)
+    all.append(tmp)
+
+
+
 
 df = pd.DataFrame(all)
 df['is_shuffled'] = [elem is not False for elem in df.shuffle]

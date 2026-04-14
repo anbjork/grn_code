@@ -19,20 +19,35 @@ def Y_from_adata(adata):
     return Y
 
 
-def shuffle_ynp(ynp):
+
+
+def shuffle_y(y):
     import random
-    shuffled_ynp = {}
-    for df_name, df in ynp.items():
-        rs = []
-        for l in df.shape:
-            rs.append(np.array(random.sample(population=range(l), k=l)))
-        rrows, rcols = rs
-        shuffled = pd.DataFrame(
-            data=np.array(df)[rrows[:, np.newaxis], rcols],
-            columns=df.columns,
-            index=df.index)
-        shuffled_ynp[df_name] = shuffled
-    return shuffled_ynp
+    import copy
+    l = y.shape[0]
+    riis = random.sample(population=range(l), k=l)
+    out = copy.deepcopy(y)
+    out.index = y.index[riis]
+    return out
+
+
+
+
+
+# def shuffle_ynp(ynp):
+#     import random
+#     shuffled_ynp = {}
+#     for df_name, df in ynp.items():
+#         rs = []
+#         for l in df.shape:
+#             rs.append(np.array(random.sample(population=range(l), k=l)))
+#         rrows, rcols = rs
+#         shuffled = pd.DataFrame(
+#             data=np.array(df)[rrows[:, np.newaxis], rcols],
+#             columns=df.columns,
+#             index=df.index)
+#         shuffled_ynp[df_name] = shuffled
+#     return shuffled_ynp
 
 
 def get_P(Y, knockdown_value=-1):
@@ -126,31 +141,29 @@ def run_inference_on_data(data):
 
     m = 'lsco'
     anton_util.log_timestamp(f'Running {m}...')
-    # try:
-    en = gs.inference.infer_networks(
-        Y = Y,
-        P = P,
-        method=m)
-    estimated_networks[m] = en
-        # anton_util.log_timestamp(f'{m} finished.')
-    # except Exception as e:
-    #     print(f'{m} failed with:')
-    #     print(e)
+    try:
+        en = gs.inference.infer_networks(
+            Y = Y,
+            P = P,
+            method=m)
+        estimated_networks[m] = en
+    except Exception as e:
+        print(f'{m} failed with:')
+        print(e)
 
 
     m = 'lsco'
     m_name = f'{m}.T'
     anton_util.log_timestamp(f'Running {m_name}...')
-    # try:
-    en = gs.inference.infer_networks(
-        Y = Y,
-        P = P,
-        method=m)
-    estimated_networks[m_name] = en.T
-        # anton_util.log_timestamp(f'{m_name} finished.')
-    # except Exception as e:
-    #     print(f'{m_name} failed with:')
-    #     print(e)
+    try:
+        en = gs.inference.infer_networks(
+            Y = Y,
+            P = P,
+            method=m)
+        estimated_networks[m_name] = en.T
+    except Exception as e:
+        print(f'{m_name} failed with:')
+        print(e)
 
 
 
@@ -161,7 +174,6 @@ def run_inference_on_data(data):
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[m] = en
-    # anton_util.log_timestamp(f'{m} finished.')
 
     # print(en)
 
@@ -172,7 +184,6 @@ def run_inference_on_data(data):
         method=m)
     en[np.isnan(en)] = 0
     estimated_networks[m] = en
-    # anton_util.log_timestamp(f'{m} finished.')
 
     return estimated_networks
 
@@ -424,9 +435,11 @@ def transform(df, transform):
 
 
 def merge_p_into_y(Y, P):
+    index = np.array(Y.index).astype(str)
     for gene in P:
         perturbed_cell_indices = np.nonzero(P[gene])[0]
-        Y.index[perturbed_cell_indices] = gene
+        index[perturbed_cell_indices] = gene
+    Y.index = index
     return Y
 
 

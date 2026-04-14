@@ -1,5 +1,6 @@
 
 import numpy as np
+import pandas as pd
 from pathlib import Path
 import anton_util
 import functions
@@ -34,60 +35,95 @@ data_raw = anton_util.unpickle_object(path)
 #     simulation.update(ynp)
 #     data_sources[f'simulated_{ii}'] = simulation
 datasets = data_raw
+
+datasets = datasets[:2]  # Debug
+
+
+
+
+ground_truths = {}
+for ii, d in enumerate(datasets):
+    ground_truths[ii] = d['A']
+anton_util.pickle_object(ground_truths, 'data/simulated/ground_truths.pkl')
+
+
+
+
+updated = []
+for ii, d in enumerate(datasets):
+    Y = d['Y']
+    Y = functions.merge_p_into_y(Y, d['P'])
+    controls = d['SCC']
+    controls.index = ['controls'] * len(controls)
+    all = pd.concat([controls, d['Y']], axis = 0)
+    updated.append({
+        'meta': {
+            'replicate': ii
+            },
+        'Y': all,
+        'A': d['A'],
+    })
+datasets = updated
+
+
+# I don't think this does anything. REMOVE
+# updated = []
+# for ii, d in enumerate(datasets):
+#     updated.append({
+#         'Y': d['Y'],
+#         })
+# datasets = updated
+
+
 for d in datasets:
-    d.update({'0_fraction': functions.calculate_zero_fraction(d['Y'])})
+    d['meta']['0_fraction'] = functions.calculate_zero_fraction(d['Y'])
+
 
 # datasets = datasets[:2]  # Debug
 
 
 anton_util.log_timestamp('shuffling...')
 updated = []
-for ii, simulation in enumerate(datasets):
-    updated.append({
-        'index': ii,
-        'shuffle': False,
-        **simulation,
-    })
+for ii, dataset in enumerate(datasets):
+    ds = copy.deepcopy(dataset)
+    ds['meta']['shuffle'] = False
+    updated.append(ds)
+
     for jj in range(1):
-        ynp = {k: v for k, v in simulation.items() if k in ['Y', 'P']}
-        ynp = functions.shuffle_ynp(ynp)
-        simulation_shuffled = copy.deepcopy(simulation)
-        simulation_shuffled.update(ynp)
-        updated.append({
-            'index': ii,
-            'shuffle': jj,
-            **simulation_shuffled,
-        })
+        ds = copy.deepcopy(dataset)
+        ds['meta']['shuffle'] = jj
+        ds['Y'] = functions.shuffle_y(ds['Y'])
+        updated.append(ds)
 datasets = updated
 
 # datasets = datasets[:1]  # Debug
 
 
+
 anton_util.log_timestamp('pseudo bulking...')
 updated = []
-for ii, simulation in enumerate(datasets):
-    anton_util.log_timestamp(f'{ii}...')
-    updated.append({
-        'pseudo_bulk': False,
-        **simulation,
-    })
+for ii, dataset in enumerate(datasets):
+    anton_util.log_timestamp(f'dataset {ii}...')
+    ds = copy.deepcopy(dataset)
+    ds['meta']['pseudo_bulk'] = False
+    updated.append(ds)
     n_pseudo_bulk_options = [1, 2, 3, 5, 10]
+
+    # Debug versions
+    n_pseudo_bulk_options = [5]
+    # n_pseudo_bulk_options = [2, 5, 10]
+
     for n_pseudo_bulks in n_pseudo_bulk_options:
-        anton_util.log_timestamp(f'{n_pseudo_bulks} pseudo bulks...')
-        mats = {k: v for k, v in simulation.items() if k in ['Y', 'P', 'SCC']}
-        P_bulk, pseudo_bulks = functions.bin_bulk(
-            P = simulation['P'],
-            matrices = mats,
+        anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
+        mat_bulk = functions.bin_bulk(
+            mat = dataset['Y'],
             n_pseudo_bulks = n_pseudo_bulks,
-            verbose = True,
         )
-        pseudo_bulks['P'] = P_bulk
-        data_updated = copy.deepcopy(simulation)
-        data_updated.update(pseudo_bulks)
-        updated.append({
-            'pseudo_bulk': n_pseudo_bulks,
-            **data_updated,
-        })
+
+        ds = copy.deepcopy(dataset)
+        ds['Y'] = mat_bulk
+        ds['meta']['pseudo_bulk'] = n_pseudo_bulks
+        updated.append(ds)
 datasets = updated
 
 
@@ -95,20 +131,71 @@ datasets = updated
 
 
 
-anton_util.log_timestamp('calculating log fold changes...')
-for elem in datasets:
+anton_util.log_timestamp('transforming...')
+updated = []
+for ii, dataset in enumerate(datasets):
+    anton_util.log_timestamp(f'dataset {ii}...')
+    ds = copy.deepcopy(dataset)
+    ds['meta']['transform'] = 'raw'
+    updated.append(ds)
 
-    Y = elem['Y']
-    P = elem['P']
-    SCC = elem['SCC']
+    transforms = ['log1p', 'zscores']
+    for transform in transforms:
+        anton_util.log_timestamp(f'transform {transform}...')
+        transformed = functions.transform(dataset['Y'], transform)
 
-    log2_fold_changes = np.log2(Y + 1) - np.log2(SCC + 1)
+        ds = copy.deepcopy(dataset)
+        ds['meta']['transform'] = transform
+        ds['Y'] = transformed
+        updated.append(ds)
+datasets = updated
 
-    elem['log_fold_changes'] = {
-        'Y': log2_fold_changes,
-        'P': P,
-        }
 
+
+
+
+updated = []
+anton_util.log_timestamp('Computing differences...')
+for ii, dataset in enumerate(datasets):
+    anton_util.log_timestamp(f'dataset {ii}...')
+
+    ds = copy.deepcopy(dataset)
+    ds['meta']['control_delta'] = False
+    updated.append(ds)
+
+    Y = dataset['Y']
+    ct_bool = (Y.index == 'controls')
+    control_cells = Y.loc[ct_bool, :]
+    control = control_cells.mean(axis=0)
+    Y = Y.loc[~ct_bool, :]
+
+    delta = pd.DataFrame(
+        Y - control,
+        index = Y.index,
+        columns = Y.columns
+    )
+
+    ds = copy.deepcopy(dataset)
+    ds['Y'] = delta
+    ds['meta']['delta'] = True
+    updated.append(ds)
+
+datasets = updated
+
+
+
+
+
+
+anton_util.log_timestamp('extracting P...')
+for ii, dataset in enumerate(datasets):
+    anton_util.log_timestamp(f'dataset {ii}...')
+    dataset['P'] = functions.get_P(dataset['Y'])
+
+
+
+# Debug, for speedy inference
+datasets = [d for d in datasets if d['meta']['pseudo_bulk'] is not False]
 
 
 
