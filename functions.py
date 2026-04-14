@@ -405,6 +405,24 @@ def calculate_zero_fraction(df):
 
 
 
+
+def transform(df, transform):
+    # Note that this uses the natural logarithm.
+    # Numpy has a readymade for it. Better calculation precision
+    # than log2 it seemed when I looked at docs
+    if transform == 'log1p':
+        return np.log1p(df)
+    elif transform == 'zscores':
+        return (df - df.mean()) / df.std()
+    else:
+        raise ValueError(f'Transform {transform} not recognised')
+
+
+
+
+
+
+
 def merge_p_into_y(Y, P):
     for gene in P:
         perturbed_cell_indices = np.nonzero(P[gene])[0]

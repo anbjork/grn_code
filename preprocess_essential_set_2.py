@@ -31,8 +31,12 @@ df = pd.DataFrame(
         index = adata.obs.gene,
         columns = adata.var.gene_name,
         )
+nt = 'non-targeting'
+# Giving the the controls a generic dataset agnostic name
+tmp = np.array(df.index)
+tmp[tmp == nt] = 'controls'
+df.index = tmp
 dropouts = functions.calculate_zero_fraction(df)
-
 datasets = [{
     'meta': {
         '0_fraction': dropouts,
@@ -102,50 +106,60 @@ datasets = updated
 
 
 
+anton_util.log_timestamp('transforming...')
+updated = []
+for ii, dataset in enumerate(datasets):
+    anton_util.log_timestamp(f'dataset {ii}...')
+    ds = copy.deepcopy(dataset)
+    ds['meta']['transform'] = 'raw'
+    updated.append(ds)
+
+    transforms = ['log1p', 'zscores']
+    for transform in transforms:
+        anton_util.log_timestamp(f'transform {transform}...')
+        transformed = functions.transform(dataset['Y'], transform)
+
+        ds = copy.deepcopy(dataset)
+        ds['meta']['transform'] = transform
+        ds['Y'] = transformed
+        updated.append(ds)
+datasets = updated
+
 
 
 
 
 updated = []
-anton_util.log_timestamp('Computing log fold changes...')
+anton_util.log_timestamp('Computing differences...')
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
 
     ds = copy.deepcopy(dataset)
-    ds['meta']['transform'] = 'raw'
+    ds['meta']['delta'] = False
     updated.append(ds)
 
     Y = dataset['Y']
-    # P = dataset['P']
-    nt = 'non-targeting'
-    nt_bool = (Y.index == nt)
-    control_cells = Y.loc[nt_bool, :]
-    Y = Y.loc[~nt_bool, :]
-    # P = P.loc[~nt_bool, :]
+    ct_bool = (Y.index == 'controls')
+    control_cells = Y.loc[ct_bool, :]
+    control = control_cells.mean(axis=0)
+    Y = Y.loc[~ct_bool, :]
 
-    control = np.log2(control_cells.values + 1).mean(axis=0)
-    log2_fold_changes = pd.DataFrame(
-        np.log2(Y.values + 1) - control,
-        index=Y.index,
-        columns=Y.columns
+    delta = pd.DataFrame(
+        Y - control,
+        index = Y.index,
+        columns = Y.columns
     )
 
     ds = copy.deepcopy(dataset)
-    ds['Y'] = log2_fold_changes
-    ds['meta']['transform'] = 'log_fold_changes'
+    ds['Y'] = delta
+    ds['meta']['delta'] = True
     updated.append(ds)
 
-    # ds = copy.deepcopy(dataset)
-    # dataset['Y'] = {
-    #         'raw': dataset['Y'],
-    #         'log_fold_changes': log2_fold_changes,
-    #         }
-
-    # dataset['log_fold_changes'] = {
-    #     'Y': log2_fold_changes,
-    #     'P': P,
-    #     }
 datasets = updated
+
+
+
+
 
 
 anton_util.log_timestamp('extracting P...')
@@ -156,18 +170,14 @@ for ii, dataset in enumerate(datasets):
 
 
 # Debug, for speedy inference
-datasets = datasets[2:]
+datasets = [d for d in datasets if d['meta']['pseudo_bulk'] is not False]
+
 
 
 anton_util.log_timestamp('saving...')
 outdir = Path('data/replogle')
 outdir.mkdir(exist_ok=True, parents=True)
 anton_util.pickle_object(datasets, f'{outdir}/{data_set_name}_preprocessed_2.pkl')
-
-
-
-
-
 
 
 

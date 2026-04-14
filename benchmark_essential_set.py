@@ -20,8 +20,8 @@ reference_networks = anton_util.unpickle_object(
 # anton_util.log_timestamp('Reference networks loaded.')
 
 # Debug
-# tmp = 'Non-specific-ChIP-seq-network_with_weights'
-# reference_networks = {tmp: reference_networks[tmp]}
+tmp = 'Non-specific-ChIP-seq-network_with_weights'
+reference_networks = {tmp: reference_networks[tmp]}
 
 
 
@@ -45,7 +45,7 @@ for ii, estimated_network in enumerate(estimated_networks):
         res = benchmark_method_against_reference(
             method = meta['method'],
             estimated_network = estimated_network['estimated_network'],
-            ref_name = ref_name,
+            # ref_name = ref_name,
             reference_network = ref_net,
             benchmark_output_dir = benchmark_output_dir,
             )
