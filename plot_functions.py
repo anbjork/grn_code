@@ -24,9 +24,11 @@ def create_scatter_plot_with_jitter(ax, method_data, metric, color_map=None, col
     color_column = None
     if color_by is not None:
         if color_by == 'delta':
-            color_column = 'delta_clean'
+            color_column = 'delta_clean' if 'delta_clean' in method_data.columns else 'delta'
         elif color_by == 'transform':
             color_column = 'transform'
+        elif color_by == 'delta_control':
+            color_column = 'delta_control'
         else:  # replicate
             color_column = 'replicate'
     
@@ -56,7 +58,8 @@ def create_scatter_plot_with_jitter(ax, method_data, metric, color_map=None, col
                 ax.scatter(value_x_positions, value_subset[metric].values, 
                           alpha=0.7, s=60, color=color_map[value], label=label)
         else:
-            ax.scatter(x_positions, subset[metric].values, alpha=0.7, s=60)
+            # Use single color when no coloring is specified
+            ax.scatter(x_positions, subset[metric].values, alpha=0.7, s=60, color='steelblue')
     
     ax.set_xticks(range(len(ordered_categories)))
     ax.set_xticklabels(ordered_categories)
@@ -71,9 +74,11 @@ def create_auroc_plots(df_filtered, methods_to_plot, title_prefix, output_path, 
     if color_by is not None:
         # Set title and color mapping based on color_by parameter
         if color_by == 'delta':
-            color_column = 'delta_clean'
+            color_column = 'delta_clean' if 'delta_clean' in df_filtered.columns else 'delta'
         elif color_by == 'transform':
             color_column = 'transform'
+        elif color_by == 'delta_control':
+            color_column = 'delta_control'
         else:  # replicate
             color_column = 'replicate'
         
@@ -122,9 +127,11 @@ def create_aupr_ratio_plots(df_filtered, methods_to_plot, title_prefix, output_p
     if color_by is not None:
         # Set title and color mapping based on color_by parameter
         if color_by == 'delta':
-            color_column = 'delta_clean'
+            color_column = 'delta_clean' if 'delta_clean' in df_filtered.columns else 'delta'
         elif color_by == 'transform':
             color_column = 'transform'
+        elif color_by == 'delta_control':
+            color_column = 'delta_control'
         else:  # replicate
             color_column = 'replicate'
         
@@ -174,9 +181,11 @@ def create_aupr_erma_plots(df_filtered, methods_to_plot, title_prefix, output_pa
     if color_by is not None:
         # Set title and color mapping based on color_by parameter
         if color_by == 'delta':
-            color_column = 'delta_clean'
+            color_column = 'delta_clean' if 'delta_clean' in df_filtered.columns else 'delta'
         elif color_by == 'transform':
             color_column = 'transform'
+        elif color_by == 'delta_control':
+            color_column = 'delta_control'
         else:  # replicate
             color_column = 'replicate'
         
@@ -239,23 +248,23 @@ def create_aupr_erma_plots(df_filtered, methods_to_plot, title_prefix, output_pa
                                    alpha=0.7, s=60, color=color_map[value], 
                                    marker='^', label=erma_label)
                 else:
-                    # No coloring - plot all points with default colors
+                    # No coloring - plot all points with consistent colors
                     if len(subset) > 1:
                         jitter = np.random.normal(0, 0.075, len(subset))
                         x_pos = [j] * len(subset) + jitter
                     else:
                         x_pos = [j] * len(subset)
                     
-                    # AUPR points (circles)
+                    # AUPR points (circles) - consistent blue color
                     aupr_label = 'AUPR' if (i == 0 and j == 0) else ""
                     ax.scatter(x_pos, subset['AUPR'].values, 
-                               alpha=0.7, s=60, color='blue', 
+                               alpha=0.7, s=60, color='steelblue', 
                                marker='o', label=aupr_label)
                     
-                    # ERMA points (triangles)
+                    # ERMA points (triangles) - consistent red color
                     erma_label = 'ERMA' if (i == 0 and j == 0) else ""
                     ax.scatter(x_pos, subset['ERMA'].values, 
-                               alpha=0.7, s=60, color='red', 
+                               alpha=0.7, s=60, color='orangered', 
                                marker='^', label=erma_label)
             
             aupr_max = method_data['AUPR'].max()

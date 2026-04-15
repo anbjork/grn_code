@@ -19,6 +19,17 @@ df_filtered = df[df['method'].isin(methods_to_plot)].copy()
 # Convert pseudo_bulk to string for better plotting
 df_filtered['pseudo_bulk_str'] = df_filtered['pseudo_bulk'].astype(str)
 
+# Check what columns are available for coloring
+print(f"Available columns: {df_filtered.columns.tolist()}")
+if 'delta' in df_filtered.columns:
+    print(f"Delta column unique values: {df_filtered['delta'].unique()}")
+    print(f"Delta column value counts:\n{df_filtered['delta'].value_counts(dropna=False)}")
+    unique_deltas = df_filtered['delta'].unique()
+    print(f"Unique deltas: {unique_deltas}")
+if 'transform' in df_filtered.columns:
+    unique_transforms = df_filtered['transform'].unique()
+    print(f"Unique transforms: {unique_transforms}")
+
 # Set up the plotting style
 plt.style.use('default')
 sns.set_palette("husl")
@@ -40,6 +51,18 @@ create_aupr_erma_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/r
 
 # AUPR ratio plot (no coloring for essential set data)
 create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_ratio_comparison_scatter.png', color_by=None)
+
+# Create plots colored by transform if available
+if 'transform' in df_filtered.columns:
+    create_auroc_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/auroc_comparison_scatter_transform.png', color_by='transform')
+    create_aupr_erma_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_erma_comparison_scatter_transform.png', color_by='transform')
+    create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_ratio_comparison_scatter_transform.png', color_by='transform')
+
+# Create plots colored by delta if available
+if 'delta' in df_filtered.columns:
+    create_auroc_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/auroc_comparison_scatter_delta.png', color_by='delta')
+    create_aupr_erma_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_erma_comparison_scatter_delta.png', color_by='delta')
+    create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_ratio_comparison_scatter_delta.png', color_by='delta')
 
 # Plots for specific reference networks
 reference_networks = [
