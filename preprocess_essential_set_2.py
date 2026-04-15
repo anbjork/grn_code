@@ -18,7 +18,8 @@ anton_util.log_timestamp(f'Loading {data_set_name}...')
 
 preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed.h5ad')
 # Debug, use subset for speed
-preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
+# preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
+
 print('using path:')
 print(preprocessed_path)
 
@@ -81,7 +82,7 @@ for ii, dataset in enumerate(datasets):
     n_pseudo_bulk_options = [1, 2, 3, 5, 10]
 
     # Debug versions
-    n_pseudo_bulk_options = [5]
+    # n_pseudo_bulk_options = [5]
     # n_pseudo_bulk_options = [2, 5, 10]
 
     for n_pseudo_bulks in n_pseudo_bulk_options:
@@ -162,8 +163,8 @@ for ii, dataset in enumerate(datasets):
 
 
 
-# Debug, for speedy inference
-datasets = [d for d in datasets if d['meta']['pseudo_bulk'] is not False]
+# # Debug, for speedy inference
+# datasets = [d for d in datasets if d['meta']['pseudo_bulk'] is not False]
 
 
 
