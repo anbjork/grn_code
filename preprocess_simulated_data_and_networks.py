@@ -36,7 +36,7 @@ data_raw = anton_util.unpickle_object(path)
 #     data_sources[f'simulated_{ii}'] = simulation
 datasets = data_raw
 
-datasets = datasets[:2]  # Debug
+# datasets = datasets[:2]  # Debug
 
 
 
@@ -66,13 +66,6 @@ for ii, d in enumerate(datasets):
 datasets = updated
 
 
-# I don't think this does anything. REMOVE
-# updated = []
-# for ii, d in enumerate(datasets):
-#     updated.append({
-#         'Y': d['Y'],
-#         })
-# datasets = updated
 
 
 for d in datasets:
@@ -110,7 +103,7 @@ for ii, dataset in enumerate(datasets):
     n_pseudo_bulk_options = [1, 2, 3, 5, 10]
 
     # Debug versions
-    n_pseudo_bulk_options = [5]
+    # n_pseudo_bulk_options = [5]
     # n_pseudo_bulk_options = [2, 5, 10]
 
     for n_pseudo_bulks in n_pseudo_bulk_options:
@@ -177,7 +170,7 @@ for ii, dataset in enumerate(datasets):
 
     ds = copy.deepcopy(dataset)
     ds['Y'] = delta
-    ds['meta']['delta'] = True
+    ds['meta']['control_delta'] = True
     updated.append(ds)
 
 datasets = updated
@@ -195,7 +188,7 @@ for ii, dataset in enumerate(datasets):
 
 
 # Debug, for speedy inference
-datasets = [d for d in datasets if d['meta']['pseudo_bulk'] is not False]
+# datasets = [d for d in datasets if d['meta']['pseudo_bulk'] is not False]
 
 
 
