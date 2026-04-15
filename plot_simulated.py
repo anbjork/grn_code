@@ -19,6 +19,23 @@ df_filtered = df[(df['method'].isin(methods_to_plot)) & (df['is_shuffled'] == Fa
 # Convert pseudo_bulk to string for better plotting
 df_filtered['pseudo_bulk_str'] = df_filtered['pseudo_bulk'].astype(str)
 
+# Check what's actually in the delta column
+print(f"Delta column unique values: {df_filtered['delta'].unique()}")
+print(f"Delta column value counts:\n{df_filtered['delta'].value_counts(dropna=False)}")
+
+# Handle delta values properly - convert NaN to 'False' and True to 'True'
+df_filtered['delta_clean'] = df_filtered['delta'].apply(lambda x: 'False' if pd.isna(x) else 'True')
+unique_deltas = df_filtered['delta_clean'].unique()
+print(f"Unique deltas after cleaning: {unique_deltas}")
+
+# Get unique transforms for color mapping
+unique_transforms = df_filtered['transform'].unique()
+print(f"Unique transforms found: {unique_transforms}")
+
+# Get unique replicates for color mapping
+unique_replicates = df_filtered['replicate'].unique()
+print(f"Unique replicates found: {unique_replicates}")
+
 # Set up the plotting style
 plt.style.use('default')
 sns.set_palette("husl")
@@ -31,20 +48,18 @@ for method in methods_to_plot:
     counts = method_data['pseudo_bulk'].value_counts().sort_index()
     print(counts)
 
-# AUROC plot
-create_auroc_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/auroc_comparison_scatter.png')
+# Create plots colored by delta
+create_auroc_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/auroc_comparison_scatter_delta.png', color_by='delta')
+create_aupr_erma_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_erma_comparison_scatter_delta.png', color_by='delta')
+create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_ratio_comparison_scatter_delta.png', color_by='delta')
 
-# AUPR and ERMA plot
-create_aupr_erma_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_erma_comparison_scatter.png')
+# Create plots colored by transform
+create_auroc_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/auroc_comparison_scatter_transform.png', color_by='transform')
+create_aupr_erma_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_erma_comparison_scatter_transform.png', color_by='transform')
+create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_ratio_comparison_scatter_transform.png', color_by='transform')
 
-# AUPR ratio plot
-create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_ratio_comparison_scatter.png')
+# Create plots colored by replicate
+create_auroc_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/auroc_comparison_scatter_replicate.png', color_by='replicate')
+create_aupr_erma_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_erma_comparison_scatter_replicate.png', color_by='replicate')
+create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Simulated Data', './plots/simulated/aupr_ratio_comparison_scatter_replicate.png', color_by='replicate')
 
-# Print summary statistics
-print("\nSummary Statistics by Method and Pseudo-bulk Category:")
-print("=" * 60)
-for method in methods_to_plot:
-    method_data = df_filtered[df_filtered['method'] == method]
-    print(f"\n{method.upper()}:")
-    summary = method_data.groupby('pseudo_bulk_str')[['AUROC', 'AUPR', 'ERMA', 'AUPR ratio']].agg(['mean', 'std'])
-    print(summary.round(4))

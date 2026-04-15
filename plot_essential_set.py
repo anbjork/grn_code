@@ -32,14 +32,14 @@ for method in methods_to_plot:
     print(counts)
 
 
-# AUROC plot
-create_auroc_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/auroc_comparison_scatter.png')
+# AUROC plot (no coloring for essential set data)
+create_auroc_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/auroc_comparison_scatter.png', color_by=None)
 
-# AUPR and ERMA plot
-create_aupr_erma_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_erma_comparison_scatter.png')
+# AUPR and ERMA plot (no coloring for essential set data)
+create_aupr_erma_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_erma_comparison_scatter.png', color_by=None)
 
-# AUPR ratio plot
-create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_ratio_comparison_scatter.png')
+# AUPR ratio plot (no coloring for essential set data)
+create_aupr_ratio_plots(df_filtered, methods_to_plot, 'Replogle Data', './plots/replogle/aupr_ratio_comparison_scatter.png', color_by=None)
 
 # Plots for specific reference networks
 reference_networks = [
@@ -49,7 +49,7 @@ reference_networks = [
 
 for ref_network in reference_networks:
     # Filter data for this reference network
-    df_ref = df_filtered[df_filtered['reference_network'] == ref_network].copy()
+    df_ref = df_filtered[df_filtered['reference'] == ref_network].copy()
     
     if len(df_ref) == 0:
         print(f"No data found for reference network: {ref_network}")
@@ -58,17 +58,17 @@ for ref_network in reference_networks:
     # Clean reference network name for filename
     ref_name_clean = ref_network.replace('.csv', '')
     
-    # AUROC plot for this reference network
+    # AUROC plot for this reference network (no coloring)
     create_auroc_plots(df_ref, methods_to_plot, f'Replogle Data ({ref_network})', 
-                      f'./plots/replogle/auroc_comparison_{ref_name_clean}_scatter.png')
+                      f'./plots/replogle/auroc_comparison_{ref_name_clean}_scatter.png', color_by=None)
     
-    # AUPR and ERMA plot for this reference network
+    # AUPR and ERMA plot for this reference network (no coloring)
     create_aupr_erma_plots(df_ref, methods_to_plot, f'Replogle Data ({ref_network})', 
-                          f'./plots/replogle/aupr_erma_comparison_{ref_name_clean}_scatter.png')
+                          f'./plots/replogle/aupr_erma_comparison_{ref_name_clean}_scatter.png', color_by=None)
     
-    # AUPR ratio plot for this reference network
+    # AUPR ratio plot for this reference network (no coloring)
     create_aupr_ratio_plots(df_ref, methods_to_plot, f'Replogle Data ({ref_network})', 
-                           f'./plots/replogle/aupr_ratio_comparison_{ref_name_clean}_scatter.png')
+                           f'./plots/replogle/aupr_ratio_comparison_{ref_name_clean}_scatter.png', color_by=None)
 
 # Print summary statistics
 print("\nSummary Statistics by Method and Pseudo-bulk Category:")
