@@ -425,6 +425,9 @@ def transform(df, transform):
         return np.log1p(df)
     elif transform == 'zscores':
         return (df - df.mean()) / df.std()
+    # Does nothing useful, but enables fewer special cases in the pipeline code
+    elif transform == 'raw':
+        return df
     else:
         raise ValueError(f'Transform {transform} not recognised')
 

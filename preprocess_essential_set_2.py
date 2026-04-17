@@ -35,7 +35,7 @@ df = pd.DataFrame(
 nt = 'non-targeting'
 # Giving the the controls a generic dataset agnostic name
 tmp = np.array(df.index)
-tmp[tmp == nt] = 'controls'
+tmp[tmp == nt] = 'control'
 df.index = tmp
 dropouts = functions.calculate_zero_fraction(df)
 datasets = [{
