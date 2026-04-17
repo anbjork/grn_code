@@ -1,10 +1,7 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import genesnake as gs
-import pickle
 from pathlib import Path
-from copy import deepcopy
 import anton_util
 
 
@@ -186,6 +183,99 @@ def run_inference_on_data(data):
     estimated_networks[m] = en
 
     return estimated_networks
+
+
+
+
+
+
+
+def dspin_inference(data):
+
+    from dspin.dspin import DSPIN
+    import anndata as ad
+
+    # Recreating an anndata object to fit with the rest of the code
+    # from previously
+    y = data['Y']
+
+    # # Debug
+    # y = y.iloc[:, :50]
+
+    adata = ad.AnnData(
+            # to_numpy and commented out obs because anndata stresses
+            # over non unique obs names, so letting it assign an integer range
+            X = y.to_numpy(),
+            # obs = pd.DataFrame(index = y.index),
+            var = pd.DataFrame(index = y.columns),
+            )
+    adata.obs['sample_id'] = adata.obs.index
+    adata.obs['batch'] = 'mock_batch'  # Assuming only 1 batch
+    controls = (y.index == 'control')
+    adata.obs['if_control'] = controls
+    adata.obs['gene_name'] = y.index
+    adata.var['gene_name'] = adata.var.index
+
+    all_genes = adata.var['gene_name']
+
+    save_path = Path('tmp/dspin_save_path')
+    save_path.mkdir(exist_ok=True, parents=True)
+    num_spin = len(adata.var)
+    model = DSPIN(adata, str(save_path), num_spin=num_spin)
+
+    # Data is filtered in the model creation, so extract the updated
+    # data to continue with
+    adata = model.adata
+    num_spin = model.num_spin
+
+    # Custom prior h for perturbations
+    # dspin bioarxiv at least used to describe this as the way
+    perturbation_list = np.unique(adata.obs['gene_name'])
+    rows = np.array(adata.var.gene_name)
+    cols = perturbation_list
+    cur_h = np.zeros((len(rows), len(cols)))
+    for ii in range(len(rows)):
+        for jj in range(len(cols)):
+            if rows[ii] == cols[jj]:
+                cur_h[ii, jj] = -3  # -3 from dspin bioarxiv preprint
+    extra_params = {'cur_h': cur_h}
+    # These params according to the dspin bioarxiv
+    # I saw some potential updates to recommended paramters in the bioarxiv
+    params={'lambda_l1_j': 5e-3, 'lambda_l2_h': 0.5}
+    all_params = {**params, **extra_params}
+
+    model = DSPIN(adata, str(save_path), num_spin=num_spin)
+    model.network_inference(
+        sample_id_key = 'gene_name',
+        method = 'pseudo_likelihood',
+        params = all_params,
+        )
+
+    estimated_network = pd.DataFrame(
+            data = model.network,
+            index = adata.var.gene_name,
+            columns = adata.var.gene_name,
+            )
+
+    # Using these conversions to put the previously filtered out genes in again
+    estimated_network = gs.util.edgelist_to_matrix(
+        np.array(gs.util.matrix_to_edgelist(estimated_network)),
+        all_genes = all_genes,
+        )
+
+    return estimated_network
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

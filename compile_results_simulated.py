@@ -16,7 +16,7 @@ benchmark_output_dir = Path('benchmarks/simulated')
 benchmarks = anton_util.unpickle_object(
     benchmark_output_dir / 'stats.pkl')
 
-all = []
+results = []
 for benchmark in benchmarks:
     tmp = {}
     for d in benchmark.values():
@@ -25,14 +25,16 @@ for benchmark in benchmarks:
         except TypeError as e:
             print(e)
             print('If benchmarking fails, the data is None, so could be that')
-    all.append(tmp)
+    results.append(tmp)
 
 
 
 
-df = pd.DataFrame(all)
-df['is_shuffled'] = [elem is not False for elem in df.shuffle]
-df = df.sort_values(by = ['is_shuffled', 'method', 'pseudo_bulk'])
+df = pd.DataFrame(results)
+cs = ['shuffle', 'method', 'pseudo_bulk']
+if all([elem in df.columns for elem in cs]):
+    df['is_shuffled'] = [elem is not False for elem in df['shuffle']]
+    df = df.sort_values(by = ['is_shuffled', 'method', 'pseudo_bulk'])
 df['AUPR ratio'] = df['AUPR'] / df['ERMA']
 anton_util.pickle_object(df, benchmark_output_dir / 'stats_df.pkl')
 # csvs don't handle the nested f1_scores well

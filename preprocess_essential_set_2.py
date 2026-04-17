@@ -18,7 +18,7 @@ anton_util.log_timestamp(f'Loading {data_set_name}...')
 
 preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed.h5ad')
 # Debug, use subset for speed
-# preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
+preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
 
 print('using path:')
 print(preprocessed_path)
@@ -76,13 +76,14 @@ anton_util.log_timestamp('pseudo bulking...')
 updated = []
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
-    ds = copy.deepcopy(dataset)
-    ds['meta']['pseudo_bulk'] = False
-    updated.append(ds)
-    n_pseudo_bulk_options = [1, 2, 3, 5, 10]
+
+    # ds = copy.deepcopy(dataset)
+    # ds['meta']['pseudo_bulk'] = False
+    # updated.append(ds)
+    # n_pseudo_bulk_options = [1, 2, 3, 5, 10]
 
     # Debug versions
-    # n_pseudo_bulk_options = [5]
+    n_pseudo_bulk_options = [5]
     # n_pseudo_bulk_options = [2, 5, 10]
 
     for n_pseudo_bulks in n_pseudo_bulk_options:
@@ -103,12 +104,14 @@ datasets = updated
 anton_util.log_timestamp('transforming...')
 updated = []
 for ii, dataset in enumerate(datasets):
-    anton_util.log_timestamp(f'dataset {ii}...')
-    ds = copy.deepcopy(dataset)
-    ds['meta']['transform'] = 'raw'
-    updated.append(ds)
+    # anton_util.log_timestamp(f'dataset {ii}...')
+    # ds = copy.deepcopy(dataset)
+    # ds['meta']['transform'] = 'raw'
+    # updated.append(ds)
 
-    transforms = ['log1p', 'zscores']
+    transforms = ['raw', 'log1p', 'zscores']
+    transforms = ['log1p']
+
     for transform in transforms:
         anton_util.log_timestamp(f'transform {transform}...')
         transformed = functions.transform(dataset['Y'], transform)
@@ -123,33 +126,33 @@ datasets = updated
 
 
 
-updated = []
-anton_util.log_timestamp('Computing differences...')
-for ii, dataset in enumerate(datasets):
-    anton_util.log_timestamp(f'dataset {ii}...')
-
-    ds = copy.deepcopy(dataset)
-    ds['meta']['delta'] = False
-    updated.append(ds)
-
-    Y = dataset['Y']
-    ct_bool = (Y.index == 'controls')
-    control_cells = Y.loc[ct_bool, :]
-    control = control_cells.mean(axis=0)
-    Y = Y.loc[~ct_bool, :]
-
-    delta = pd.DataFrame(
-        Y - control,
-        index = Y.index,
-        columns = Y.columns
-    )
-
-    ds = copy.deepcopy(dataset)
-    ds['Y'] = delta
-    ds['meta']['delta'] = True
-    updated.append(ds)
-
-datasets = updated
+# updated = []
+# anton_util.log_timestamp('Computing differences...')
+# for ii, dataset in enumerate(datasets):
+#     anton_util.log_timestamp(f'dataset {ii}...')
+#
+#     ds = copy.deepcopy(dataset)
+#     ds['meta']['delta'] = False
+#     updated.append(ds)
+#
+#     Y = dataset['Y']
+#     ct_bool = (Y.index == 'controls')
+#     control_cells = Y.loc[ct_bool, :]
+#     control = control_cells.mean(axis=0)
+#     Y = Y.loc[~ct_bool, :]
+#
+#     delta = pd.DataFrame(
+#         Y - control,
+#         index = Y.index,
+#         columns = Y.columns
+#     )
+#
+#     ds = copy.deepcopy(dataset)
+#     ds['Y'] = delta
+#     ds['meta']['delta'] = True
+#     updated.append(ds)
+#
+# datasets = updated
 
 
 
