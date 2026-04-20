@@ -18,7 +18,7 @@ anton_util.log_timestamp(f'Loading {data_set_name}...')
 
 preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed.h5ad')
 # Debug, use subset for speed
-preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
+# preprocessed_path = Path(f'data/replogle/{data_set_name}_preprocessed_subset.h5ad')
 
 print('using path:')
 print(preprocessed_path)
@@ -77,26 +77,26 @@ updated = []
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
 
-    # ds = copy.deepcopy(dataset)
-    # ds['meta']['pseudo_bulk'] = False
-    # updated.append(ds)
+    ds = copy.deepcopy(dataset)
+    ds['meta']['pseudo_bulk'] = False
+    updated.append(ds)
     # n_pseudo_bulk_options = [1, 2, 3, 5, 10]
 
     # Debug versions
-    n_pseudo_bulk_options = [5]
+    # n_pseudo_bulk_options = [5]
     # n_pseudo_bulk_options = [2, 5, 10]
 
-    for n_pseudo_bulks in n_pseudo_bulk_options:
-        anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
-        mat_bulk = functions.bin_bulk(
-            mat = dataset['Y'],
-            n_pseudo_bulks = n_pseudo_bulks,
-        )
-
-        ds = copy.deepcopy(dataset)
-        ds['Y'] = mat_bulk
-        ds['meta']['pseudo_bulk'] = n_pseudo_bulks
-        updated.append(ds)
+    # for n_pseudo_bulks in n_pseudo_bulk_options:
+    #     anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
+    #     mat_bulk = functions.bin_bulk(
+    #         mat = dataset['Y'],
+    #         n_pseudo_bulks = n_pseudo_bulks,
+    #     )
+    #
+    #     ds = copy.deepcopy(dataset)
+    #     ds['Y'] = mat_bulk
+    #     ds['meta']['pseudo_bulk'] = n_pseudo_bulks
+    #     updated.append(ds)
 datasets = updated
 
 
@@ -109,7 +109,7 @@ for ii, dataset in enumerate(datasets):
     # ds['meta']['transform'] = 'raw'
     # updated.append(ds)
 
-    transforms = ['raw', 'log1p', 'zscores']
+    # transforms = ['raw', 'log1p', 'zscores']
     transforms = ['log1p']
 
     for transform in transforms:

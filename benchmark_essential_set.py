@@ -18,8 +18,8 @@ reference_networks = anton_util.unpickle_object(
     )
 
 # Debug
-tmp = 'Non-specific-ChIP-seq-network_with_weights'
-reference_networks = {tmp: reference_networks[tmp]}
+# tmp = 'Non-specific-ChIP-seq-network_with_weights'
+# reference_networks = {tmp: reference_networks[tmp]}
 
 
 

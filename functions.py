@@ -209,10 +209,14 @@ def dspin_inference(data):
             # obs = pd.DataFrame(index = y.index),
             var = pd.DataFrame(index = y.columns),
             )
-    adata.obs['sample_id'] = adata.obs.index
+    adata.obs['sample_id'] = y.index
     adata.obs['batch'] = 'mock_batch'  # Assuming only 1 batch
     controls = (y.index == 'control')
     adata.obs['if_control'] = controls
+    # This gene name column is probably not needed. Without the sample_id_key
+    # argument, the network inference would probably pick the the sample ids
+    # from the sample_id column.
+    # This way, we have both and are explicit about it, so keeping for now
     adata.obs['gene_name'] = y.index
     adata.var['gene_name'] = adata.var.index
 
@@ -228,27 +232,44 @@ def dspin_inference(data):
     adata = model.adata
     num_spin = model.num_spin
 
-    # Custom prior h for perturbations
-    # dspin bioarxiv at least used to describe this as the way
-    perturbation_list = np.unique(adata.obs['gene_name'])
-    rows = np.array(adata.var.gene_name)
-    cols = perturbation_list
-    cur_h = np.zeros((len(rows), len(cols)))
-    for ii in range(len(rows)):
-        for jj in range(len(cols)):
-            if rows[ii] == cols[jj]:
-                cur_h[ii, jj] = -3  # -3 from dspin bioarxiv preprint
-    extra_params = {'cur_h': cur_h}
-    # These params according to the dspin bioarxiv
-    # I saw some potential updates to recommended paramters in the bioarxiv
-    params={'lambda_l1_j': 5e-3, 'lambda_l2_h': 0.5}
+    # # Custom prior h for perturbations
+    # # dspin bioarxiv at least used to describe this as the way
+    # perturbation_list = np.unique(adata.obs['gene_name'])
+    # rows = np.array(adata.var.gene_name)
+    # cols = perturbation_list
+    # cur_h = np.zeros((len(rows), len(cols)))
+    # for ii in range(len(rows)):
+    #     for jj in range(len(cols)):
+    #         if rows[ii] == cols[jj]:
+    #             cur_h[ii, jj] = -1.5
+    # extra_params = {'cur_h': cur_h}
+
+    extra_params = {}
+
+
+    # p = np.zeros((len(rows), len(cols)))
+    # for ii in range(len(rows)):
+    #     for jj in range(len(cols)):
+    #         if rows[ii] == cols[jj]:
+    #             p[ii, jj] = -1
+    #
+
+    params={'stepsz': 0.05, 'lambda_l1_j': 0.01, 'lambda_l2_h': 3}
     all_params = {**params, **extra_params}
+
+    anton_util.log_timestamp(f'{all_params = }')
+
+    # p = data['P']
+    # p = p.loc[:, adata.var['gene_name']]
+    # p = p.to_numpy()
 
     model = DSPIN(adata, str(save_path), num_spin=num_spin)
     model.network_inference(
         sample_id_key = 'gene_name',
         method = 'pseudo_likelihood',
         params = all_params,
+        directed = True,
+        # perturb_matrix = p,
         )
 
     estimated_network = pd.DataFrame(

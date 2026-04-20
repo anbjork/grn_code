@@ -35,7 +35,7 @@ data_raw = anton_util.unpickle_object(path)
 #     data_sources[f'simulated_{ii}'] = simulation
 datasets = data_raw
 
-# datasets = datasets[:1]  # Debug
+datasets = datasets[:3]  # Debug
 
 
 
