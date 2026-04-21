@@ -337,61 +337,90 @@ def deepsem_inference(data):
     import shutil
     import sys
     from pathlib import Path
-    
-    # Change to DeepSEM directory and add to path
-    deepsem_dir = Path('DeepSEM').resolve()
-    os.chdir(deepsem_dir)
-    sys.path.insert(0, str(deepsem_dir))
-    
-    # Import DeepSEM test model (for inference without ground truth)
-    from src.DeepSEM_cell_type_test_non_specific_GRN_model import test_non_celltype_GRN_model
-    
-    # Create opt object with test parameters (for inference without ground truth)
-    opt = argparse.Namespace(
-        task='non_celltype_GRN',
-        setting='test',
-        n_epochs=120,
-        batch_size=64,
-        alpha=100,
-        beta=1,
-        lr=1e-4,
-        lr_step_size=0.99,
-        gamma=0.95,
-        n_hidden=128,
-        K=1,
-        K1=1,
-        K2=2,
-        net_file=None,
-    )
-    
-    # Create temporary file for data
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-        data['Y'].to_csv(f.name)
-        opt.data_file = f.name
-        
+
+    import copy
+    expression_data = copy.deepcopy(data['Y'])
+
+    # # Debug
+    # expression_data = expression_data.iloc[:, :10]
+
+    all_genes = expression_data.columns
+    stds = expression_data.std(axis = 0)
+    non_zero_stds = stds > 0
+    expression_data = expression_data.loc[:, non_zero_stds]
+
+    # Save the original working directory so we can restore it later
+    original_dir = os.getcwd()
+    temp_file = None
+    temp_dir = None
+
+    try:
+        # Change to DeepSEM directory and add to path
+        deepsem_dir = Path('DeepSEM').resolve()
+        os.chdir(deepsem_dir)
+        sys.path.insert(0, str(deepsem_dir))
+
+        # Import DeepSEM test model (for inference without ground truth)
+        from src.DeepSEM_cell_type_test_non_specific_GRN_model import test_non_celltype_GRN_model
+
+        # Create opt object with test parameters (for inference without ground truth)
+        opt = argparse.Namespace(
+            task='non_celltype_GRN',
+            setting='test',
+            n_epochs=120,
+            # debug
+            # n_epochs=20,
+            batch_size=64,
+            alpha=100,
+            beta=1,
+            lr=1e-4,
+            lr_step_size=0.99,
+            gamma=0.95,
+            n_hidden=128,
+            K=1,
+            K1=1,
+            K2=2,
+            net_file=None,
+        )
+
+        # Create temporary file for data
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            temp_file = f.name
+            expression_data.to_csv(f.name)
+            opt.data_file = f.name
+
         # Create temporary directory for save_name
         temp_dir = tempfile.mkdtemp()
         opt.save_name = temp_dir
-        
-        try:
-            model = test_non_celltype_GRN_model(opt)
-            model.train_model()
-            
-            # Read the output - based on collaborator code, it creates "GRN_inference_result.tsv"
-            result_file = os.path.join(temp_dir, "GRN_inference_result.tsv")
-            if os.path.exists(result_file):
-                result_df = pd.read_csv(result_file, sep='\t')
-                # Return raw result for now - we'll check structure first
-                return result_df
-            else:
-                raise RuntimeError("DeepSEM did not produce expected output file")
-                
-        finally:
-            # Cleanup
-            os.unlink(f.name)
+
+        model = test_non_celltype_GRN_model(opt)
+        model.train_model()
+
+        # Read the output - based on collaborator code, it creates "GRN_inference_result.tsv"
+        result_file = os.path.join(temp_dir, "GRN_inference_result.tsv")
+        if os.path.exists(result_file):
+            result_df = pd.read_csv(result_file, sep='\t')
+        else:
+            raise RuntimeError("DeepSEM did not produce expected output file")
+
+    finally:
+        # Restore the original working directory
+        os.chdir(original_dir)
+        # Cleanup temp file and temp dir
+        if temp_file is not None and os.path.exists(temp_file):
+            os.unlink(temp_file)
+        if temp_dir is not None and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
+    estimated_network = result_df
 
+    # Using these conversions to put the previously filtered out genes in again
+    estimated_network = gs.util.edgelist_to_matrix(
+        np.array(estimated_network),
+        all_genes = all_genes,
+        )
+
+    return estimated_network
 
 
 
@@ -653,10 +682,3 @@ def merge_p_into_y(Y, P):
         index[perturbed_cell_indices] = gene
     Y.index = index
     return Y
-
-
-
-
-
-
-
