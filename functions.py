@@ -330,6 +330,68 @@ def genie3_inference(data):
     return estimated_network
 
 
+def deepsem_inference(data):
+    import argparse
+    import tempfile
+    import os
+    import shutil
+    import sys
+    from pathlib import Path
+    
+    # Change to DeepSEM directory and add to path
+    deepsem_dir = Path('DeepSEM').resolve()
+    os.chdir(deepsem_dir)
+    sys.path.insert(0, str(deepsem_dir))
+    
+    # Import DeepSEM test model (for inference without ground truth)
+    from src.DeepSEM_cell_type_test_non_specific_GRN_model import test_non_celltype_GRN_model
+    
+    # Create opt object with test parameters (for inference without ground truth)
+    opt = argparse.Namespace(
+        task='non_celltype_GRN',
+        setting='test',
+        n_epochs=120,
+        batch_size=64,
+        alpha=100,
+        beta=1,
+        lr=1e-4,
+        lr_step_size=0.99,
+        gamma=0.95,
+        n_hidden=128,
+        K=1,
+        K1=1,
+        K2=2,
+        net_file=None,
+    )
+    
+    # Create temporary file for data
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        data['Y'].to_csv(f.name)
+        opt.data_file = f.name
+        
+        # Create temporary directory for save_name
+        temp_dir = tempfile.mkdtemp()
+        opt.save_name = temp_dir
+        
+        try:
+            model = test_non_celltype_GRN_model(opt)
+            model.train_model()
+            
+            # Read the output - based on collaborator code, it creates "GRN_inference_result.tsv"
+            result_file = os.path.join(temp_dir, "GRN_inference_result.tsv")
+            if os.path.exists(result_file):
+                result_df = pd.read_csv(result_file, sep='\t')
+                # Return raw result for now - we'll check structure first
+                return result_df
+            else:
+                raise RuntimeError("DeepSEM did not produce expected output file")
+                
+        finally:
+            # Cleanup
+            os.unlink(f.name)
+            shutil.rmtree(temp_dir)
+
+
 
 
 
