@@ -35,7 +35,7 @@ data_raw = anton_util.unpickle_object(path)
 #     data_sources[f'simulated_{ii}'] = simulation
 datasets = data_raw
 
-datasets = datasets[:3]  # Debug
+# datasets = datasets[:3]  # Debug
 
 
 
@@ -97,26 +97,26 @@ updated = []
 for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
 
-    ds = copy.deepcopy(dataset)
-    ds['meta']['pseudo_bulk'] = False
-    updated.append(ds)
+    # ds = copy.deepcopy(dataset)
+    # ds['meta']['pseudo_bulk'] = False
+    # updated.append(ds)
 
     # n_pseudo_bulk_options = [1, 2, 3, 5, 10]
     # # Debug versions
-    # n_pseudo_bulk_options = [5]
+    n_pseudo_bulk_options = [10]
     # # n_pseudo_bulk_options = [2, 5, 10]
-    #
-    # for n_pseudo_bulks in n_pseudo_bulk_options:
-    #     anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
-    #     mat_bulk = functions.bin_bulk(
-    #         mat = dataset['Y'],
-    #         n_pseudo_bulks = n_pseudo_bulks,
-    #     )
-    #
-    #     ds = copy.deepcopy(dataset)
-    #     ds['Y'] = mat_bulk
-    #     ds['meta']['pseudo_bulk'] = n_pseudo_bulks
-    #     updated.append(ds)
+
+    for n_pseudo_bulks in n_pseudo_bulk_options:
+        anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
+        mat_bulk = functions.bin_bulk(
+            mat = dataset['Y'],
+            n_pseudo_bulks = n_pseudo_bulks,
+        )
+
+        ds = copy.deepcopy(dataset)
+        ds['Y'] = mat_bulk
+        ds['meta']['pseudo_bulk'] = n_pseudo_bulks
+        updated.append(ds)
 datasets = updated
 
 

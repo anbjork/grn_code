@@ -289,9 +289,45 @@ def dspin_inference(data):
 
 
 
+def genie3_inference(data):
 
+    import copy
+    expression_data = copy.deepcopy(data['Y'])
 
+    # Genie3 normalises the the output gene in each RF regression by
+    # it's standard deviation. Some are 0 and crashes.
+    # Took a note of looking into why they are 0
+    # Filtering those out in the meantime
+    all_genes = expression_data.columns
+    stds = expression_data.std(axis = 0)
+    non_zero_stds = stds > 0
+    expression_data = expression_data.loc[:, non_zero_stds]
 
+    # # Debug
+    # expression_data = expression_data.iloc[:, :5]
+
+    from GENIE3.GENIE3_python.GENIE3 import GENIE3  # pyright: ignore
+    VIM = GENIE3(np.array(expression_data))
+    estimated_network = pd.DataFrame(
+        data = VIM,
+        index = expression_data.columns,
+        columns = expression_data.columns,
+        )
+    # genie3 does output on format regulators x targets
+    # https://github.com/vahuynh/GENIE3/blob/master/GENIE3_python/GENIE3_python_doc.pdf
+    # , but the group experience is that it often gets
+    # the directionality inverted
+    # It seems to do that with genesnake data as well, so
+    # helping out by transposing.
+    estimated_network = estimated_network.T
+
+    # Using these conversions to put the previously filtered out genes in again
+    estimated_network = gs.util.edgelist_to_matrix(
+        np.array(gs.util.matrix_to_edgelist(estimated_network)),
+        all_genes = all_genes,
+        )
+
+    return estimated_network
 
 
 
