@@ -8,6 +8,11 @@
 /benchmarks/
 /plots/
 /figures/
+/not_used/
+/saved_results/
+/simulate_data/
+/tmp/
+
 
 __*
 
@@ -17,3 +22,12 @@ __*
 
 
 .aider*
+
+/DeepSEM/
+/GENIE3/
+
+data.tar.gz_to_eris_for_deepsem_on_gpu
+
+
+
+
