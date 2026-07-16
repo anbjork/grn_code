@@ -124,8 +124,15 @@ def benchmark_method_against_reference(
 
 
 
+def correlation_inference(data):
 
+    Y = data['Y']
 
+    # Calculate pearson correlation between all pairs of columns
+    estimated_network = Y.corr(method='pearson')
+    estimated_network[np.isnan(estimated_network)] = 0
+
+    return estimated_network
 
 
 
