@@ -436,7 +436,7 @@ def deepsem_inference(data):
 
 def psgrn_inference(data):
 
-    from PSGRN.src.main import Custom as Model
+    from psgrn_extract_src.main import Custom as Model
 
     import copy
     expression_data = copy.deepcopy(data['Y'])

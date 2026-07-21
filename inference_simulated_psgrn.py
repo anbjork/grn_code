@@ -5,7 +5,7 @@ import functions
 inference(
     data_path = Path('data/simulated/preprocessed.pkl'),
     output_dir_path = Path('inferences/simulated'),
-    method_name = 'psgrn_all_bugfix',
+    method_name = 'psgrn_all',
     method_function = functions.psgrn_inference
     )
 
