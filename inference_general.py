@@ -15,9 +15,10 @@ def inference(
     estimated_networks = []
     for ii, data_source in enumerate(data_sources):
         anton_util.log_timestamp(f'dataset {ii}...')
+        anton_util.log_timestamp(f'method {method_name}...')
+        
         en = method_function(data=data_source)
 
-        anton_util.log_timestamp(f'method {method_name}...')
         meta = copy.deepcopy(data_source['meta'])
         meta['method'] = method_name
         estimated_networks.append({
