@@ -434,6 +434,58 @@ def deepsem_inference(data):
 
 
 
+def psgrn_inference(data):
+
+    from PSGRN.src.main import Custom as Model
+
+    import copy
+    expression_data = copy.deepcopy(data['Y'])
+    # The method normalises by standard deviation. Some are 0 and crashes.
+    # Took a note of looking into why they are 0
+    # Filtering those out in the meantime
+    all_genes = expression_data.columns
+    stds = expression_data.std(axis = 0)
+    non_zero_stds = stds > 0
+    expression_data = expression_data.loc[:, non_zero_stds]
+
+    Y = expression_data
+    # Follows PSGRN code variable naming below.
+    # They optionally do training and test set splits, hence training.
+    expression_matrix_train = np.array(Y)
+    interventions_train = np.array(Y.index)
+    # The PSGRN model code expects this name for 
+    # control cells that were not perturbed
+    interventions_train[interventions_train == 'control'] = 'non-targeting'
+    gene_names = list(Y.columns)
+
+    model = Model()
+    _, edgelist = model(
+        expression_matrix = expression_matrix_train,
+        interventions = list(interventions_train),
+        gene_names = gene_names,
+        # This training regime argument is not actually used by the model code
+        # Giving it a None, because the argument does not have a default
+        training_regime = None, # type: ignore[reportArgumentType]
+        # Defaults to 0
+        # self.model_seed,
+    )
+
+    # Using these conversions to put the previously filtered out genes in again
+    estimated_network = gs.util.edgelist_to_matrix(
+        np.array(edgelist),
+        all_genes = all_genes,
+        )
+    print(estimated_network)
+
+    return estimated_network
+
+
+
+
+
+
+
+
 
 
 # def pseudo_bulk_group(Y, n_pseudo_bulks, verbose = True):
