@@ -189,6 +189,26 @@ def run_inference_on_data(data):
     en[np.isnan(en)] = 0
     estimated_networks[m] = en
 
+
+
+    m = 'mean_difference'
+    anton_util.log_timestamp(f'Running {m}...')
+    en = gs.inference.infer_networks(
+        Y=Y, P=P,
+        method=m)
+    en[np.isnan(en)] = 0
+    estimated_networks[m] = en
+
+
+
+    m = 'mean_difference_controls_only'
+    anton_util.log_timestamp(f'Running {m}...')
+    en = gs.inference.infer_networks(
+        Y=Y, P=P,
+        method=m)
+    en[np.isnan(en)] = 0
+    estimated_networks[m] = en
+
     return estimated_networks
 
 
