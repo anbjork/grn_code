@@ -107,7 +107,6 @@ def benchmark_method_against_reference(
     tmp = gs.benchmarking.benchmark(
         estimated_network=harmonised_estimated_network,
         reference_network=harmonised_reference_network.astype(bool),
-        plot_dir=benchmark_output_dir / method,
         method_name=method,
         )
     ntps = np.nonzero(harmonised_reference_network)[0].shape[0]
