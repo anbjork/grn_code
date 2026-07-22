@@ -70,6 +70,15 @@ datasets = updated
 
 
 
+# datasets = datasets[:1]  # Debug
+# print(type(datasets))
+#
+# # Subset data for debugging
+# for dataset in datasets:
+#     dataset['Y'] = dataset['Y'].iloc[:, :10]
+#     dataset['A'] = dataset['A'].iloc[:10, :10]
+
+
 
 for d in datasets:
     d['meta']['0_fraction'] = functions.calculate_zero_fraction(d['Y'])
