@@ -36,6 +36,10 @@ for ii, inference in enumerate(inferred):
         'data': mstats,
     })
 
+outfile = benchmark_output_dir / 'stats.pkl'
+if outfile.exists():
+    previous_stats = anton_util.unpickle_object(outfile)
+    stats = previous_stats + stats
 anton_util.pickle_object(stats, benchmark_output_dir / 'stats.pkl')
 
 

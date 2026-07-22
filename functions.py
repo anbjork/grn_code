@@ -132,11 +132,11 @@ def correlation_inference(data):
     estimated_network = Y.corr(method='pearson')
     estimated_network[np.isnan(estimated_network)] = 0
 
-    return estimated_network
+    return {'correlation': estimated_network}
 
 
 
-def run_inference_on_data(data):
+def fast_methods_inference(data):
 
     estimated_networks = {}
 
@@ -311,7 +311,7 @@ def dspin_inference(data):
         all_genes = all_genes,
         )
 
-    return estimated_network
+    return {'dspin': estimated_network}
 
 
 
@@ -447,7 +447,7 @@ def deepsem_inference(data):
         all_genes = all_genes,
         )
 
-    return estimated_network
+    return {'deepsem': estimated_network}
 
 
 
@@ -497,7 +497,7 @@ def psgrn_inference(data):
         )
     print(estimated_network)
 
-    return estimated_network
+    return {'psgrn': estimated_network}
 
 
 

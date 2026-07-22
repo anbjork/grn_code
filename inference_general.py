@@ -6,7 +6,6 @@ import copy
 def inference(
         data_path,
         output_dir_path,
-        method_name,
         method_function):
 
     path = data_path
@@ -15,16 +14,16 @@ def inference(
     estimated_networks = []
     for ii, data_source in enumerate(data_sources):
         anton_util.log_timestamp(f'dataset {ii}...')
-        anton_util.log_timestamp(f'method {method_name}...')
-        
-        en = method_function(data=data_source)
+        anton_util.log_timestamp(repr(method_function))
 
-        meta = copy.deepcopy(data_source['meta'])
-        meta['method'] = method_name
-        estimated_networks.append({
-            'meta': meta,
-            'estimated_network': en,
-        })
+        ens = method_function(data=data_source)
+        for method_name, estimated_network in ens.items():
+            meta = copy.deepcopy(data_source['meta'])
+            meta['method'] = method_name
+            estimated_networks.append({
+                'meta': meta,
+                'estimated_network': estimated_network,
+                })
 
     output_dir = Path(output_dir_path)
     output_dir.mkdir(exist_ok=True, parents=True)

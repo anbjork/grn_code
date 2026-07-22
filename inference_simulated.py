@@ -1,29 +1,24 @@
+
 from pathlib import Path
-import anton_util
+from inference_general import inference
 import functions
-import copy
 
-path = Path('data/simulated/preprocessed.pkl')
-data_sources = anton_util.unpickle_object(path)
+functions = [
+    # functions.fast_methods_inference,
+    functions.correlation_inference,
+    # functions.psgrn_inference,
+    # functions.genie3_inference,
+    # functions.deepsem_inference,
+    # functions.dspin_inference,
+    ]
 
-estimated_networks = []
-for ii, data_source in enumerate(data_sources):
-    anton_util.log_timestamp(f'dataset {ii}...')
-    ens = functions.run_inference_on_data(data=data_source)
-    for method, en in ens.items():
-        meta = copy.deepcopy(data_source['meta'])
-        meta['method'] = method
-        estimated_networks.append({
-            'meta': meta,
-            'estimated_network': en,
-        })
+for method_function in functions:
 
-output_dir = Path('inferences/simulated')
-output_dir.mkdir(exist_ok=True, parents=True)
-anton_util.pickle_object(
-    estimated_networks,
-    output_dir / f'estimated_networks.pkl')
-anton_util.log_timestamp('Estimated networks saved.')
+    inference(
+        data_path = Path('data_processed/simulated/preprocessed.pkl'),
+        output_dir_path = Path('inferences/simulated'),
+        method_function = method_function
+        )
 
 
 
