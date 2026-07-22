@@ -306,8 +306,11 @@ def dspin_inference(data):
             )
 
     # Using these conversions to put the previously filtered out genes in again
+    edgelist = gs.util.matrix_to_edgelist(estimated_network)
     estimated_network = gs.util.edgelist_to_matrix(
-        np.array(gs.util.matrix_to_edgelist(estimated_network)),
+        regulators = edgelist['regulator'],
+        targets = edgelist['target'],
+        values = edgelist['value'],
         all_genes = all_genes,
         )
 
@@ -349,8 +352,11 @@ def genie3_inference(data):
     estimated_network = estimated_network.T
 
     # Using these conversions to put the previously filtered out genes in again
+    edgelist = gs.util.matrix_to_edgelist(estimated_network)
     estimated_network = gs.util.edgelist_to_matrix(
-        np.array(gs.util.matrix_to_edgelist(estimated_network)),
+        regulators = edgelist['regulator'],
+        targets = edgelist['target'],
+        values = edgelist['value'],
         all_genes = all_genes,
         )
 
@@ -442,8 +448,17 @@ def deepsem_inference(data):
     estimated_network = result_df
 
     # Using these conversions to put the previously filtered out genes in again
+
+    # NOTE:
+    # changed the edgelist_to_matrix function interface.
+    # deepsem needs a gpu, so cannot be tested on octa.
+    # adjusted the code, but haven't tested it since.
+    # so if it crashes, look at the format of estimated_network
+    # //AB
     estimated_network = gs.util.edgelist_to_matrix(
-        np.array(estimated_network),
+        regulators = estimated_network.iloc[:, 0],
+        targets = estimated_network.iloc[:, 1],
+        values = estimated_network.iloc[:, 2],
         all_genes = all_genes,
         )
 
@@ -492,7 +507,9 @@ def psgrn_inference(data):
 
     # Using these conversions to put the previously filtered out genes in again
     estimated_network = gs.util.edgelist_to_matrix(
-        np.array(edgelist),
+        regulators = edgelist['regulator'],
+        targets = edgelist['target'],
+        values = edgelist['value'],
         all_genes = all_genes,
         )
     print(estimated_network)
