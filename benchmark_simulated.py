@@ -9,7 +9,9 @@ inferred = anton_util.unpickle_object(
     inference_dir / 'estimated_networks.pkl')
 
 
-ground_truths = anton_util.unpickle_object('data/simulated/ground_truths.pkl')
+ground_truths = anton_util.unpickle_object(
+    'data_processed/simulated/ground_truths.pkl'
+    )
 
 from functions import benchmark_method_against_reference
 anton_util.log_timestamp('benchmarking...')

@@ -15,6 +15,10 @@ path = Path(
 #         'data/simulated/subset.pkl'
 #         )
 
+outdir = Path('data_processed/simulated')
+outdir.mkdir(exist_ok=True, parents=True)
+
+
 data_raw = anton_util.unpickle_object(path)
 # get_Y_and_P uses the row names of Y, but they are not set on the
 # simulated data, so it doesn't work as expected for those.
@@ -43,7 +47,7 @@ datasets = data_raw
 ground_truths = {}
 for ii, d in enumerate(datasets):
     ground_truths[ii] = d['A']
-anton_util.pickle_object(ground_truths, 'data/simulated/ground_truths.pkl')
+anton_util.pickle_object(ground_truths, 'data_processed/simulated/ground_truths.pkl')
 
 
 
