@@ -198,13 +198,12 @@ for ii, dataset in enumerate(datasets):
 
 
 anton_util.log_timestamp('saving...')
-outdir = Path('data_processed/simulated')
-outdir.mkdir(exist_ok=True, parents=True)
 outfile = f'{outdir}/preprocessed.pkl'
 if Path(outfile).exists():
     previous_data = anton_util.unpickle_object(outfile)
     datasets = previous_data + datasets
-    anton_util.pickle_object(datasets, outfile)
+anton_util.log_timestamp(f'total datasets: {len(datasets)}')
+anton_util.pickle_object(datasets, outfile)
 
 
 
