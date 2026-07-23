@@ -5,7 +5,7 @@ import anton_util
 
 
 
-path = Path('data/simulated/preprocessed.pkl')
+path = Path('data_processed/simulated/preprocessed.pkl')
 data_sources = anton_util.unpickle_object(path)
 
 inference_dir = Path('inferences/simulated')
