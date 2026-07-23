@@ -72,7 +72,6 @@ def benchmark_method_against_reference(
     estimated_network,
     # ref_name,
     reference_network,
-    benchmark_output_dir,
     ):
 
     filter_reference = True

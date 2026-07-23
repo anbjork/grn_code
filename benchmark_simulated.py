@@ -27,7 +27,6 @@ for ii, inference in enumerate(inferred):
             method = meta['method'],
             estimated_network = estimated_network,
             reference_network = reference_network,
-            benchmark_output_dir = benchmark_output_dir,
             )
     except Exception as e:
         anton_util.log_timestamp(f'Error benchmarking inference {ii} with method {meta["method"]}: {e}')
