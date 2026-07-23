@@ -1,20 +1,13 @@
 
 import pandas as pd
-from pathlib import Path
 import anton_util
 
+anton_util.log_timestamp('compiling results...')
 
-
-path = Path('data_processed/simulated/preprocessed.pkl')
-data_sources = anton_util.unpickle_object(path)
-
-inference_dir = Path('inferences/simulated')
-inferred = anton_util.unpickle_object(
-    inference_dir / 'estimated_networks.pkl')
-
-benchmark_output_dir = Path('benchmarks/simulated')
-benchmarks = anton_util.unpickle_object(
-    benchmark_output_dir / 'stats.pkl')
+data_sources, inferred, benchmarks = [
+    anton_util.unpickle_object(f'outputs/simulated/{name}.pkl')
+    for name in ['data_processed', 'inferences', 'benchmarks']
+    ]
 
 results = []
 for benchmark in benchmarks:
@@ -29,15 +22,19 @@ for benchmark in benchmarks:
 
 
 
-
+output_path = 'outputs/simulated/compiled_results'
 df = pd.DataFrame(results)
 cs = ['shuffle', 'method', 'pseudo_bulk']
-if all([elem in df.columns for elem in cs]):
+if 'is_shuffled' in df.columns:
     df['is_shuffled'] = [elem is not False for elem in df['shuffle']]
+if all([elem in df.columns for elem in cs]):
     df = df.sort_values(by = ['is_shuffled', 'method', 'pseudo_bulk'])
 df['AUPR ratio'] = df['AUPR'] / df['ERMA']
-anton_util.pickle_object(df, benchmark_output_dir / 'stats_df.pkl')
+anton_util.pickle_object(df, f'{output_path}.pkl')
 # csvs don't handle the nested f1_scores well
 df = df.drop('f1_scores', axis = 1)
-df.to_csv(benchmark_output_dir / 'stats_df.csv')
+df.to_csv(f'{output_path}.csv')
+
+
+
 

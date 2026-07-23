@@ -4,8 +4,8 @@ from pipeline_functions import inference
 import functions
 
 functions = [
-    # functions.fast_methods_inference,
-    functions.correlation_inference,
+    functions.fast_methods_inference,
+    # functions.correlation_inference,
     # functions.psgrn_inference,
     # functions.genie3_inference,
     # functions.deepsem_inference,
@@ -13,10 +13,10 @@ functions = [
     ]
 
 for method_function in functions:
-
+    base_path = Path('outputs__in_pipeline/simulated')
     inference(
-        data_path = Path('data_processed/simulated/preprocessed.pkl'),
-        output_dir_path = Path('inferences/simulated'),
+        data_path = base_path / 'data_processed.pkl',
+        output_path = base_path / 'inferences.pkl',
         method_function = method_function
         )
 

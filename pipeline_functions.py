@@ -4,11 +4,14 @@
 def append_pickle(data, path):
     from pathlib import Path
     import anton_util
-    if Path(path).exists():
+    p = Path(path)
+    if p.exists():
         previous_data = anton_util.unpickle_object(path)
         data = previous_data + data
-    anton_util.log_timestamp(f'total data: {len(data)}')
+    else:
+        p.parent.mkdir(exist_ok=True, parents=True)
     anton_util.pickle_object(data, path)
+    anton_util.log_timestamp(f'total data length: {len(data)}')
 
 
 
@@ -18,7 +21,7 @@ def append_pickle(data, path):
 
 def inference(
         data_path,
-        output_dir_path,
+        output_path,
         method_function):
 
     from pathlib import Path
@@ -42,12 +45,9 @@ def inference(
                 'estimated_network': estimated_network,
                 })
 
-    output_dir = Path(output_dir_path)
-    output_dir.mkdir(exist_ok=True, parents=True)
-    p = output_dir / f'estimated_networks.pkl'
-
+    Path(output_path).parent.mkdir(exist_ok=True, parents=True)
     anton_util.log_timestamp('Saving...')
-    append_pickle(estimated_networks, p)
+    anton_util.pickle_object(estimated_networks, output_path)
 
 
 

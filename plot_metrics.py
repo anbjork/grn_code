@@ -1,4 +1,3 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -8,12 +7,11 @@ def plot_metrics_with_jitter(df, output_prefix='metrics_plot'):
     Plot AUROC, AUPR ratio, and top_k_accuracy with methods on x-axis and jitter.
     """
     # Create output directory if it doesn't exist
-    output_dir = 'plots/simulated'
     os.makedirs(output_dir, exist_ok=True)
     
     metrics = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
     
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    _, axes = plt.subplots(1, 3, figsize=(15, 5))
     
     for i, metric in enumerate(metrics):
         ax = axes[i]
@@ -47,10 +45,15 @@ def plot_metrics_with_jitter(df, output_prefix='metrics_plot'):
     plt.close()
 
 if __name__ == "__main__":
-    # Load the dataframe from pickle file
-    df = pd.read_pickle('benchmarks/simulated/stats_df.pkl')
-    
-    # Generate the plots
+
+    import anton_util
+    anton_util.log_timestamp('plotting...')
+    df = anton_util.unpickle_object('outputs/simulated/compiled_results.pkl')
+    output_dir = 'outputs/simulated/plots'
     plot_metrics_with_jitter(df)
-    
-    print("Plots saved to plots/simulated/metrics_plot.png")
+    print(f"Plots saved to {output_dir}")
+
+
+
+
+

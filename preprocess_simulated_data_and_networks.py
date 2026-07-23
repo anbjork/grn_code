@@ -16,9 +16,6 @@ path = Path(
 #         'data/simulated/subset.pkl'
 #         )
 
-outdir = Path('data_processed/simulated')
-outdir.mkdir(exist_ok=True, parents=True)
-
 
 data_raw = anton_util.unpickle_object(path)
 # get_Y_and_P uses the row names of Y, but they are not set on the
@@ -48,8 +45,9 @@ datasets = data_raw
 ground_truths = {}
 for ii, d in enumerate(datasets):
     ground_truths[ii] = d['A']
-anton_util.pickle_object(ground_truths, 'data_processed/simulated/ground_truths.pkl')
-
+outfile = Path('outputs__in_pipeline/simulated/reference_networks.pkl')
+outfile.parent.mkdir(exist_ok=True, parents=True)
+anton_util.pickle_object(ground_truths, outfile)
 
 
 
@@ -206,10 +204,10 @@ for ii, dataset in enumerate(datasets):
 
 
 
-
+outfile = Path('outputs__in_pipeline/simulated/data_processed.pkl')
+outfile.parent.mkdir(exist_ok=True, parents=True)
 anton_util.log_timestamp('saving...')
-outfile = f'{outdir}/preprocessed.pkl'
-pipeline_functions.append_pickle(datasets, outfile)
+anton_util.pickle_object(datasets, outfile)
 
 
 

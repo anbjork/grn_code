@@ -1,20 +1,16 @@
 from pathlib import Path
 import anton_util
-import pipeline_functions
+from functions import benchmark_method_against_reference
 
-benchmark_output_dir = Path('benchmarks/simulated')
-[d.mkdir(exist_ok=True, parents=True) for d in [benchmark_output_dir]]
+base_path = Path('outputs__in_pipeline/simulated')
 
-inference_dir = Path('inferences/simulated')
 inferred = anton_util.unpickle_object(
-    inference_dir / 'estimated_networks.pkl')
-
-
+    base_path / 'inferences.pkl'
+    )
 ground_truths = anton_util.unpickle_object(
-    'data_processed/simulated/ground_truths.pkl'
+    base_path / 'reference_networks.pkl'
     )
 
-from functions import benchmark_method_against_reference
 anton_util.log_timestamp('benchmarking...')
 stats = []
 for ii, inference in enumerate(inferred):
@@ -38,7 +34,9 @@ for ii, inference in enumerate(inferred):
         'data': mstats,
     })
 
-outfile = benchmark_output_dir / 'stats.pkl'
-pipeline_functions.append_pickle(stats, outfile)
+outfile = base_path / 'benchmarks.pkl'
+outfile.parent.mkdir(parents = True, exist_ok = True)
+anton_util.pickle_object(stats, outfile)
+
 
 

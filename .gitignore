@@ -15,7 +15,7 @@
 /archived/
 /data_processed/
 /saved_data/
-
+/outputs__in_pipeline/
 __*
 
 /genesnake/
