@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import anton_util
 import functions
+import pipeline_functions
 import copy
 
 anton_util.log_timestamp('loading...')
@@ -208,11 +209,7 @@ for ii, dataset in enumerate(datasets):
 
 anton_util.log_timestamp('saving...')
 outfile = f'{outdir}/preprocessed.pkl'
-if Path(outfile).exists():
-    previous_data = anton_util.unpickle_object(outfile)
-    datasets = previous_data + datasets
-anton_util.log_timestamp(f'total datasets: {len(datasets)}')
-anton_util.pickle_object(datasets, outfile)
+pipeline_functions.append_pickle(datasets, outfile)
 
 
 

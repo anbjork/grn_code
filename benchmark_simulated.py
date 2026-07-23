@@ -1,5 +1,6 @@
 from pathlib import Path
 import anton_util
+import pipeline_functions
 
 benchmark_output_dir = Path('benchmarks/simulated')
 [d.mkdir(exist_ok=True, parents=True) for d in [benchmark_output_dir]]
@@ -39,9 +40,6 @@ for ii, inference in enumerate(inferred):
     })
 
 outfile = benchmark_output_dir / 'stats.pkl'
-if outfile.exists():
-    previous_stats = anton_util.unpickle_object(outfile)
-    stats = previous_stats + stats
-anton_util.pickle_object(stats, benchmark_output_dir / 'stats.pkl')
+pipeline_functions.append_pickle(stats, outfile)
 
 

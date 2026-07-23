@@ -2,6 +2,7 @@
 from pathlib import Path
 import anton_util
 import copy
+import pipeline_functions
 
 def inference(
         data_path,
@@ -28,13 +29,9 @@ def inference(
     output_dir = Path(output_dir_path)
     output_dir.mkdir(exist_ok=True, parents=True)
     p = output_dir / f'estimated_networks.pkl'
-    if p.exists():
-        oldnets = anton_util.unpickle_object(p)
-        estimated_networks = oldnets + estimated_networks
-    anton_util.pickle_object(
-        estimated_networks,
-        output_dir / f'estimated_networks.pkl')
-    anton_util.log_timestamp('Estimated networks saved.')
+
+    anton_util.log_timestamp('Saving...')
+    pipeline_functions.append_pickle(estimated_networks, p)
 
 
 
