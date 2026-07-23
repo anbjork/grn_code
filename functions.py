@@ -133,6 +133,21 @@ def correlation_inference(data):
     return {'correlation': estimated_network}
 
 
+def random_inference(data):
+
+    Y = data['Y']
+
+    rng = np.random.default_rng()
+    random_array = rng.random([len(Y.columns)] * 2)
+
+    estimated_network = pd.DataFrame(
+        data = random_array,
+        index = Y.columns,
+        columns = Y.columns
+    )
+
+    return {'random': estimated_network}
+
 
 def fast_methods_inference(data):
 
