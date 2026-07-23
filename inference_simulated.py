@@ -1,6 +1,6 @@
 
 from pathlib import Path
-from inference_general import inference
+from pipeline_functions import inference
 import functions
 
 functions = [
