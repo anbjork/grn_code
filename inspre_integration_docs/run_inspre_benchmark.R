@@ -7,6 +7,7 @@
 suppressPackageStartupMessages({
   library(hdf5r)
   library(dplyr)
+  library(purrr)
   library(inspre)
   library(jsonlite)
   library(optparse)
@@ -112,9 +113,16 @@ run_inspre_analysis <- function() {
           if(length(target_genes) > 5) "..." else "", "\n")
     }
     
+    # Debug: print all available genes in obs_data
+    cat("All unique genes in obs_data:", paste(unique(obs_data$gene), collapse=", "), "\n")
+    cat("All gene_ids in var_data:", paste(head(var_data$gene_id, 10), collapse=", "), 
+        if(nrow(var_data) > 10) "..." else "", "\n")
+    
     # Create targets list
     targets_list <- as.list(target_genes)
     names(targets_list) <- target_genes
+    
+    cat("Final targets_list names:", paste(names(targets_list), collapse=", "), "\n")
     
     # Validate targets exist in data
     available_targets <- unique(obs_data$gene[obs_data$gene != "non-targeting"])
@@ -185,6 +193,16 @@ run_inspre_analysis <- function() {
       output_data$R_hat <- as.matrix(results$R_hat)
       output_data$R_hat_dimensions <- dim(results$R_hat)
       cat("Network matrix dimensions:", paste(dim(results$R_hat), collapse=" x "), "\n")
+      
+      # Add row and column names to output
+      if (!is.null(rownames(results$R_hat))) {
+        output_data$R_hat_rownames <- rownames(results$R_hat)
+        cat("Network row names:", paste(rownames(results$R_hat), collapse=", "), "\n")
+      }
+      if (!is.null(colnames(results$R_hat))) {
+        output_data$R_hat_colnames <- colnames(results$R_hat)
+        cat("Network col names:", paste(colnames(results$R_hat), collapse=", "), "\n")
+      }
     }
     
     if ("lambda_opt" %in% names(results)) {
