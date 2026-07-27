@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Standalone R script for running INSPRE analysis from Python subprocess
-# Usage: Rscript run_inspre_benchmark.R --input data.h5ad --output results.json [options]
+# Usage: Rscript run_inspre_benchmark.R config.json
 
 # Load required libraries
 suppressPackageStartupMessages({
@@ -10,245 +10,98 @@ suppressPackageStartupMessages({
   library(purrr)
   library(inspre)
   library(jsonlite)
-  library(optparse)
 })
 
-# Define command line options
-option_list <- list(
-  make_option(c("--input", "-i"), type="character", default=NULL,
-              help="Input HDF5 file path", metavar="character"),
-  make_option(c("--output", "-o"), type="character", default="inspre_results.json",
-              help="Output JSON file path [default %default]", metavar="character"),
-  make_option(c("--targets", "-t"), type="character", default=NULL,
-              help="Comma-separated list of target genes", metavar="character"),
-  make_option(c("--ncores", "-c"), type="integer", default=1,
-              help="Number of CPU cores [default %default]", metavar="integer"),
-  make_option(c("--weighted"), action="store_true", default=TRUE,
-              help="Use weighted fitting [default %default]"),
-  make_option(c("--dag"), action="store_true", default=FALSE,
-              help="Enforce DAG constraints [default %default]"),
-  make_option(c("--nlambda"), type="integer", default=20,
-              help="Number of lambda values [default %default]", metavar="integer"),
-  make_option(c("--iterations"), type="integer", default=100,
-              help="Maximum iterations [default %default]", metavar="integer"),
-  make_option(c("--verbose"), type="integer", default=1,
-              help="Verbosity level (0-2) [default %default]", metavar="integer"),
-  make_option(c("--filter"), action="store_true", default=TRUE,
-              help="Filter low-quality perturbations [default %default]"),
-  make_option(c("--max_med_ratio"), type="double", default=10.0,
-              help="Maximum median weight ratio [default %default]", metavar="double")
-)
-
-# Parse command line arguments
-opt_parser <- OptionParser(option_list=option_list)
-opt <- parse_args(opt_parser)
-
-# Validate required arguments
-if (is.null(opt$input)) {
-  print_help(opt_parser)
-  stop("Input file must be specified with --input", call.=FALSE)
-}
-
-if (!file.exists(opt$input)) {
-  stop(paste("Input file does not exist:", opt$input), call.=FALSE)
-}
-
-# Function to safely close HDF5 file
-safe_close_h5 <- function(hfile) {
-  tryCatch({
-    if (!is.null(hfile) && hfile$is_valid) {
-      hfile$close()
-    }
-  }, error = function(e) {
-    # Ignore errors when closing
-  })
-}
+config_file <- commandArgs(trailingOnly = TRUE)[1]
+opt <- fromJSON(config_file)
 
 # Main analysis function
 run_inspre_analysis <- function() {
-  cat("Starting INSPRE analysis...\n")
-  cat("Input file:", opt$input, "\n")
-  cat("Output file:", opt$output, "\n")
-  
-  hfile <- NULL
-  
+
   tryCatch({
-    # Open HDF5 file
-    cat("Opening HDF5 file...\n")
     hfile <- H5File$new(opt$input, "r")
-    
-    # Parse metadata
-    cat("Parsing metadata...\n")
-    obs_data <- parse_hdf5_df(hfile, 'obs')
-    var_data <- parse_hdf5_df(hfile, 'var')
-    
-    cat("Data dimensions:\n")
-    cat("- Cells:", nrow(obs_data), "\n")
-    cat("- Genes:", nrow(var_data), "\n")
-    
-    # Get control cells
-    cat("Identifying control cells...\n")
-    cells_ntc <- obs_data$gene == "non-targeting"
-    n_ntc <- sum(cells_ntc)
-    cat("- Control cells:", n_ntc, "\n")
-    
-    if (n_ntc == 0) {
-      stop("No non-targeting control cells found. Cells should have gene = 'non-targeting'")
-    }
-    
-    # Extract control expression matrix
-    X_control <- hfile[['X']][, cells_ntc]
-    rownames(X_control) <- var_data$gene_id
-    
-    # Determine targets
-    if (!is.null(opt$targets)) {
-      # Use specified targets
-      target_genes <- trimws(strsplit(opt$targets, ",")[[1]])
-      cat("Using specified targets:", paste(target_genes, collapse=", "), "\n")
-    } else {
-      # Use all available targets
-      target_genes <- unique(obs_data$gene[obs_data$gene != "non-targeting"])
-      cat("Using all available targets (", length(target_genes), "):", 
-          paste(head(target_genes, 5), collapse=", "), 
-          if(length(target_genes) > 5) "..." else "", "\n")
-    }
-    
-    # Debug: print all available genes in obs_data
-    cat("All unique genes in obs_data:", paste(unique(obs_data$gene), collapse=", "), "\n")
-    cat("All gene_ids in var_data:", paste(head(var_data$gene_id, 10), collapse=", "), 
-        if(nrow(var_data) > 10) "..." else "", "\n")
-    
-    # Create targets list
-    targets_list <- as.list(target_genes)
-    names(targets_list) <- target_genes
-    
-    cat("Final targets_list names:", paste(names(targets_list), collapse=", "), "\n")
-    
-    # Validate targets exist in data
-    available_targets <- unique(obs_data$gene[obs_data$gene != "non-targeting"])
-    missing_targets <- setdiff(target_genes, available_targets)
-    if (length(missing_targets) > 0) {
-      warning("Some targets not found in data: ", paste(missing_targets, collapse=", "))
-      targets_list <- targets_list[target_genes %in% available_targets]
-    }
-    
-    if (length(targets_list) == 0) {
-      stop("No valid targets found in data")
-    }
-    
-    cat("Running INSPRE with", length(targets_list), "targets...\n")
-    cat("Parameters:\n")
-    cat("- Weighted:", opt$weighted, "\n")
-    cat("- DAG constraints:", opt$dag, "\n")
-    cat("- Lambda values:", opt$nlambda, "\n")
-    cat("- Max iterations:", opt$iterations, "\n")
-    cat("- CPU cores:", opt$ncores, "\n")
-    
-    # Run INSPRE analysis
-    start_time <- Sys.time()
-    
-    results <- fit_inspre_from_h5X(
-      X = hfile[['X']], 
-      X_control = X_control,
-      X_ids = obs_data$gene_transcript, 
-      X_vars = var_data$gene_id, 
-      targets = targets_list,
-      weighted = opt$weighted,
-      DAG = opt$dag,
-      filter = opt$filter,
-      max_med_ratio = opt$max_med_ratio,
-      nlambda = opt$nlambda,
-      its = opt$iterations,
-      verbose = opt$verbose,
-      ncores = opt$ncores
-    )
-    
-    end_time <- Sys.time()
-    runtime <- as.numeric(difftime(end_time, start_time, units="secs"))
-    
-    cat("Analysis completed in", round(runtime, 2), "seconds\n")
-    
-    # Prepare output
-    output_data <- list(
-      success = TRUE,
-      runtime_seconds = runtime,
-      n_genes = nrow(var_data),
-      n_cells = nrow(obs_data),
-      n_controls = n_ntc,
-      n_targets = length(targets_list),
-      targets = names(targets_list),
-      parameters = list(
-        weighted = opt$weighted,
-        dag = opt$dag,
-        nlambda = opt$nlambda,
-        iterations = opt$iterations,
-        ncores = opt$ncores,
-        filter = opt$filter,
-        max_med_ratio = opt$max_med_ratio
-      )
-    )
-    
-    # Add results
-    if ("R_hat" %in% names(results)) {
-      output_data$R_hat <- as.matrix(results$R_hat)
-      output_data$R_hat_dimensions <- dim(results$R_hat)
-      cat("Network matrix dimensions:", paste(dim(results$R_hat), collapse=" x "), "\n")
-      
-      # Add row and column names to output
-      if (!is.null(rownames(results$R_hat))) {
-        output_data$R_hat_rownames <- rownames(results$R_hat)
-        cat("Network row names:", paste(rownames(results$R_hat), collapse=", "), "\n")
-      }
-      if (!is.null(colnames(results$R_hat))) {
-        output_data$R_hat_colnames <- colnames(results$R_hat)
-        cat("Network col names:", paste(colnames(results$R_hat), collapse=", "), "\n")
-      }
-    }
-    
-    if ("lambda_opt" %in% names(results)) {
-      output_data$lambda_opt <- results$lambda_opt
-      cat("Optimal lambda:", results$lambda_opt, "\n")
-    }
-    
-    # Add any other results
-    other_fields <- setdiff(names(results), c("R_hat", "lambda_opt"))
-    for (field in other_fields) {
-      if (is.numeric(results[[field]]) || is.logical(results[[field]]) || is.character(results[[field]])) {
-        output_data[[field]] <- results[[field]]
-      }
-    }
-    
-    # Save results
-    cat("Saving results to:", opt$output, "\n")
-    write_json(output_data, opt$output, pretty=TRUE, auto_unbox=TRUE)
-    
-    cat("INSPRE analysis completed successfully!\n")
-    
-  }, error = function(e) {
-    cat("ERROR:", e$message, "\n")
-    
-    # Save error information
-    error_data <- list(
-      success = FALSE,
-      error = e$message,
-      parameters = list(
-        input_file = opt$input,
-        weighted = opt$weighted,
-        dag = opt$dag,
-        nlambda = opt$nlambda,
-        iterations = opt$iterations,
-        ncores = opt$ncores
-      )
-    )
-    
-    write_json(error_data, opt$output, pretty=TRUE, auto_unbox=TRUE)
-    stop(e$message, call.=FALSE)
-    
+    X_matrix <- hfile[['X']][,]
+    var <- inspre::parse_hdf5_df(hfile, 'var')
   }, finally = {
-    # Always try to close the HDF5 file
-    safe_close_h5(hfile)
+    hfile$close()
   })
+
+  # AnnData writes X as cells x genes, hdf5r reads it transposed as genes x cells.
+  # fit_inspre_from_X expects samples x features (cells x genes), so we transpose.
+  X <- t(X_matrix)
+  colnames(X) <- var$gene_name
+  targets_vector <- opt$targets
+
+  cat("X dimensions (cells x genes):", nrow(X), "x", ncol(X), "\n")
+  cat("Number of targets:", length(targets_vector), "\n")
+  cat("Unique targets:", paste(unique(targets_vector), collapse=", "), "\n")
+
+  cat("\n--- Data summary ---\n")
+  cat("X class:", class(X), "\n")
+  cat("X range: [", min(X, na.rm=TRUE), ",", max(X, na.rm=TRUE), "]\n")
+  cat("X NA count:", sum(is.na(X)), "\n")
+  cat("X Inf count:", sum(is.infinite(X)), "\n")
+  cat("X zero fraction:", mean(X == 0, na.rm=TRUE), "\n")
+  cat("Colnames (first 10):", paste(head(colnames(X), 10), collapse=", "), "\n")
+  cat("Rownames (first 10):", paste(head(rownames(X), 10), collapse=", "), "\n")
+  cat("Targets (first 10):", paste(head(targets_vector, 10), collapse=", "), "\n")
+  cat("Targets matching colnames:", sum(unique(targets_vector) %in% colnames(X)), "of", length(unique(targets_vector[targets_vector != "non-targeting"])), "\n")
+  cat("'non-targeting' count:", sum(targets_vector == "non-targeting"), "\n")
+  cat("--------------------\n\n")
+
+  start_time <- Sys.time()
+  results <- fit_inspre_from_X(
+    X = X,
+    targets = targets_vector,
+    weighted = opt$weighted,
+    DAG = opt$dag,
+    max_med_ratio = opt$max_med_ratio,
+    nlambda = opt$nlambda,
+    its = opt$iterations,
+    verbose = opt$verbose,
+    ncores = opt$ncores
+  )
+  runtime <- as.numeric(difftime(Sys.time(), start_time, units="secs"))
+
+  output_data <- list(
+    runtime_seconds = runtime,
+    n_genes = ncol(X),
+    n_cells = nrow(X),
+    n_targets = length(unique(targets_vector[targets_vector != "non-targeting"])),
+    parameters = list(
+      weighted = opt$weighted,
+      dag = opt$dag,
+      nlambda = opt$nlambda,
+      iterations = opt$iterations,
+      ncores = opt$ncores,
+      max_med_ratio = opt$max_med_ratio
+    )
+  )
+
+  R_hat_mat <- as.matrix(results$R_hat)
+  cat("\n--- Inferred network (R_hat) summary ---\n")
+  cat("Dimensions:", dim(R_hat_mat), "\n")
+  cat("Rownames (first 10):", paste(head(rownames(R_hat_mat), 10), collapse=", "), "\n")
+  cat("Colnames (first 10):", paste(head(colnames(R_hat_mat), 10), collapse=", "), "\n")
+  cat("Value range: [", min(R_hat_mat, na.rm=TRUE), ",", max(R_hat_mat, na.rm=TRUE), "]\n")
+  cat("NA count:", sum(is.na(R_hat_mat)), "\n")
+  nonzero_off_diag <- sum(R_hat_mat[row(R_hat_mat) != col(R_hat_mat)] != 0, na.rm=TRUE)
+  total_off_diag <- nrow(R_hat_mat) * (nrow(R_hat_mat) - 1)
+  cat("Non-zero off-diagonal entries:", nonzero_off_diag, "of", total_off_diag, "\n")
+  cat("----------------------------------------\n\n")
+
+  output_data$R_hat <- R_hat_mat
+  output_data$R_hat_dimensions <- dim(results$R_hat)
+  output_data$R_hat_rownames <- rownames(results$R_hat)
+  output_data$R_hat_colnames <- colnames(results$R_hat)
+  output_data$lambda_opt <- results$lambda_opt
+
+  write_json(output_data, opt$output, pretty=TRUE, auto_unbox=TRUE)
 }
 
 # Run the analysis
 run_inspre_analysis()
+
+
+
+

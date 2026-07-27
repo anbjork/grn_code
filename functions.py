@@ -540,147 +540,104 @@ def inspre_inference(data):
     import anndata as ad
 
     expression_data = copy.deepcopy(data['Y'])
-    
-    # # Debug - limit genes for testing
-    # expression_data = expression_data.iloc[:, :50]
-    
     all_genes = expression_data.columns
-    
-    # Create temporary files for input and output
-    with tempfile.NamedTemporaryFile(suffix='.h5ad', delete=False) as input_file, \
-         tempfile.NamedTemporaryFile(suffix='.json', delete=False) as output_file:
-        
-        input_path = input_file.name
-        output_path = output_file.name
-    
-    try:
-        # Convert to AnnData format expected by the R script
-        anton_util.log_timestamp('Preparing AnnData for INSPRE...')
-        
-        # Create obs dataframe with gene and gene_transcript columns
-        # Convert 'control' to 'non-targeting' as expected by INSPRE
-        gene_names = expression_data.index.to_series().replace('control', 'non-targeting')
-        obs_df = pd.DataFrame(index=expression_data.index)
-        obs_df['gene'] = gene_names
-        obs_df['gene_transcript'] = gene_names
-        
-        # Create var dataframe with gene_id and gene_name columns  
-        var_df = pd.DataFrame(index=expression_data.columns)
-        var_df['gene_id'] = expression_data.columns
-        var_df['gene_name'] = expression_data.columns
-        
-        # Create AnnData object
-        adata = ad.AnnData(
-            X=expression_data.values,
-            obs=obs_df,
-            var=var_df
+
+    # Filter out zero-std genes since methods crashes with those
+    stds = expression_data.std(axis=0)
+    non_zero_stds = stds > 0
+    expression_data = expression_data.loc[:, non_zero_stds]
+
+    # Get temporary file paths
+    with tempfile.NamedTemporaryFile(suffix='.h5ad', delete=False) as f:
+        input_path = f.name
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        output_path = f.name
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        config_path = f.name
+
+    anton_util.log_timestamp('Preparing AnnData for INSPRE...')
+    # Convert 'control' to 'non-targeting' as expected by INSPRE
+    perturbations = expression_data.index.to_series().replace(
+            'control', 'non-targeting')
+    var_df = pd.DataFrame(index=expression_data.columns)
+    var_df['gene_name'] = expression_data.columns
+
+    adata = ad.AnnData(
+        X=expression_data.values,
+        var=var_df
+    )
+    adata.write_h5ad(Path(input_path))
+
+    # Create targets vector - one entry per cell indicating which gene was perturbed
+    targets_vector = perturbations.tolist()
+
+    config = {
+        'input': input_path,
+        'output': output_path,
+        'targets': targets_vector,
+        'ncores': 1,
+        'weighted': True,
+        'dag': False,
+        'nlambda': 20,
+        'iterations': 100,
+        'verbose': 1,
+        'max_med_ratio': 10.0
+    }
+
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=2)
+
+    # Run R script
+    anton_util.log_timestamp('Running INSPRE R script...')
+    r_script_path = Path('inspre_integration_docs/run_inspre_benchmark.R').resolve()
+
+    result = subprocess.run([
+        'Rscript', str(r_script_path), config_path
+    ], capture_output=True, text=True)
+
+    if result.stdout:
+        print("R stdout:", result.stdout)
+    if result.stderr:
+        print("R stderr:", result.stderr)
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"INSPRE R script failed with return code {result.returncode}.\n"
+            f"See R stderr above for details."
         )
-        
-        # Save as h5ad file
-        adata.write_h5ad(input_path)
-        
-        # Run R script
-        anton_util.log_timestamp('Running INSPRE R script...')
-        r_script_path = Path('inspre_integration_docs/run_inspre_benchmark.R').resolve()
-        
-        result = subprocess.run([
-            'Rscript', str(r_script_path),
-            '--input', input_path,
-            '--output', output_path
-        ], capture_output=True, text=True, check=True)
-        
-        if result.stdout:
-            print("R script output:", result.stdout)
-        
-        # Read results from JSON
-        anton_util.log_timestamp('Reading INSPRE results...')
-        with open(output_path, 'r') as f:
-            results = json.load(f)
-        
-        if not results.get('success', False):
-            raise RuntimeError(f"INSPRE failed: {results.get('error', 'Unknown error')}")
-        
-        # Extract network matrix
-        if 'R_hat' not in results:
-            raise RuntimeError("No network matrix (R_hat) found in INSPRE results")
-        
-        network_matrix = np.array(results['R_hat'])
-        
-        # Handle the case where INSPRE returns a smaller network
-        n_genes_in_network = network_matrix.shape[0]
-        
-        # Use the actual row/column names from the network matrix if available
-        if 'R_hat_rownames' in results and 'R_hat_colnames' in results:
-            result_genes = results['R_hat_rownames']
-            anton_util.log_timestamp(f'INSPRE returned {n_genes_in_network} genes from network rownames: {result_genes}')
-        elif 'targets' in results and len(results['targets']) == n_genes_in_network:
-            result_genes = results['targets']
-            anton_util.log_timestamp(f'INSPRE returned {n_genes_in_network} genes from targets: {result_genes}')
-        else:
-            raise RuntimeError(f"Cannot determine gene names for INSPRE network. Network size: {n_genes_in_network}, targets length: {len(results.get('targets', []))}")
-        
-        # Validate that all result genes are in the original gene list
-        missing_genes = set(result_genes) - set(all_genes)
-        if missing_genes:
-            raise RuntimeError(f"INSPRE returned genes not in original data: {missing_genes}")
-        
-        # Debug: print the network matrix to see what values we have
-        anton_util.log_timestamp(f'Network matrix shape: {network_matrix.shape}')
-        anton_util.log_timestamp(f'Network matrix type: {type(network_matrix)}')
-        anton_util.log_timestamp(f'Network matrix contents:\n{network_matrix}')
-        
-        # Handle 'NA' values in network matrix - convert to numpy array first
-        network_matrix = np.array(network_matrix, dtype=object)
-        network_matrix[network_matrix == 'NA'] = np.nan
-        network_matrix = network_matrix.astype(float)
-        
-        anton_util.log_timestamp(f'Network matrix after NA conversion:\n{network_matrix}')
-        
-        # Convert to pandas DataFrame with the actual network size
-        estimated_network = pd.DataFrame(
-            data=network_matrix,
-            index=result_genes,
-            columns=result_genes
-        )
-        
-        # Replace NaN values with 0 for benchmarking compatibility
-        estimated_network = estimated_network.fillna(0)
-        
-        anton_util.log_timestamp(f'DataFrame contents:\n{estimated_network}')
-        
-        # Using these conversions to put the previously filtered out genes in again
-        edgelist = gs.util.matrix_to_edgelist(estimated_network)
-        estimated_network = gs.util.edgelist_to_matrix(
-            regulators=edgelist['regulator'],
-            targets=edgelist['target'],
-            values=edgelist['value'],
-            all_genes=all_genes,
-        )
-        
-        anton_util.log_timestamp(f'INSPRE completed. Network shape: {estimated_network.shape}')
-        
-    except subprocess.CalledProcessError as e:
-        print(f"R script failed with return code {e.returncode}")
-        print(f"stdout: {e.stdout}")
-        print(f"stderr: {e.stderr}")
-        raise
-    except Exception as e:
-        print(f"INSPRE inference failed: {e}")
-        raise
-    finally:
-        # Clean up temporary files
-        for path in [input_path, output_path]:
-            if os.path.exists(path):
-                os.unlink(path)
-    
+
+    # Read results from JSON
+    anton_util.log_timestamp('Reading INSPRE results...')
+    with open(output_path, 'r') as f:
+        results = json.load(f)
+
+    network_matrix = np.array(results['R_hat'])
+    result_genes = results['R_hat_rownames']
+    network_matrix = np.array(network_matrix, dtype=object)
+    network_matrix[network_matrix == 'NA'] = np.nan
+    network_matrix = network_matrix.astype(float)
+    estimated_network = pd.DataFrame(
+        data=network_matrix,
+        index=result_genes,
+        columns=result_genes
+    )
+    estimated_network = estimated_network.fillna(0)
+
+    # Using these conversions to put the previously filtered out genes in again
+    edgelist = gs.util.matrix_to_edgelist(estimated_network)
+    estimated_network = gs.util.edgelist_to_matrix(
+        regulators=edgelist['regulator'],
+        targets=edgelist['target'],
+        values=edgelist['value'],
+        all_genes=all_genes,
+    )
+
+    # Clean up temporary files
+    for path in [input_path, output_path, config_path]:
+        if os.path.exists(path):
+            os.unlink(path)
+
     return {'inspre': estimated_network}
-
-
-
-
-
-
-
 
 
 
