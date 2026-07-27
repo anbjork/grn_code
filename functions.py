@@ -642,6 +642,149 @@ def inspre_inference(data):
     return {'inspre': estimated_network}
 
 
+def inspre_inference_hdf5(data):
+    """
+    INSPRE inference using the fit_inspre_from_h5X interface, mirroring the
+    gwps analysis pipeline. This includes guide effect calculation and filtering
+    before fitting, as done in run_gwps_analysis.R.
+
+    Key differences from inspre_inference:
+    - Uses fit_inspre_from_h5X instead of fit_inspre_from_X
+    - Data is written cells x genes to HDF5; HDF5's row/column-major conversion
+      between Python (row-major) and R (column-major) means R reads it as
+      genes x cells, which is what fit_inspre_from_h5X expects.
+    - Controls are labelled 'non-targeting'
+    - obs table includes 'perturbation' and 'guide_id' columns
+    - var table includes 'gene_name' column
+    """
+    import subprocess
+    import tempfile
+    import os
+    import json
+    import copy
+    from pathlib import Path
+    import h5py
+
+    expression_data = copy.deepcopy(data['Y'])
+    all_genes = expression_data.columns
+
+    # Filter out zero-std genes
+    stds = expression_data.std(axis=0)
+    non_zero_stds = stds > 0
+    expression_data = expression_data.loc[:, non_zero_stds]
+
+    # Map 'control' -> 'non-targeting' as expected by fit_inspre_from_h5X
+    perturbations = expression_data.index.to_series().replace('control', 'non-targeting')
+
+    # For the hdf5 interface, guide_id is used to match cells to targets.
+    # Since our simulated data has one guide per perturbation target, we use
+    # the perturbation name as the guide_id as well.
+    guide_ids = perturbations.copy()
+
+    gene_names = list(expression_data.columns)
+
+    # Get temporary file paths
+    with tempfile.NamedTemporaryFile(suffix='.h5', delete=False) as f:
+        input_path = f.name
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        output_path = f.name
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        config_path = f.name
+
+    anton_util.log_timestamp('Preparing HDF5 file for INSPRE (hdf5 interface)...')
+
+    # Write HDF5 file in the format expected by fit_inspre_from_h5X.
+    # We write X as cells x genes (the natural Python/NumPy row-major layout).
+    # Because Python is row-major and R is column-major, hdf5r in R will read
+    # this back as genes x cells — exactly the format fit_inspre_from_h5X expects.
+    # No explicit transpose is needed here.
+    with h5py.File(input_path, 'w') as hf:
+        hf.create_dataset('X', data=expression_data.values)
+
+        # obs group: per-cell metadata
+        obs_grp = hf.create_group('obs')
+        obs_grp.create_dataset(
+            'perturbation',
+            data=np.array(perturbations.tolist(), dtype=h5py.special_dtype(vlen=str))
+        )
+        obs_grp.create_dataset(
+            'guide_id',
+            data=np.array(guide_ids.tolist(), dtype=h5py.special_dtype(vlen=str))
+        )
+
+        # var group: per-gene metadata
+        var_grp = hf.create_group('var')
+        var_grp.create_dataset(
+            'gene_name',
+            data=np.array(gene_names, dtype=h5py.special_dtype(vlen=str))
+        )
+
+    config = {
+        'input': input_path,
+        'output': output_path,
+        'ncores': 5,
+        'dag': False,
+        'nlambda': 20,
+        'verbose': 1,
+        'max_med_ratio': 50.0
+    }
+
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=2)
+
+    # Run R script
+    anton_util.log_timestamp('Running INSPRE R script (hdf5 interface)...')
+    r_script_path = Path('inspre_integration_docs/run_inspre_benchmark_hdf5.R').resolve()
+
+    result = subprocess.run([
+        'Rscript', str(r_script_path), config_path
+    ], capture_output=True, text=True)
+
+    if result.stdout:
+        print("R stdout:", result.stdout)
+    if result.stderr:
+        print("R stderr:", result.stderr)
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"INSPRE hdf5 R script failed with return code {result.returncode}.\n"
+            f"See R stderr above for details."
+        )
+
+    # Read results from JSON
+    anton_util.log_timestamp('Reading INSPRE hdf5 results...')
+    with open(output_path, 'r') as f:
+        results = json.load(f)
+
+    network_matrix = np.array(results['R_hat'])
+    result_genes = results['R_hat_rownames']
+    network_matrix = np.array(network_matrix, dtype=object)
+    network_matrix[network_matrix == 'NA'] = np.nan
+    network_matrix = network_matrix.astype(float)
+    estimated_network = pd.DataFrame(
+        data=network_matrix,
+        index=result_genes,
+        columns=result_genes
+    )
+    estimated_network = estimated_network.fillna(0)
+
+    # Put previously filtered-out genes back in
+    edgelist = gs.util.matrix_to_edgelist(estimated_network)
+    estimated_network = gs.util.edgelist_to_matrix(
+        regulators=edgelist['regulator'],
+        targets=edgelist['target'],
+        values=edgelist['value'],
+        all_genes=all_genes,
+    )
+
+    # Clean up temporary files
+    for path in [input_path, output_path, config_path]:
+        if os.path.exists(path):
+            os.unlink(path)
+
+    return {'inspre_hdf5': estimated_network}
+
+
 
 # def pseudo_bulk_group(Y, n_pseudo_bulks, verbose = True):
 #
@@ -750,9 +893,6 @@ def bin_bulk(
         iis = np.nonzero(mat.index == group)[0]
         # cells = P.iloc[iis, :]
         n_cells = iis.shape[0]
-
-
-
 
 
     # for perturbed_gene in P:

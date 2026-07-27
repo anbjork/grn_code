@@ -4,10 +4,11 @@ from pipeline_functions import inference
 import functions
 
 functions = [
-    functions.fast_methods_inference,
-    functions.random_inference,
+    # functions.fast_methods_inference,
+    # functions.random_inference,
     # functions.correlation_inference,
-    functions.inspre_inference,
+    # functions.inspre_inference,
+    functions.inspre_inference_hdf5,
     # functions.psgrn_inference,
     # functions.genie3_inference,
     # functions.deepsem_inference,
