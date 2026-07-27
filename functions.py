@@ -557,8 +557,10 @@ def inspre_inference(data):
 
     anton_util.log_timestamp('Preparing AnnData for INSPRE...')
     # Convert 'control' to 'non-targeting' as expected by INSPRE
-    perturbations = expression_data.index.to_series().replace(
-            'control', 'non-targeting')
+    perturbations = expression_data.index.to_series()
+    # Seems the interface fit_inspre_from_X does use 'control',
+    # while the fit_inspre_from_h5X interface uses 'non-targeting'
+    # perturbations = perturbations.replace('control', 'non-targeting')
     var_df = pd.DataFrame(index=expression_data.columns)
     var_df['gene_name'] = expression_data.columns
 
@@ -575,13 +577,13 @@ def inspre_inference(data):
         'input': input_path,
         'output': output_path,
         'targets': targets_vector,
-        'ncores': 1,
+        'ncores': 5,
         'weighted': True,
         'dag': False,
         'nlambda': 20,
         'iterations': 100,
         'verbose': 1,
-        'max_med_ratio': 10.0
+        'max_med_ratio': 50.0
     }
 
     with open(config_path, 'w') as f:
