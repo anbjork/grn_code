@@ -668,13 +668,13 @@ predict_inspre <- function(res, .X, .beta, .targets){
   ZB <- t(t(ZB) * .beta)
 
   D <- nrow(res$R_hat)
-  ImGi <- purrr::map(1:length(res$lambda), ~ solve(diag(D) - res$R_hat[,,.x]))
+  ImGi <- purrr::map(1:length(res$lambda), ~ solve(diag(D) - res$G_hat[,,.x]))
   ImGi <- array(do.call(cbind, ImGi), dim=c(dim(ImGi[[1]]), length(ImGi)))
 
   eps_hat_G <- vector("numeric", length(res$lambda))
   eps_hat_I <- vector("numeric", length(res$lambda))
   for(i in 1:length(res$lambda)){
-    X_hat_G <- .X %*% res$R_hat[,,i] + ZB
+    X_hat_G <- .X %*% res$G_hat[,,i] + ZB  # G_hat is 3D (D x D x nlambda)
     X_hat_I <- ZB %*% ImGi[,,i]
     eps_hat_G[i] <- mean((.X - X_hat_G)**2)
     eps_hat_I[i] <- mean((.X - X_hat_I)**2)
@@ -785,7 +785,10 @@ fit_inspre_from_X <- function(X, targets, weighted = TRUE, max_med_ratio = NULL,
     folds <- caret::createFolds(1:sum(keep_obs), k=cv_folds)
     eps_hat_G <- array(0.0, length(full_res$lambda))
     eps_hat_I <- array(0.0, length(full_res$lambda))
-    xi_mat <- array(0, dim = c(D, D, length(full_res$lambda)))
+    # Commented out StARS stability calculation due to dimension mismatch bug
+    # D is probably not right here. It should possibly be the number of features
+    # in data after filtering, but D is from before filtering.
+    # xi_mat <- array(0, dim = c(D, D, length(full_res$lambda)))
     for(i in seq_along(folds)){
       fold <- folds[[i]]
       if (verbose){
@@ -818,22 +821,35 @@ fit_inspre_from_X <- function(X, targets, weighted = TRUE, max_med_ratio = NULL,
                                   verbose = verbose, train_prop = 1,
                                   cv_folds = 0, mu = mu, tau = tau, solve_its = solve_its,
                                   ncores = ncores, warm_start = warm_start, min_nz = min_nz, constraint = constraint, DAG = DAG)
-      V_nz <- abs(cv_res$V) > min_nz
-      xi_mat <- xi_mat + V_nz
+      # V_nz <- abs(cv_res$V) > min_nz  # StARS stability - disabled due to dimension mismatch bug
+      # xi_mat <- xi_mat + V_nz
+
+      # Diagnostic: print cv_res dimensions before predict_inspre
+      cat(sprintf("CV fold %d: cv_res fields and dims:\n", i))
+      for (nm in names(cv_res)) {
+        val <- cv_res[[nm]]
+        if (is.array(val) || is.matrix(val)) {
+          cat(sprintf("  %s: dim = %s\n", nm, paste(dim(val), collapse=" x ")))
+        } else if (is.numeric(val)) {
+          cat(sprintf("  %s: numeric, length = %d\n", nm, length(val)))
+        } else {
+          cat(sprintf("  %s: %s\n", nm, class(val)))
+        }
+      }
+
       X_test <- X[fold, ]
       targets_test <- targets[fold]
       eps <- predict_inspre(cv_res, X_test, beta_obs, targets_test)
       eps_hat_G <- eps_hat_G + eps$eps_hat_G
       eps_hat_I <- eps_hat_I + eps$eps_hat_I
     }
-    xi_mat <- xi_mat/cv_folds
-    D_hat <- 2 * xi_mat * (1-xi_mat)
-    D_hat <- apply(D_hat, 3, mean)
-    D_hat_se <- apply(
-      xi_mat, 3, function(x){ stats::sd(x)/sqrt(length(x)) })
-    full_res$D_hat <- D_hat
-    full_res$D_hat_se <- D_hat_se
-    full_res$xi_mat <- xi_mat
+    # xi_mat <- xi_mat/cv_folds  # StARS stability - disabled
+    # D_hat <- 2 * xi_mat * (1-xi_mat)
+    # D_hat <- apply(D_hat, 3, mean)
+    # D_hat_se <- apply(xi_mat, 3, function(x){ stats::sd(x)/sqrt(length(x)) })
+    # full_res$D_hat <- D_hat
+    # full_res$D_hat_se <- D_hat_se
+    # full_res$xi_mat <- xi_mat
 
     eps_hat_G <- eps_hat_G/cv_folds
     eps_hat_I <- eps_hat_I/cv_folds

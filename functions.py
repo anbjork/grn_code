@@ -583,7 +583,8 @@ def inspre_inference(data):
         'nlambda': 20,
         'iterations': 100,
         'verbose': 1,
-        'max_med_ratio': 50.0
+        'max_med_ratio': 50.0,
+        'cv_folds': 5
     }
 
     with open(config_path, 'w') as f:
@@ -613,8 +614,35 @@ def inspre_inference(data):
     with open(output_path, 'r') as f:
         results = json.load(f)
 
-    network_matrix = np.array(results['R_hat'])
-    result_genes = results['R_hat_rownames']
+    # Diagnostic: print the top-level keys and shapes of what came back from R
+    print("INSPRE result keys:", list(results.keys()))
+    for k, v in results.items():
+        if isinstance(v, list):
+            if len(v) > 0 and isinstance(v[0], list):
+                if len(v[0]) > 0 and isinstance(v[0][0], list):
+                    print(f"  {k}: 3D list, dims={len(v)} x {len(v[0])} x {len(v[0][0])}")
+                else:
+                    print(f"  {k}: nested list (matrix), outer len={len(v)}, inner len={len(v[0])}")
+            else:
+                print(f"  {k}: flat list, len={len(v)}, first few={v[:3]}")
+        else:
+            print(f"  {k}: {type(v).__name__} = {v}")
+    # Print G_hat as numpy array shape
+    if 'G_hat' in results:
+        G_hat_np = np.array(results['G_hat'])
+        print(f"  G_hat as np.array shape: {G_hat_np.shape}")
+
+    # G_hat shape is (nlambda, D, D); use the CV-selected best lambda index from R
+    G_hat_np = np.array(results['G_hat'])  # shape: (nlambda, D, D)
+    result_genes = results['G_hat_rownames']
+    best_lambda_idx = results['best_lambda_idx'] - 1  # R is 1-indexed, Python is 0-indexed
+    network_matrix = G_hat_np[best_lambda_idx]
+
+    # Diagnostic: print G_hat at best lambda (Python side) for comparison with R
+    print(f"\n--- G_hat at best lambda (Python, index {best_lambda_idx}) ---")
+    print("Genes:", result_genes)
+    print(pd.DataFrame(network_matrix, index=result_genes, columns=result_genes))
+    print("---------------------------------------------------\n")
     network_matrix = np.array(network_matrix, dtype=object)
     network_matrix[network_matrix == 'NA'] = np.nan
     network_matrix = network_matrix.astype(float)

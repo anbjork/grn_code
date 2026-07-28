@@ -59,7 +59,8 @@ run_inspre_analysis <- function() {
     nlambda = opt$nlambda,
     its = opt$iterations,
     verbose = opt$verbose,
-    ncores = opt$ncores
+    ncores = opt$ncores,
+    cv_folds = opt$cv_folds
   )
   runtime <- as.numeric(difftime(Sys.time(), start_time, units="secs"))
 
@@ -78,6 +79,32 @@ run_inspre_analysis <- function() {
     )
   )
 
+  cat("\n--- All fields returned by fit_inspre_from_X ---\n")
+  cat("Names:", paste(names(results), collapse=", "), "\n")
+  for (nm in names(results)) {
+    val <- results[[nm]]
+    if (is.matrix(val) || is.array(val)) {
+      cat(sprintf("  %s: matrix/array, dim = %s\n", nm, paste(dim(val), collapse=" x ")))
+    } else if (is.list(val)) {
+      cat(sprintf("  %s: list, length = %d\n", nm, length(val)))
+      for (nm2 in names(val)) {
+        val2 <- val[[nm2]]
+        if (is.matrix(val2) || is.array(val2)) {
+          cat(sprintf("    %s: matrix/array, dim = %s\n", nm2, paste(dim(val2), collapse=" x ")))
+        } else if (is.numeric(val2) && length(val2) == 1) {
+          cat(sprintf("    %s: scalar = %g\n", nm2, val2))
+        } else {
+          cat(sprintf("    %s: %s, length = %d\n", nm2, class(val2), length(val2)))
+        }
+      }
+    } else if (is.numeric(val) && length(val) == 1) {
+      cat(sprintf("  %s: scalar = %g\n", nm, val))
+    } else {
+      cat(sprintf("  %s: %s, length = %d\n", nm, class(val), length(val)))
+    }
+  }
+  cat("-------------------------------------------------\n\n")
+
   R_hat_mat <- as.matrix(results$R_hat)
   cat("\n--- Inferred network (R_hat) summary ---\n")
   cat("Dimensions:", dim(R_hat_mat), "\n")
@@ -95,6 +122,50 @@ run_inspre_analysis <- function() {
   output_data$R_hat_rownames <- rownames(results$R_hat)
   output_data$R_hat_colnames <- colnames(results$R_hat)
   output_data$lambda_opt <- results$lambda_opt
+
+  # Additional output fields for inspection from Python
+  output_data$lambda <- as.numeric(results$lambda)
+  output_data$rho <- as.numeric(results$rho)
+  output_data$L <- as.numeric(results$L)
+  output_data$train_error <- as.numeric(results$train_error)
+  output_data$test_error <- as.numeric(results$test_error)
+  output_data$gamma <- as.numeric(results$gamma)
+  output_data$W <- as.matrix(results$W)
+  output_data$W_rownames <- rownames(results$W)
+  output_data$SE_hat <- as.matrix(results$SE_hat)
+  # G_hat is D x D x nlambda — serialize as a list of nlambda matrices
+  G_hat_arr <- results$G_hat
+  n_lambda <- dim(G_hat_arr)[3]
+  output_data$G_hat <- lapply(seq_len(n_lambda), function(i) as.matrix(G_hat_arr[,,i]))
+  output_data$G_hat_dimensions <- dim(G_hat_arr)
+  output_data$G_hat_rownames <- rownames(G_hat_arr[,,1])
+  output_data$G_hat_colnames <- colnames(G_hat_arr[,,1])
+
+  # Select best lambda by minimum CV eps_hat_G, or fall back to smallest lambda
+  if (!is.null(results$eps_hat_G) && any(!is.nan(as.numeric(results$eps_hat_G)))) {
+    eps_hat_G <- as.numeric(results$eps_hat_G)
+    best_lambda_idx <- which.min(eps_hat_G)
+    cat("\n--- Lambda selection by CV eps_hat_G ---\n")
+    cat("Lambda values:", paste(round(results$lambda, 4), collapse=", "), "\n")
+    cat("eps_hat_G:", paste(round(eps_hat_G, 4), collapse=", "), "\n")
+    cat("Best lambda index:", best_lambda_idx, "\n")
+    cat("Best lambda value:", results$lambda[best_lambda_idx], "\n")
+    cat("-----------------------------------------\n\n")
+  } else {
+    best_lambda_idx <- length(results$lambda)
+    cat("\n--- No CV performed, using smallest lambda (index", best_lambda_idx, ") ---\n\n")
+  }
+
+  # Diagnostic: print G_hat at best lambda before serialization
+  G_hat_best <- G_hat_arr[,,best_lambda_idx]
+  cat("\n--- G_hat at best lambda (R, index", best_lambda_idx, ") ---\n")
+  cat("Rownames:", paste(rownames(G_hat_best), collapse=", "), "\n")
+  cat("Colnames:", paste(colnames(G_hat_best), collapse=", "), "\n")
+  print(G_hat_best)
+  cat("---------------------------------------------------\n\n")
+
+  output_data$best_lambda_idx <- best_lambda_idx
+  output_data$best_lambda <- results$lambda[best_lambda_idx]
 
   write_json(output_data, opt$output, pretty=TRUE, auto_unbox=TRUE)
 }
