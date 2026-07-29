@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 import genesnake as gs
@@ -228,19 +230,78 @@ def fast_methods_inference(data):
 
 
 
+def dspin_inference_wrapper(data):
+
+    options = {
+        'use_perturbation_matrix': [True, False],
+        'perturbation_knockdown_value': [-1, -0.9, -0.7],
+        'use_prior_h': [True, False],
+        }
+    configs = []
+    def recursive_setting(settings_applied, settings_left):
+        from copy import deepcopy
+        settings_applied = deepcopy(settings_applied)
+        settings_left = deepcopy(settings_left)
+        if len(settings_left) == 0:
+            configs.append(deepcopy(settings_applied))
+            return
+        new_setting, options = settings_left.popitem()
+        for option in options:
+            settings_applied[new_setting] = option
+            recursive_setting(
+                settings_applied = settings_applied,
+                settings_left = settings_left
+                )
+    recursive_setting({}, options)
+    from pprint import pprint
+    pprint(configs)
+
+    # Manual override
+    configs = [{
+        'use_perturbation_matrix': True,
+        'perturbation_knockdown_value': -0.9,
+        'use_prior_h': True,
+        }]
+
+    estimated_networks = {}
+    for config in configs:
+        anton_util.log_timestamp(f'Running dspin...')
+        # try:
+        print('config:')
+        pprint(config)
+        en = dspin_inference(data=data, **config)
+        # It's always length 1
+        ((method_name, estimated_network),) = en.items()
+        config_cat = '__'.join([f'{k}_{v}' for k, v in config.items()])
+        method_name = f'{method_name}__{config_cat}'
+        estimated_networks[method_name] = estimated_network
+        # temporary, I just want to see which options run at all
+        # except Exception as e:
+        #     pprint(config)
+        #     print(e)
+
+    return estimated_networks
 
 
-def dspin_inference(data):
-
-    from dspin.dspin import DSPIN
+def dspin_inference(
+        data,
+        use_perturbation_matrix = None,
+        perturbation_knockdown_value = -1,
+        use_prior_h = None,
+        ):
     import anndata as ad
+    from dspin import DSPIN
+    from copy import deepcopy
 
     # Recreating an anndata object to fit with the rest of the code
-    # from previously
+    # from previously.
+    # y is a regular pandas dataframe of expression values,
+    # where the index/rownames is the gene perturbed or 'control',
+    # and the columns are the genes
     y = data['Y']
 
     # # Debug
-    # y = y.iloc[:, :50]
+    # y = y.iloc[:, :10]
 
     adata = ad.AnnData(
             # to_numpy and commented out obs because anndata stresses
@@ -265,43 +326,101 @@ def dspin_inference(data):
     save_path = Path('tmp/dspin_save_path')
     save_path.mkdir(exist_ok=True, parents=True)
     num_spin = len(adata.var)
-    model = DSPIN(adata, str(save_path), num_spin=num_spin)
+    model = DSPIN(deepcopy(adata), str(save_path), num_spin=num_spin)
 
-    # Data is filtered in the model creation, so extract the updated
-    # data to continue with
-    adata = model.adata
-    num_spin = model.num_spin
+    # # Data is filtered in the model creation, so extract the updated
+    # # data to continue with
+    # adata = model.adata
+    # num_spin = model.num_spin
 
-    # # Custom prior h for perturbations
-    # # dspin bioarxiv at least used to describe this as the way
-    # perturbation_list = np.unique(adata.obs['gene_name'])
-    # rows = np.array(adata.var.gene_name)
-    # cols = perturbation_list
-    # cur_h = np.zeros((len(rows), len(cols)))
-    # for ii in range(len(rows)):
-    #     for jj in range(len(cols)):
-    #         if rows[ii] == cols[jj]:
-    #             cur_h[ii, jj] = -1.5
-    # extra_params = {'cur_h': cur_h}
+    # In case dspins internal preprocessing applied something that is not
+    # idempotent, let's actually filter the original data, and go from
+    # that again.
+    #
+    # Also, try filtering out cells where a gene was perturbed that is not
+    # among the genes in the data (columns).
+    #
+    # Didn't seem to improve results.
+    genes_left = model.adata.var.gene_name
+    print(f'{genes_left = }')
+    to_keep = list(genes_left) + ['control']
+    # Since genes are not in adata.obs_names
+    to_keep_bool = adata.obs['gene_name'].isin(to_keep)
+    adata = adata[to_keep_bool, genes_left]  # pyright: ignore
+    num_spin = len(adata.var)
+    print(adata)
+
+    # perturbation_list: Created similarly by getting unique elements from
+    # a full list of samples in raw_data_state -> sample_states
+    # So hopefully the same. But it seems sensitive to sorting, so if 
+    # sorted somewhere else, it might lead to problems.
+    perturbation_list = np.unique(adata.obs['gene_name'])
+    rows = np.array(adata.var.gene_name)
+    cols = perturbation_list
 
     extra_params = {}
 
+    if use_prior_h:
+        # Custom prior h for perturbations
+        # dspin bioarxiv describes this as the way
+        cur_h = np.zeros((len(rows), len(cols)))
+        for ii in range(len(rows)):
+            for jj in range(len(cols)):
+                if rows[ii] == cols[jj]:
+                    cur_h[ii, jj] = -1.5
+        extra_params = {'cur_h': cur_h}
+        # My intuition would have been the other transpose, ie
+        # samples x genes, but in learn_network_adam, it gets dimensions as
+        # num_spin, num_round = train_dat['cur_h'].shape
+        # , which implies genes x samples, since num_spin == number of variables,
+        # so maybe those are the internal dimensions
+        #
+        # Seeing the printout of the cur_h matrix, I remember that it's not
+        # as simple as genes x samples, the samples dimension is substituted
+        # by a smaller dimension which I am a bit unclear on
+        #
+        # In sample_states, the state_list assigned to _raw_data is created.
+        # _raw_data determines the dimensions of cur_h in default_params. 
+        # It comes from a unique list of samples. 
+        # So h is genes x unique(samples), which
+        # matches above. I guess it's sorting sensitive, since just applying
+        # unique to the sample lables from the data. That's one thing that
+        # can go wrong I guess
+        #
+        # Crashes when run with transpose, so at least dimensions are probably right.
 
-    # p = np.zeros((len(rows), len(cols)))
-    # for ii in range(len(rows)):
-    #     for jj in range(len(cols)):
-    #         if rows[ii] == cols[jj]:
-    #             p[ii, jj] = -1
-    #
+
+    if use_perturbation_matrix:
+        p = np.zeros((len(rows), len(cols)))
+        for ii in range(len(rows)):
+            for jj in range(len(cols)):
+                if rows[ii] == cols[jj]:
+                    p[ii, jj] = perturbation_knockdown_value
+        # Looks like wrong transpose here, based on github readme.
+        # But in apply_regularization, it is subtracted from h_rela,
+        # which probably is the same dimensions as cur_h, so might be
+        # a mistake in the readme. Worth trying both orientations.
+        #
+        # Crashes with transpose, actually exactly on the line subtracting 
+        # from h_rela. So these dimensions seem right.
+
+        # Alternative construction of the perturbation matrix
+        # Should be equivalent
+        # p = data['P']
+        # p = p.loc[:, adata.var['gene_name']]
+        # p = p.to_numpy()
+        # No, not equivalent.  Note that perturbation list is
+        # a list of unique perturbations, so not the same dimensions.
+    else:
+        # Checked network_inference, and perturb_matrix does not go in params,
+        # but the case perturb_matrix == None is handled
+        p = None
+
 
     params={'stepsz': 0.05, 'lambda_l1_j': 0.01, 'lambda_l2_h': 3}
     all_params = {**params, **extra_params}
 
     anton_util.log_timestamp(f'{all_params = }')
-
-    # p = data['P']
-    # p = p.loc[:, adata.var['gene_name']]
-    # p = p.to_numpy()
 
     model = DSPIN(adata, str(save_path), num_spin=num_spin)
     model.network_inference(
@@ -309,14 +428,17 @@ def dspin_inference(data):
         method = 'pseudo_likelihood',
         params = all_params,
         directed = True,
-        # perturb_matrix = p,
+        perturb_matrix = p,  # pyright: ignore
         )
 
+    # Note: Assumes orientation regulators x targets
+    # Quick test using other transpose did not seem to improve results
     estimated_network = pd.DataFrame(
             data = model.network,
             index = adata.var.gene_name,
             columns = adata.var.gene_name,
             )
+    # estimated_network = estimated_network.T
 
     # Using these conversions to put the previously filtered out genes in again
     edgelist = gs.util.matrix_to_edgelist(estimated_network)
