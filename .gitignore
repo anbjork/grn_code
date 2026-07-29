@@ -16,6 +16,7 @@
 /data_processed/
 /saved_data/
 /outputs__in_pipeline/
+/dspin_files_from_troubleshooting/
 __*
 
 /genesnake/
