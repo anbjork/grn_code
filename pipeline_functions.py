@@ -47,7 +47,7 @@ def inference(
 
     Path(output_path).parent.mkdir(exist_ok=True, parents=True)
     anton_util.log_timestamp('Saving...')
-    anton_util.pickle_object(estimated_networks, output_path)
+    append_pickle(estimated_networks, output_path)
 
 
 
