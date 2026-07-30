@@ -1017,7 +1017,6 @@ def chunk_array(arr, n_chunks):
 
 def bin_bulk(
         dataset,
-        # matrices,
         n_pseudo_bulks = 5,
         verbose = False,
         **kwargs,
@@ -1028,7 +1027,7 @@ def bin_bulk(
     import pandas as pd
     import math
 
-    # Needed to comply with interface, that allows non modifications
+    # Needed to comply with calling interface, that allows non modifications
     if n_pseudo_bulks == False:
         out = update_dataset_default(dataset, dataset['Y'], 'pseudo_bulk', False)
         return out
@@ -1042,26 +1041,13 @@ def bin_bulk(
     complaints_count = 0
     complain = True
 
-
     mat_bulk = []
     mat_indices = []
-    # pseudo_bulk_indices = []
-
-
 
     groups = np.unique(mat.index)
     for group in groups:
         iis = np.nonzero(mat.index == group)[0]
-        # cells = P.iloc[iis, :]
         n_cells = iis.shape[0]
-
-
-    # for perturbed_gene in P:
-        # If it wasn't for counting complaints, I would put all
-        # the next paragraph away in a neat and tidy function.
-        # Can do workarounds like having part of the logic here
-        # and part in a function, but didn't find a way that felt good.
-        # So just inlined all for now
         if (
                 complaints_count >= max_complaints and
                 not verbose and
@@ -1073,14 +1059,6 @@ def bin_bulk(
             print(f'Reached warning count limit of {max_complaints}, so will stop warning. To print all warnings, call with verbose = True')
             print()
             complain = False
-
-        # perturbed_cell_indices = np.nonzero(P[perturbed_gene])[0]
-        # n_cells = len(perturbed_cell_indices)
-
-        # if n_cells == 0:
-        #     complaints_count = complaints_count + 1
-        #     print(f'Gene {perturbed_gene} has no perturbations, skipping.')
-        #     continue
 
         n_pseudo_bulks = math.floor(n_cells / smallest_intended_bin)
         if n_pseudo_bulks > n_requested_pseudo_bulks:
@@ -1100,75 +1078,25 @@ def bin_bulk(
                 print(f'using {n_pseudo_bulks} pseudo bulks instead')
                 print('remaining cells go with the last pseudo bulk')
 
-
-
-
-        # # ..indices[0] is arbitrary
-        # # The code assumes single perturbations, so all rows pointed to by the
-        # # indices should be identical
-        # #
-        # # Actually worth checking!
-        # # Not unthinkable that this or some other dataset will include
-        # # multi target perturbations, and if so we want to know
-        # #
-        # # Actually, the way P is extracted, that shouldn't happpen.
-        # # So such checks would need to be before extracting P
-        # #
-        # # Can comment this out to save time, if it turns out to be significant
-        # first = P.iloc[perturbed_cell_indices[0], :]
-        # for ii in perturbed_cell_indices:
-        #     if not (P.iloc[ii, :] == first).all():
-        #         raise ValueError(f'Perturbed cell indices for gene {perturbed_gene} do not point to identical rows in P.')
-        # #
-        # for _ in range(n_pseudo_bulks):
-        #     mat_bulk.append(list(first))
-
-
-
+        # This code structure is a left over from an earlier version,
+        # where this functions handled both Y and P matrices.
+        # Now it only needs to deal with the Y matrix, since P is extracted
+        # from Y at a later stage of pre processing.
         # If this function keeps just dealing with one matrix at a time,
         # I could rewrite this function to just chunk the matrix directly.
         # But for now, I have a function that chunks an array (of indices),
         # so I'll keep using that for now. It does the thing
         indices_chunks = chunk_array(iis, n_pseudo_bulks)
-
         for iiis in indices_chunks:
             mat_indices.append(group)
             mat_bulk.append(mat.iloc[iiis, :].sum(axis = 0))
 
+    pseudo_bulk_df = pd.DataFrame(mat_bulk)
+    pseudo_bulk_df.columns = mat.columns
+    pseudo_bulk_df.index = mat_indices
 
-
-        # pseudo_bulk_indices.append(indices_chunks)
-
-    # I do not understand why this is called P_..
-    # Pretty sure it's a Y matrix.
-    # Perhaps a leftover from an earlier version where this function
-    # handled both Y and P matrices. At time of writing, the P matrix
-    # is extracted from Y at the end of data processing, so doesn't
-    # exist at the pseudo bulking stage.
-    # Or P means something completely different that I don't connect right now.
-    # The following commented out paragraph suggests that this used to
-    # be a P matrix but is no longer. See how it based on bulk indices
-    # constructs several matrices the same way. That should have been Y and P
-    # It definitely was called with Y even before I started the current changees.
-    # that much is clear from the git diff.
-    # Aight, enough about this. I am sure enough.
-    # Will leave these comments in for now, but then do a cleanup commit
-    # removing them.
-    P_bulk_df = pd.DataFrame(mat_bulk)
-    P_bulk_df.columns = mat.columns
-    P_bulk_df.index = mat_indices
-
-    # pseudo_bulks = {}
-    # for matrix_name, matrix in matrices.items():
-    #     matbulk = []
-    #     for gene_pseudo_bulks in pseudo_bulk_indices:
-    #         for index_array in gene_pseudo_bulks:
-    #             matbulk.append(list(matrix.iloc[index_array, :].mean(axis = 0)))
-    #     df = pd.DataFrame(matbulk)
-    #     df.columns = matrix.columns
-    #     pseudo_bulks[matrix_name] = df
-
-    out = update_dataset_default(dataset, P_bulk_df, 'pseudo_bulk', n_pseudo_bulks)
+    out = update_dataset_default(
+            dataset, pseudo_bulk_df, 'pseudo_bulk', n_pseudo_bulks)
     return out
 
 
