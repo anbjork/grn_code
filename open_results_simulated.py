@@ -3,7 +3,7 @@ import anton_util
 import pandas as pd
 
 
-df = anton_util.unpickle_object('benchmarks/simulated/stats_df.pkl')
+df = anton_util.unpickle_object('outputs/simulated/compiled_results.pkl')
 
 
 pd.set_option('display.max_columns', None)

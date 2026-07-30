@@ -1,7 +1,6 @@
 
 import anton_util
 
-anton_util.log_timestamp('appending to results...')
 output_types = [
         'data_processed',
         'inferences',
