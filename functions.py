@@ -1133,7 +1133,7 @@ def bin_bulk(
 
         for iiis in indices_chunks:
             mat_indices.append(group)
-            mat_bulk.append(mat.iloc[iiis, :].mean(axis = 0))
+            mat_bulk.append(mat.iloc[iiis, :].sum(axis = 0))
 
 
 
