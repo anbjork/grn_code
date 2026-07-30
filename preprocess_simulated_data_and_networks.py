@@ -87,16 +87,17 @@ for d in datasets:
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.shuffle_y,
-        function_options = [False, True],
+        # function_options = [False, True],
+        function_options = [False],
         )
 
 
 
-n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
+# n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
 # # Debug versions
 # n_pseudo_bulk_options = [10]
 # n_pseudo_bulk_options = [False]
-n_pseudo_bulk_options = [False, 10]
+n_pseudo_bulk_options = [10]
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
@@ -106,9 +107,9 @@ datasets = update_datasets(
 
 
 
-transforms = ['raw', 'log1p', 'zscores']
+# transforms = ['raw', 'log1p', 'zscores']
 # Debug versions
-# transforms = ['log1p']
+transforms = ['log1p']
 datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
@@ -117,7 +118,8 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
+# options = [False, True]
+options = [False]
 datasets = update_datasets(
     datasets = datasets, 
     update_function = functions.compute_differences, 
