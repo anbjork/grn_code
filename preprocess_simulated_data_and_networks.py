@@ -3,7 +3,6 @@ import pandas as pd
 from pathlib import Path
 import anton_util
 import functions
-import copy
 
 anton_util.log_timestamp('loading...')
 data_set_name = 'simulated'
@@ -15,30 +14,8 @@ path = Path(
 #         'data/simulated/subset.pkl'
 #         )
 
-
 data_raw = anton_util.unpickle_object(path)
-# get_Y_and_P uses the row names of Y, but they are not set on the
-# simulated data, so it doesn't work as expected for those.
-# One could imagine reconstructing the row names and running get_Y_and_P
-# to verify that the function works. But we already know it does that,
-# since we have better than 0 performance for real data,
-# so won't do that for now
-# //AB
-#
-# data_original = copy.deepcopy(data_raw)
-# data_sources = {}
-# for ii, simulation in enumerate(data_raw):
-#     anton_util.log_timestamp('Building Y and P...')
-#     ynp = functions.get_Y_and_P(simulation['Y'])
-#     assert((ynp['P'] == simulation['P']).all().all())
-#     anton_util.log_timestamp('Y and P built.')
-#     simulation.update(ynp)
-#     data_sources[f'simulated_{ii}'] = simulation
 datasets = data_raw
-
-# datasets = datasets[:3]  # Debug
-
-
 
 
 ground_truths = {}
@@ -50,22 +27,47 @@ anton_util.pickle_object(ground_truths, outfile)
 
 
 
-updated = []
-for ii, d in enumerate(datasets):
+def update_datasets(
+        datasets,
+        update_function,
+        function_options,
+        function_kwargs = {},
+        ):
+    anton_util.log_timestamp(f'{update_function}...')
+    updated = []
+    for ii, dataset in enumerate(datasets):
+        function_kwargs['index'] = ii
+        anton_util.log_timestamp(f'dataset {ii}...')
+        for option in function_options:
+            anton_util.log_timestamp(f'{option}...')
+            updated.append(update_function(dataset, option, **function_kwargs))
+    return updated
+
+
+def basic_formatting(dataset, _, **kwargs):
+    d = dataset
     Y = d['Y']
     Y = functions.merge_p_into_y(Y, d['P'])
     controls = d['SCC']
     controls.index = ['control'] * len(controls)
     all = pd.concat([controls, d['Y']], axis = 0)
-    updated.append({
+    out = ({
         'meta': {
-            'replicate': ii
+            'replicate': kwargs['index']
             },
         'Y': all,
         'A': d['A'],
-    })
-datasets = updated
+        })
+    return out
 
+# because kwargs['index'] is assigned to replicate in basic_formatting,
+# this update must happen first for the replicate to correspond to original
+# dataset replicates
+datasets = update_datasets(
+    datasets = datasets,
+    update_function = basic_formatting,
+    function_options = [None],
+    )
 
 
 # datasets = datasets[:1]  # Debug
@@ -77,119 +79,49 @@ datasets = updated
 #     dataset['A'] = dataset['A'].iloc[:10, :10]
 
 
-
 for d in datasets:
     d['meta']['0_fraction'] = functions.calculate_zero_fraction(d['Y'])
 
 
-# datasets = datasets[:2]  # Debug
 
-
-# anton_util.log_timestamp('shuffling...')
-# updated = []
-# for ii, dataset in enumerate(datasets):
-#     ds = copy.deepcopy(dataset)
-#     ds['meta']['shuffle'] = False
-#     updated.append(ds)
-#
-#     for jj in range(1):
-#         ds = copy.deepcopy(dataset)
-#         ds['meta']['shuffle'] = jj
-#         ds['Y'] = functions.shuffle_y(ds['Y'])
-#         updated.append(ds)
-# datasets = updated
-
-# datasets = datasets[:1]  # Debug
+datasets = update_datasets(
+        datasets = datasets,
+        update_function = functions.shuffle_y,
+        function_options = [False, True],
+        )
 
 
 
-anton_util.log_timestamp('pseudo bulking...')
-updated = []
-for ii, dataset in enumerate(datasets):
-    anton_util.log_timestamp(f'dataset {ii}...')
-
-    ds = copy.deepcopy(dataset)
-    ds['meta']['pseudo_bulk'] = False
-    updated.append(ds)
-
-    # # n_pseudo_bulk_options = [1, 2, 3, 5, 10]
-    # # # Debug versions
-    # n_pseudo_bulk_options = [10]
-    # # # n_pseudo_bulk_options = [2, 5, 10]
-    #
-    # for n_pseudo_bulks in n_pseudo_bulk_options:
-    #     anton_util.log_timestamp(f'n_pseudo_bulks: {n_pseudo_bulks}...')
-    #     mat_bulk = functions.bin_bulk(
-    #         mat = dataset['Y'],
-    #         n_pseudo_bulks = n_pseudo_bulks,
-    #     )
-    #
-    #     ds = copy.deepcopy(dataset)
-    #     ds['Y'] = mat_bulk
-    #     ds['meta']['pseudo_bulk'] = n_pseudo_bulks
-    #     updated.append(ds)
-
-datasets = updated
+n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
+# # Debug versions
+# n_pseudo_bulk_options = [10]
+# n_pseudo_bulk_options = [False]
+n_pseudo_bulk_options = [False, 10]
+datasets = update_datasets(
+        datasets = datasets,
+        update_function = functions.bin_bulk,
+        function_options = n_pseudo_bulk_options,
+        )
 
 
 
 
-
-
-anton_util.log_timestamp('transforming...')
-updated = []
-for ii, dataset in enumerate(datasets):
-    anton_util.log_timestamp(f'dataset {ii}...')
-    # ds = copy.deepcopy(dataset)
-    # ds['meta']['transform'] = 'raw'
-    # updated.append(ds)
-
-    transforms = ['raw', 'log1p', 'zscores']
-    # Debug versions
-    transforms = ['log1p']
-
-    for transform in transforms:
-        anton_util.log_timestamp(f'transform {transform}...')
-        transformed = functions.transform(dataset['Y'], transform)
-
-        ds = copy.deepcopy(dataset)
-        ds['meta']['transform'] = transform
-        ds['Y'] = transformed
-        updated.append(ds)
-datasets = updated
+transforms = ['raw', 'log1p', 'zscores']
+# Debug versions
+# transforms = ['log1p']
+datasets = update_datasets(
+    datasets = datasets,
+    update_function = functions.transform,
+    function_options = transforms,
+    )
 
 
 
-
-
-# updated = []
-# anton_util.log_timestamp('Computing differences...')
-# for ii, dataset in enumerate(datasets):
-#     anton_util.log_timestamp(f'dataset {ii}...')
-#
-#     ds = copy.deepcopy(dataset)
-#     ds['meta']['control_delta'] = False
-#     updated.append(ds)
-#
-#     Y = dataset['Y']
-#     ct_bool = (Y.index == 'controls')
-#     control_cells = Y.loc[ct_bool, :]
-#     control = control_cells.mean(axis=0)
-#     Y = Y.loc[~ct_bool, :]
-#
-#     delta = pd.DataFrame(
-#         Y - control,
-#         index = Y.index,
-#         columns = Y.columns
-#     )
-#
-#     ds = copy.deepcopy(dataset)
-#     ds['Y'] = delta
-#     ds['meta']['control_delta'] = True
-#     updated.append(ds)
-#
-# datasets = updated
-
+options = [False, True]
+datasets = update_datasets(
+    datasets = datasets, 
+    update_function = functions.compute_differences, 
+    function_options = options)
 
 
 

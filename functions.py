@@ -1,4 +1,3 @@
-from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -20,13 +19,17 @@ def Y_from_adata(adata):
 
 
 
-def shuffle_y(y):
+def shuffle_y(dataset, shuffle_bool, **kwargs):
     import random
     import copy
-    l = y.shape[0]
-    riis = random.sample(population=range(l), k=l)
-    out = copy.deepcopy(y)
-    out.index = y.index[riis]
+    
+    y = dataset['Y']
+    if shuffle_bool:
+        l = y.shape[0]
+        riis = random.sample(population=range(l), k=l)
+        y = copy.deepcopy(y)
+        y.index = y.index[riis]
+    out = update_dataset_default(dataset, y, 'shuffle', shuffle_bool)
     return out
 
 
@@ -1013,16 +1016,24 @@ def chunk_array(arr, n_chunks):
 
 
 def bin_bulk(
-        mat,
+        dataset,
         # matrices,
         n_pseudo_bulks = 5,
         verbose = False,
+        **kwargs,
         ):
+    # Based on initial testing, pseudo bulking is a
+    # significant part of the runtime for the lsco method
+
     import pandas as pd
     import math
 
-    # Based on initial testing, pseudo bulking is a
-    # significant part of the runtime for the lsco method
+    # Needed to comply with interface, that allows non modifications
+    if n_pseudo_bulks == False:
+        out = update_dataset_default(dataset, dataset['Y'], 'pseudo_bulk', False)
+        return out
+
+    mat = dataset['Y']
 
     smallest_intended_bin = 5
     n_requested_pseudo_bulks = n_pseudo_bulks
@@ -1128,6 +1139,21 @@ def bin_bulk(
 
         # pseudo_bulk_indices.append(indices_chunks)
 
+    # I do not understand why this is called P_..
+    # Pretty sure it's a Y matrix.
+    # Perhaps a leftover from an earlier version where this function
+    # handled both Y and P matrices. At time of writing, the P matrix
+    # is extracted from Y at the end of data processing, so doesn't
+    # exist at the pseudo bulking stage.
+    # Or P means something completely different that I don't connect right now.
+    # The following commented out paragraph suggests that this used to
+    # be a P matrix but is no longer. See how it based on bulk indices
+    # constructs several matrices the same way. That should have been Y and P
+    # It definitely was called with Y even before I started the current changees.
+    # that much is clear from the git diff.
+    # Aight, enough about this. I am sure enough.
+    # Will leave these comments in for now, but then do a cleanup commit
+    # removing them.
     P_bulk_df = pd.DataFrame(mat_bulk)
     P_bulk_df.columns = mat.columns
     P_bulk_df.index = mat_indices
@@ -1142,7 +1168,9 @@ def bin_bulk(
     #     df.columns = matrix.columns
     #     pseudo_bulks[matrix_name] = df
 
-    return P_bulk_df
+    out = update_dataset_default(dataset, P_bulk_df, 'pseudo_bulk', n_pseudo_bulks)
+    return out
+
 
 
 
@@ -1156,22 +1184,60 @@ def calculate_zero_fraction(df):
 
 
 
+def update_dataset_default(dataset, new_Y, meta_field, label):
+    from copy import deepcopy
+    ds = deepcopy(dataset)
+    ds['meta'][meta_field] = label
+    ds['Y'] = new_Y
+    return ds
 
 
 
-def transform(df, transform):
+def transform(dataset, transform, **kwargs):
+    df = dataset['Y']
     # Note that this uses the natural logarithm.
     # Numpy has a readymade for it. Better calculation precision
     # than log2 it seemed when I looked at docs
     if transform == 'log1p':
-        return np.log1p(df)
+        df = np.log1p(df)
     elif transform == 'zscores':
-        return (df - df.mean()) / df.std()
-    # Does nothing useful, but enables fewer special cases in the pipeline code
+        df = (df - df.mean()) / df.std()
     elif transform == 'raw':
-        return df
+        pass
     else:
         raise ValueError(f'Transform {transform} not recognised')
+    updated_dataset = update_dataset_default(dataset, df, 'transform', transform)
+    return updated_dataset
+
+
+
+
+
+
+
+def compute_differences(dataset, do_or_not: bool, **kwargs):
+
+    Y = dataset['Y']
+    if not do_or_not:
+        out = update_dataset_default(dataset, dataset['Y'], 'control_delta', False)
+        return out
+
+    ct_bool = (Y.index == 'control')
+    control_cells = Y.loc[ct_bool, :]
+    control = control_cells.mean(axis=0)
+    Y = Y.loc[~ct_bool, :]
+    delta = pd.DataFrame(
+        Y - control,
+        index = Y.index,
+        columns = Y.columns
+    )
+
+    out = update_dataset_default(dataset, delta, 'control_delta', True)
+    return out
+
+
+
+
 
 
 
