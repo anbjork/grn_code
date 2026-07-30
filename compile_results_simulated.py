@@ -25,14 +25,12 @@ for benchmark in benchmarks:
 output_path = 'outputs/simulated/compiled_results'
 df = pd.DataFrame(results)
 cs = ['shuffle', 'method', 'pseudo_bulk']
-if 'is_shuffled' in df.columns:
-    df['is_shuffled'] = [elem is not False for elem in df['shuffle']]
-if all([elem in df.columns for elem in cs]):
-    df = df.sort_values(by = ['is_shuffled', 'method', 'pseudo_bulk'])
+df = df.sort_values(by = cs)
 df['AUPR ratio'] = df['AUPR'] / df['ERMA']
 anton_util.pickle_object(df, f'{output_path}.pkl')
 # csvs don't handle the nested f1_scores well
-df = df.drop('f1_scores', axis = 1)
+drop_cols = ['f1_scores', 'plot_roc', 'plot_pr']
+df = df.drop(drop_cols, axis = 1)
 df.to_csv(f'{output_path}.csv')
 
 
