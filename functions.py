@@ -28,8 +28,13 @@ def shuffle_y(dataset, shuffle_bool, **kwargs):
         l = y.shape[0]
         riis = random.sample(population=range(l), k=l)
         y = copy.deepcopy(y)
-        y.index = y.index[riis]
+        y = pd.DataFrame(
+            data = np.array(y)[riis, :],
+            index = y.index,
+            columns = y.columns,
+            )
     out = update_dataset_default(dataset, y, 'shuffle', shuffle_bool)
+
     return out
 
 
