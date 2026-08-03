@@ -84,6 +84,20 @@ for d in datasets:
 
 
 
+
+for dataset in datasets:
+    Y = dataset['Y']
+    stds = Y.std(axis = 0)
+    print('0 stds:')
+    print(sum(stds == 0))
+    # Hmm, comparing floats to 0
+    # Not optimal. Let's see though
+    Y = Y.loc[:, stds > 0]
+    dataset['Y'] = Y
+    print(Y.shape)
+
+
+
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.shuffle_y,
@@ -146,6 +160,10 @@ datasets = update_datasets(
     function_kwargs = function_kwargs,
     )
 
+from copy import deepcopy
+
+bss = deepcopy(datasets)
+
 
 # zscores are often calculated after log1p, not instead of, so
 # separate those steps. Can reuse the transform function though.
@@ -163,6 +181,9 @@ datasets = update_datasets(
     )
 
 
+css = deepcopy(datasets)
+
+
 
 options = [False, True]
 # options = [False]
@@ -172,12 +193,7 @@ datasets = update_datasets(
     function_options = options)
 
 
-
-import numpy as np
-for dataset in datasets:
-    Y = dataset['Y']
-    Y[np.isnan(Y)] = 0
-
+dss = deepcopy(datasets)
 
 
 
@@ -186,6 +202,16 @@ for ii, dataset in enumerate(datasets):
     anton_util.log_timestamp(f'dataset {ii}...')
     dataset['P'] = functions.get_P(dataset['Y'])
 
+
+
+# For debugging and manual inspection, not saved
+import numpy as np
+for dataset in datasets:
+    Y = dataset['Y']
+    # print(dataset['meta'])
+    dataset['meta']['any nan'] = np.any(np.isnan(Y))
+metas = [d['meta'] for d in datasets]
+df = pd.DataFrame(metas)
 
 
 
