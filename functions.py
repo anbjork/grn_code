@@ -257,11 +257,16 @@ def fast_methods_inference(data):
 
     m = 'mean_difference_controls_only'
     anton_util.log_timestamp(f'Running {m}...')
-    en = gs.inference.infer_networks(
-        Y=Y, P=P,
-        method=m)
-    en[np.isnan(en)] = 0
-    estimated_networks[m] = en
+    try:
+        en = gs.inference.infer_networks(
+            Y=Y, P=P,
+            method=m)
+        en[np.isnan(en)] = 0
+        estimated_networks[m] = en
+    except Exception as e:
+        print(f'{m} failed with:')
+        print(e)
+
 
     return estimated_networks
 

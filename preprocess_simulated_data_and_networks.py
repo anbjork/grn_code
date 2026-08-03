@@ -137,11 +137,13 @@ datasets = update_datasets(
 # Debug versions
 # transforms = ['log1p']
 transforms = ['none', 'log1p']
+function_kwargs = {'meta_data_label': 'transform 1'}
+anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
     function_options = transforms,
-    function_kwargs = {'meta_data_label': 'transform 1'},
+    function_kwargs = function_kwargs,
     )
 
 
@@ -151,22 +153,30 @@ datasets = update_datasets(
 # Debug versions
 # transforms = ['zscores']
 transforms = ['none', 'zscores']
+function_kwargs = {'meta_data_label': 'transform 2'}
+anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
     function_options = transforms,
-    function_kwargs = {'meta_data_label': 'transform 2'},
+    function_kwargs = function_kwargs,
     )
 
 
 
-# options = [False, True]
-options = [False]
+options = [False, True]
+# options = [False]
 datasets = update_datasets(
     datasets = datasets, 
     update_function = functions.compute_differences, 
     function_options = options)
 
+
+
+import numpy as np
+for dataset in datasets:
+    Y = dataset['Y']
+    Y[np.isnan(Y)] = 0
 
 
 

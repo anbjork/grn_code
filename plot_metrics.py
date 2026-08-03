@@ -36,7 +36,7 @@ if __name__ == "__main__":
     output_dir = 'outputs/simulated/plots'
 
 
-    vars_to_stratify = ['transform 1', 'transform 2']
+    vars_to_stratify = ['transform 1', 'transform 2', 'control_delta']
     options = {v: df[v].unique() for v in vars_to_stratify}
     configs = []
     def recursive_combos(determined, remaining):
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     from copy import deepcopy
     for config in configs:
         df_subset = deepcopy(df)
-        plot_name = ' | '.join([f'{k}_{v}' for k, v in config.items()])
+        plot_name = ' | '.join([f'{k} {v}' for k, v in config.items()])
         for var_to_stratify, option in config.items():
             df_subset = df_subset[df_subset[var_to_stratify] == option]
         fig = plot_metrics_with_jitter(df_subset)
