@@ -36,7 +36,7 @@ if __name__ == "__main__":
     output_dir = 'outputs/simulated/plots'
 
 
-    vars_to_stratify = ['cell normalised', 'read normalised']
+    vars_to_stratify = ['transform 1', 'transform 2']
     options = {v: df[v].unique() for v in vars_to_stratify}
     configs = []
     def recursive_combos(determined, remaining):

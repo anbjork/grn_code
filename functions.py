@@ -1166,7 +1166,7 @@ def transform(dataset, transform, **kwargs):
         df = np.log1p(df)
     elif transform == 'zscores':
         df = (df - df.mean()) / df.std()
-    elif transform == 'raw':
+    elif transform == 'none':
         pass
     else:
         raise ValueError(f'Transform {transform} not recognised')

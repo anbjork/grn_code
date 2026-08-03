@@ -93,13 +93,15 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
-# options = [False]
+# options = [False, True]
+options = [False]
+function_kwargs = {'meta_data_label': 'cell normalised'}
+anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.normalise,
         function_options = options,
-        function_kwargs = {'meta_data_label': 'cell normalised'},
+        function_kwargs = function_kwargs,
         )
 
 
@@ -118,20 +120,23 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
-# options = [False]
+# options = [False, True]
+options = [True]
+function_kwargs = {'meta_data_label': 'read normalised'}
+anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.normalise,
         function_options = options,
-        function_kwargs = {'meta_data_label': 'read normalised'},
+        function_kwargs = function_kwargs,
         )
 
 
 
-# transforms = ['raw', 'log1p', 'zscores']
+# transforms = ['none', 'log1p', 'zscores']
 # Debug versions
-transforms = ['log1p']
+# transforms = ['log1p']
+transforms = ['none', 'log1p']
 datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
@@ -140,17 +145,18 @@ datasets = update_datasets(
     )
 
 
-# # zscores are often calculated after log1p, not instead of, so
-# # separate those steps. Can reuse the transform function though.
-# # transforms = ['raw', 'log1p', 'zscores']
-# # Debug versions
+# zscores are often calculated after log1p, not instead of, so
+# separate those steps. Can reuse the transform function though.
+# transforms = ['none', 'log1p', 'zscores']
+# Debug versions
 # transforms = ['zscores']
-# datasets = update_datasets(
-#     datasets = datasets,
-#     update_function = functions.transform,
-#     function_options = transforms,
-#     function_kwargs = {'meta_data_label': 'transform 2'},
-#     )
+transforms = ['none', 'zscores']
+datasets = update_datasets(
+    datasets = datasets,
+    update_function = functions.transform,
+    function_options = transforms,
+    function_kwargs = {'meta_data_label': 'transform 2'},
+    )
 
 
 
