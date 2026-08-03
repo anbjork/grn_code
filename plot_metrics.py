@@ -34,14 +34,36 @@ if __name__ == "__main__":
     anton_util.log_timestamp('plotting...')
     df = anton_util.unpickle_object('outputs/simulated/compiled_results.pkl')
     output_dir = 'outputs/simulated/plots'
-    var_to_stratify = 'shuffle'
-    for option in df[var_to_stratify].unique():
-        df_subset = df[df[var_to_stratify] == option]
+
+
+    vars_to_stratify = ['cell normalised', 'read normalised']
+    options = {v: df[v].unique() for v in vars_to_stratify}
+    configs = []
+    def recursive_combos(determined, remaining):
+        from copy import deepcopy
+        if len(remaining) == 0:
+            configs.append(deepcopy(determined))
+            return
+        k, options = remaining.popitem()
+        for option in options:
+            determined[k] = option
+            recursive_combos(determined, deepcopy(remaining))
+    recursive_combos({}, options)
+    print('Configs to plot:')
+    from pprint import pprint
+    pprint(configs)
+
+    from copy import deepcopy
+    for config in configs:
+        df_subset = deepcopy(df)
+        plot_name = ' | '.join([f'{k}_{v}' for k, v in config.items()])
+        for var_to_stratify, option in config.items():
+            df_subset = df_subset[df_subset[var_to_stratify] == option]
         fig = plot_metrics_with_jitter(df_subset)
         fig.savefig(
-            f'{output_dir}/{var_to_stratify}_{option}.png',
+            f'{output_dir}/{plot_name}.png',
             dpi=300,
-            bbox_inches='tight'
+            # bbox_inches='tight'
             )
         plt.close()
 

@@ -41,6 +41,37 @@ def shuffle_y(dataset, shuffle_bool, **kwargs):
 
 
 
+def normalise(dataset, do_or_not: bool, **kwargs):
+    import numpy as np
+
+    Y = dataset['Y']
+    meta_data_label = kwargs['meta_data_label']
+
+    if not do_or_not:
+        out = update_dataset_default(dataset, Y, meta_data_label, do_or_not)
+        return out
+
+    # # Some diagnostics ran on some genespider simulated data
+    # print(np.median(np.sum(np.array(dataset['Y']), axis = 1)))
+    # # Somewhere around e3, so picking e3 as the normalisation target
+
+    array = np.array(Y)
+    cell_sums = np.sum(array, axis = 1)
+    Y = pd.DataFrame(
+        data = 1e3 * array / cell_sums[:, np.newaxis],
+        index = Y.index,
+        columns = Y.columns,
+        )
+
+    # # Check that it worked
+    # print(Y.sum(axis = 1))
+
+    out = update_dataset_default(dataset, Y, meta_data_label, do_or_not)
+    return out
+
+
+
+
 # def shuffle_ynp(ynp):
 #     import random
 #     shuffled_ynp = {}
@@ -1139,7 +1170,8 @@ def transform(dataset, transform, **kwargs):
         pass
     else:
         raise ValueError(f'Transform {transform} not recognised')
-    updated_dataset = update_dataset_default(dataset, df, 'transform', transform)
+    updated_dataset = update_dataset_default(
+            dataset, df, kwargs['meta_data_label'], transform)
     return updated_dataset
 
 

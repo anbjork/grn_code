@@ -93,6 +93,17 @@ datasets = update_datasets(
 
 
 
+options = [False, True]
+# options = [False]
+datasets = update_datasets(
+        datasets = datasets,
+        update_function = functions.normalise,
+        function_options = options,
+        function_kwargs = {'meta_data_label': 'cell normalised'},
+        )
+
+
+
 # n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
 # # Debug versions
 # n_pseudo_bulk_options = [10]
@@ -107,6 +118,17 @@ datasets = update_datasets(
 
 
 
+options = [False, True]
+# options = [False]
+datasets = update_datasets(
+        datasets = datasets,
+        update_function = functions.normalise,
+        function_options = options,
+        function_kwargs = {'meta_data_label': 'read normalised'},
+        )
+
+
+
 # transforms = ['raw', 'log1p', 'zscores']
 # Debug versions
 transforms = ['log1p']
@@ -114,7 +136,21 @@ datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
     function_options = transforms,
+    function_kwargs = {'meta_data_label': 'transform 1'},
     )
+
+
+# # zscores are often calculated after log1p, not instead of, so
+# # separate those steps. Can reuse the transform function though.
+# # transforms = ['raw', 'log1p', 'zscores']
+# # Debug versions
+# transforms = ['zscores']
+# datasets = update_datasets(
+#     datasets = datasets,
+#     update_function = functions.transform,
+#     function_options = transforms,
+#     function_kwargs = {'meta_data_label': 'transform 2'},
+#     )
 
 
 
