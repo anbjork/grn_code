@@ -370,7 +370,15 @@ def dspin_inference(
     save_path = Path('tmp/dspin_save_path')
     save_path.mkdir(exist_ok=True, parents=True)
     num_spin = len(adata.var)
-    model = DSPIN(deepcopy(adata), str(save_path), num_spin=num_spin)
+    additional_params = {
+            'discretize_params' : {
+                'clip_percentile': 100,
+                }
+            }
+    model = DSPIN(
+            deepcopy(adata), str(save_path), num_spin=num_spin,
+            **additional_params,  # pyright: ignore
+            )
 
     # # Data is filtered in the model creation, so extract the updated
     # # data to continue with
@@ -466,7 +474,10 @@ def dspin_inference(
 
     anton_util.log_timestamp(f'{all_params = }')
 
-    model = DSPIN(adata, str(save_path), num_spin=num_spin)
+    model = DSPIN(
+            adata, str(save_path), num_spin=num_spin,
+            **additional_params,  # pyright: ignore
+            )
     model.network_inference(
         sample_id_key = 'gene_name',
         method = 'pseudo_likelihood',
