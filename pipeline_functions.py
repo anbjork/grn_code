@@ -36,7 +36,11 @@ def inference(
         anton_util.log_timestamp(f'dataset {ii}...')
         anton_util.log_timestamp(repr(method_function))
 
-        ens = method_function(data=data_source)
+        try:
+            ens = method_function(data=data_source)
+        except Exception as e:
+            anton_util.log_timestamp(f'Error in method {method_function}: {e}')
+            ens = {repr(method_function): None}
         for method_name, estimated_network in ens.items():
             meta = copy.deepcopy(data_source['meta'])
             meta['method'] = method_name
