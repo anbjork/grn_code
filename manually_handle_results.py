@@ -7,18 +7,26 @@ output_types = [
         'benchmarks',
         ]
 
+base_path = 'outputs__in_pipeline/simulated'
+base_path = 'outputs/simulated'
+
 outputs = []
 for output_type in output_types:
     anton_util.log_timestamp(f'{output_type}...')
-    outputs.append(anton_util.unpickle_object(
-        f'outputs/simulated/{output_type}.pkl',
-        ))
+    try:
+        outputs.append(anton_util.unpickle_object(
+            f'{base_path}/{output_type}.pkl',
+            ))
+    except FileNotFoundError:
+        print(f'File not found: {base_path}/{output_type}.pkl')
+        outputs.append([])
+anton_util.log_timestamp('done reading')
 
 data_processed, inferences, benchmarks = outputs
 
 
-
 # The intention is to do whatever manual handling desired interactively here
+
 
 def save_results():
     anton_util.log_timestamp('saving results...')
