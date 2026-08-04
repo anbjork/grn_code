@@ -10,6 +10,7 @@ def plot_metrics_with_jitter(df):
     os.makedirs(output_dir, exist_ok=True)
     metrics = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    plt.subplots_adjust(bottom=0.5)
     for i, metric in enumerate(metrics):
         ax = axes[i]
         methods = df['method'].unique()
@@ -31,14 +32,13 @@ def plot_metrics_with_jitter(df):
 if __name__ == "__main__":
 
     import anton_util
-    anton_util.log_timestamp('plotting...')
+    anton_util.log_timestamp('reading data...')
     df = anton_util.unpickle_object('outputs/simulated/compiled_results.pkl')
     output_dir = 'outputs/simulated/plots'
 
     vars_to_stratify = [
             'pseudo_bulk',
             'cell normalised',
-            'pseudo_bulk',
             'read normalised',
             'transform 2', 
             ]
@@ -54,14 +54,16 @@ if __name__ == "__main__":
             determined[k] = option
             recursive_combos(determined, deepcopy(remaining))
     recursive_combos({}, options)
-    print('Configs to plot:')
-    from pprint import pprint
-    pprint(configs)
+    # print('Configs to plot:')
+    # from pprint import pprint
+    # pprint(configs)
 
     from copy import deepcopy
+    # configs = configs[:3]  # Debug
     for config in configs:
         df_subset = deepcopy(df)
         plot_name = ' | '.join([f'{k} {v}' for k, v in config.items()])
+        anton_util.log_timestamp(f'{plot_name}...')
         for var_to_stratify, option in config.items():
             df_subset = df_subset[df_subset[var_to_stratify] == option]
         fig = plot_metrics_with_jitter(df_subset)
