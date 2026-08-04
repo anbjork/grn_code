@@ -30,20 +30,24 @@ def inference(
 
     path = data_path
     data_sources = anton_util.unpickle_object(path)
+    # data_sources = [data_sources[3]] # Debug
 
     estimated_networks = []
     for ii, data_source in enumerate(data_sources):
         anton_util.log_timestamp(f'dataset {ii}...')
         anton_util.log_timestamp(repr(method_function))
 
-        try:
-            ens = method_function(data=data_source)
-        except Exception as e:
-            anton_util.log_timestamp(f'Error in method {method_function}: {e}')
-            ens = {repr(method_function): None}
+        # try:
+        ens = method_function(data=data_source)
+        error = None
+        # except Exception as e:
+        #     error = repr(e)
+        #     anton_util.log_timestamp(f'Error in method {method_function}: {error}')
+        #     ens = {repr(method_function): None}
         for method_name, estimated_network in ens.items():
             meta = copy.deepcopy(data_source['meta'])
             meta['method'] = method_name
+            meta['error'] = error
             estimated_networks.append({
                 'meta': meta,
                 'estimated_network': estimated_network,
