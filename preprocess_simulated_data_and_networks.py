@@ -18,12 +18,12 @@ data_raw = anton_util.unpickle_object(path)
 datasets = data_raw
 
 
-ground_truths = {}
+reference_networks = []
 for ii, d in enumerate(datasets):
-    ground_truths[ii] = d['A']
+    reference_networks.append({'meta': {'replicate': ii}, 'data': d['A']})
 outfile = Path('outputs__in_pipeline/simulated/reference_networks.pkl')
 outfile.parent.mkdir(exist_ok=True, parents=True)
-anton_util.pickle_object(ground_truths, outfile)
+anton_util.pickle_object(reference_networks, outfile)
 
 
 
@@ -108,7 +108,8 @@ datasets = update_datasets(
 
 
 # options = [False, True]
-options = [False]
+# options = [False]
+options = [True]
 function_kwargs = {'meta_data_label': 'cell normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(

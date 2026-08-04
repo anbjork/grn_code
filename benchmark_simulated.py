@@ -7,9 +7,12 @@ base_path = Path('outputs__in_pipeline/simulated')
 inferred = anton_util.unpickle_object(
     base_path / 'inferences.pkl'
     )
-ground_truths = anton_util.unpickle_object(
+reference_networks = anton_util.unpickle_object(
     base_path / 'reference_networks.pkl'
     )
+reference_networks_dict = {
+        r['meta']['replicate']: r['data'] for r in reference_networks
+        }
 
 anton_util.log_timestamp('benchmarking...')
 stats = []
@@ -17,7 +20,11 @@ for ii, inference in enumerate(inferred):
     meta = inference['meta']
     estimated_network = inference['estimated_network']
     anton_util.log_timestamp(f'inference {ii}...')
-    reference_network = ground_truths[meta['replicate']]
+    if estimated_network is None:
+        print('estimated networks is None')
+        print(f'inference error recorded: {meta["error"]}')
+        mstats = None
+    reference_network = reference_networks_dict[meta['replicate']]
     try:
         mstats = benchmark_method_against_reference(
             method = meta['method'],

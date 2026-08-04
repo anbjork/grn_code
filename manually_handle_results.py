@@ -3,11 +3,12 @@ import anton_util
 
 output_types = [
         'data_processed',
+        'reference_networks',
         'inferences',
         'benchmarks',
         ]
 
-base_path = 'outputs__in_pipeline/simulated'
+# base_path = 'outputs__in_pipeline/simulated'
 base_path = 'outputs/simulated'
 
 outputs = []
@@ -22,10 +23,15 @@ for output_type in output_types:
         outputs.append([])
 anton_util.log_timestamp('done reading')
 
-data_processed, inferences, benchmarks = outputs
+
+
+# Note; Only for convenience, and how contents of outputs are written to disk
+# in the save function prepared below
+data_processed, reference_networks, inferences, benchmarks = outputs
 
 
 # The intention is to do whatever manual handling desired interactively here
+
 
 
 def save_results():

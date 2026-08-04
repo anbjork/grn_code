@@ -4,6 +4,7 @@ import anton_util
 anton_util.log_timestamp('appending to results...')
 outputs = [
         'data_processed',
+        'reference_networks',
         'inferences',
         'benchmarks',
         ]
