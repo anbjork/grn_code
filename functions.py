@@ -310,7 +310,6 @@ def dspin_inference_wrapper(data):
     estimated_networks = {}
     for config in configs:
         anton_util.log_timestamp(f'Running dspin...')
-        # try:
         print('config:')
         pprint(config)
         en = dspin_inference(data=data, **config)
@@ -319,10 +318,6 @@ def dspin_inference_wrapper(data):
         config_cat = '__'.join([f'{k}_{v}' for k, v in config.items()])
         method_name = f'{method_name}__{config_cat}'
         estimated_networks[method_name] = estimated_network
-        # temporary, I just want to see which options run at all
-        # except Exception as e:
-        #     pprint(config)
-        #     print(e)
 
     return estimated_networks
 
@@ -371,9 +366,10 @@ def dspin_inference(
     save_path.mkdir(exist_ok=True, parents=True)
     num_spin = len(adata.var)
     additional_params = {
-            'discretize_params' : {
-                'clip_percentile': 100,
-                }
+            # 'discretize_params' : {
+            #     'clip_percentile': 100,
+            #     },
+            'filter_threshold' : 0.06,
             }
     model = DSPIN(
             deepcopy(adata), str(save_path), num_spin=num_spin,

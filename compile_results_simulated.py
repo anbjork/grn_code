@@ -33,6 +33,6 @@ drop_cols = ['f1_scores', 'plot_roc', 'plot_pr']
 df = df.drop(drop_cols, axis = 1)
 df.to_csv(f'{output_path}.csv')
 
-
+anton_util.log_timestamp('compilation done')
 
 

@@ -22,8 +22,13 @@ for ii, inference in enumerate(inferred):
     anton_util.log_timestamp(f'inference {ii}...')
     if estimated_network is None:
         print('estimated networks is None')
-        print(f'inference error recorded: {meta["error"]}')
+        print(f'inference error recorded: {meta["inference error"]}')
         mstats = None
+        stats.append({
+            'meta': meta,
+            'data': mstats,
+        })
+        continue
     reference_network = reference_networks_dict[meta['replicate']]
     try:
         mstats = benchmark_method_against_reference(
