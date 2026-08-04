@@ -275,30 +275,30 @@ def fast_methods_inference(data):
 
 
 def dspin_inference_wrapper(data):
-
-    options = {
-        'use_perturbation_matrix': [True, False],
-        'perturbation_knockdown_value': [-1, -0.9, -0.7],
-        'use_prior_h': [True, False],
-        }
-    configs = []
-    def recursive_setting(settings_applied, settings_left):
-        from copy import deepcopy
-        settings_applied = deepcopy(settings_applied)
-        settings_left = deepcopy(settings_left)
-        if len(settings_left) == 0:
-            configs.append(deepcopy(settings_applied))
-            return
-        new_setting, options = settings_left.popitem()
-        for option in options:
-            settings_applied[new_setting] = option
-            recursive_setting(
-                settings_applied = settings_applied,
-                settings_left = settings_left
-                )
-    recursive_setting({}, options)
     from pprint import pprint
-    pprint(configs)
+
+    # options = {
+    #     'use_perturbation_matrix': [True, False],
+    #     'perturbation_knockdown_value': [-1, -0.9, -0.7],
+    #     'use_prior_h': [True, False],
+    #     }
+    # configs = []
+    # def recursive_setting(settings_applied, settings_left):
+    #     from copy import deepcopy
+    #     settings_applied = deepcopy(settings_applied)
+    #     settings_left = deepcopy(settings_left)
+    #     if len(settings_left) == 0:
+    #         configs.append(deepcopy(settings_applied))
+    #         return
+    #     new_setting, options = settings_left.popitem()
+    #     for option in options:
+    #         settings_applied[new_setting] = option
+    #         recursive_setting(
+    #             settings_applied = settings_applied,
+    #             settings_left = settings_left
+    #             )
+    # recursive_setting({}, options)
+    # pprint(configs)
 
     # Manual override
     configs = [{
@@ -672,17 +672,37 @@ def psgrn_inference(data):
     interventions_train[interventions_train == 'control'] = 'non-targeting'
     gene_names = list(Y.columns)
 
-    model = Model()
-    _, edgelist = model(
-        expression_matrix = expression_matrix_train,
-        interventions = list(interventions_train),
-        gene_names = gene_names,
-        # This training regime argument is not actually used by the model code
-        # Giving it a None, because the argument does not have a default
-        training_regime = None, # type: ignore[reportArgumentType]
-        # Defaults to 0
-        # self.model_seed,
-    )
+
+
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+		# psgrn spams warnings
+		# 	messages
+		# 		/home/anbjork/glob_venv/lib/python3.10/site-packages/numpy/lib/_function_base_impl.py:3046: RuntimeWarning: invalid value encountered in divide
+		# 		  c /= stddev[None, :]
+		# 	debugged
+		# 	it picks subsets of observations to calculate correlations
+		# 	and some of those subsets are all 0s
+		# 	which gives nan for that correlation
+		# 	probably happens more without pseudo bulking
+		# 	that may be why I encounter it now
+		# 	tried with a pseudo bulked dataset
+		# 	no warnings
+		# 	okay, cool
+		# 	then I know where it comes from
+		# 	I'll try silencing the warning
+		# 	See if it works
+        model = Model()
+        _, edgelist = model(
+            expression_matrix = expression_matrix_train,
+            interventions = list(interventions_train),
+            gene_names = gene_names,
+            # This training regime argument is not actually used by the model code
+            # Giving it a None, because the argument does not have a default
+            training_regime = None, # type: ignore[reportArgumentType]
+            # Defaults to 0
+            # self.model_seed,
+        )
 
     # Using these conversions to put the previously filtered out genes in again
     estimated_network = gs.util.edgelist_to_matrix(

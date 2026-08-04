@@ -35,8 +35,13 @@ if __name__ == "__main__":
     df = anton_util.unpickle_object('outputs/simulated/compiled_results.pkl')
     output_dir = 'outputs/simulated/plots'
 
-
-    vars_to_stratify = ['transform 1', 'transform 2', 'control_delta']
+    vars_to_stratify = [
+            'pseudo_bulk',
+            'cell normalised',
+            'pseudo_bulk',
+            'read normalised',
+            'transform 2', 
+            ]
     options = {v: df[v].unique() for v in vars_to_stratify}
     configs = []
     def recursive_combos(determined, remaining):
