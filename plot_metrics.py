@@ -40,10 +40,11 @@ if __name__ == "__main__":
     df = df.loc[df['inference error'].isna(), :]
 
     vars_to_stratify = [
-            'pseudo_bulk',
             'cell normalised',
             'read normalised',
+            'transform 1',
             'transform 2', 
+            'pseudo_bulk',
             ]
     options = {v: df[v].unique() for v in vars_to_stratify}
     configs = []

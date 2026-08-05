@@ -12,11 +12,11 @@ functions = [
     # functions.correlation_inference,
     # functions.inspre_inference,
     # functions.inspre_inference_hdf5,
-    # functions.psgrn_inference,
+    functions.psgrn_inference,
     # functions.genie3_inference,
     # functions.deepsem_inference,
     # functions.dspin_inference,
-    functions.dspin_inference_wrapper,
+    # functions.dspin_inference_wrapper,
     ]
 
 for method_function in functions:
