@@ -5,6 +5,6 @@ python inference_simulated.py
 python benchmark_simulated.py
 python append_results_with_pipeline.py
 python compile_results_simulated.py
-# python plot_metrics.py
+python plot_metrics.py
 
 

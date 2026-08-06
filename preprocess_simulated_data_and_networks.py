@@ -7,7 +7,7 @@ import functions
 anton_util.log_timestamp('loading...')
 data_set_name = 'simulated'
 path = Path(
-        '/home/anbjork/projects/replogle_round_2/versions/2/replogle_round_2/simulate_data/simulated_single_cell_benchmark/data_cases/outputs/gathered_simulations.pkl'
+        '/home/anbjork/projects/replogle_round_2/versions/2/replogle_round_2/data_simulation/outputs/gathered_simulations.pkl'
         )
 # Debug, subset for speed
 # path = Path(
@@ -107,9 +107,9 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
+# options = [False, True]
 # options = [False]
-# options = [True]
+options = [True]
 function_kwargs = {'meta_data_label': 'cell normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -124,8 +124,8 @@ datasets = update_datasets(
 # n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
 # # Debug versions
 # n_pseudo_bulk_options = [10]
-# n_pseudo_bulk_options = [False]
-n_pseudo_bulk_options = [False, 10]
+n_pseudo_bulk_options = [False]
+# n_pseudo_bulk_options = [False, 10]
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
@@ -135,9 +135,9 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
+# options = [False, True]
 # options = [True]
-# options = [False]
+options = [False]
 function_kwargs = {'meta_data_label': 'read normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -151,8 +151,8 @@ datasets = update_datasets(
 
 # transforms = ['none', 'log1p', 'zscores']
 # Debug versions
-# transforms = ['log1p']
-transforms = ['none', 'log1p']
+transforms = ['log1p']
+# transforms = ['none', 'log1p']
 function_kwargs = {'meta_data_label': 'transform 1'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
