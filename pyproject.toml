@@ -1,0 +1,17 @@
+[build-system]
+requires = ['setuptools>=61.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'antons_grn_code'
+version = '0.0.1'
+
+# [tool.setuptools.packages.find]
+# include = [
+# 	"replogle_round_2",
+# 	"data_simulation"
+# 	]
+#
+
+
+
