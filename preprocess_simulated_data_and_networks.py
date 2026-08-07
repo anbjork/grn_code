@@ -21,6 +21,7 @@ datasets = data_raw
 reference_networks = []
 for ii, d in enumerate(datasets):
     reference_networks.append({'meta': {'replicate': ii}, 'data': d['A']})
+    d.pop('A')
 outfile = Path('outputs__in_pipeline/simulated/reference_networks.pkl')
 outfile.parent.mkdir(exist_ok=True, parents=True)
 anton_util.pickle_object(reference_networks, outfile)

@@ -1,16 +1,32 @@
 
-
 from pathlib import Path
 import anton_util
-from concurrent.futures import ProcessPoolExecutor
-import numpy as np 
-import genesnake as gs
-import anton_util
 
 
-from functions import extract_matrix_from_matlab_hdf5
+def extract_matrix_from_matlab_hdf5(file_path):
 
+    import h5py
+    import pandas as pd
 
+    # Note: 
+    # hdf5 does not enforce interpretation of the data,
+    # Matlab is column major, and Numpy is row major.
+    # Hence, on Matlab -> hdf5 -> Python, matrices are transposed.
+    # It feels insane, but apparently a design choice by hdf5.
+    #
+    # Because of this, no transpose is needed to convert from
+    # Genespiders [genes/variables x cells/observations] format to
+    # Genesnakes [cells/observations x genes/variables] format.
+    #
+    # Jesus, the time and energy I've spent keeping track of transpositions
+    with h5py.File(file_path) as f: 
+        raw = f['data'][:] # pyright: ignore[reportIndexIssue]
+    simulated_gene_names = [f'G{ii}' for ii in range(raw.shape[1])]  # pyright: ignore[reportAttributeAccessIssue]
+    df = pd.DataFrame(
+        data = raw,
+        columns = simulated_gene_names  # pyright: ignore[reportArgumentType]
+    )
+    return df
 
 
 
@@ -54,6 +70,43 @@ for spec in simulation_specifications:
 
 
 
+# Cleanup when sure. REMOVE
+# def basic_formatting(dataset, _, **kwargs):
+# def basic_formatting(dataset):
+
+import pandas as pd
+import replogle_round_2.functions
+updated = []
+for ii, dataset in enumerate(simulations):
+
+    d = dataset
+    Y = d['Y']
+    Y = replogle_round_2.functions.merge_p_into_y(Y, d['P'])
+    controls = d['SCC']
+    controls.index = ['control'] * len(controls)
+    all = pd.concat([controls, d['Y']], axis = 0)
+
+    out = ({
+        'meta': {
+            # Add simulation parameeters, FIX
+            'replicate': ii,
+            },
+        'Y': all,
+        'A': d['A'],
+        })
+    updated.append(out)
+
+# # because kwargs['index'] is assigned to replicate in basic_formatting,
+# # this update must happen first for the replicate to correspond to original
+# # dataset replicates
+# datasets = update_datasets(
+#     datasets = datasets,
+#     update_function = basic_formatting,
+#     function_options = [None],
+#     )
+
+
+
 outdir = Path(f'outputs/')
 outdir.mkdir(exist_ok = True, parents = True)
 anton_util.pickle_object(
@@ -62,40 +115,3 @@ anton_util.pickle_object(
     )
 
 
-
-
-
-
-
-# def default_job_handler(inference_function, method, parallel = True):
-#
-#     from functools import partial
-#     infer_network_method = partial(inference_function, method = method)
-#
-#     max_workers = 5
-#
-#     simulation_specifications = anton_util.unpickle_object(
-#             'outputs/simulation_specifications.pkl'
-#             )
-#     if not parallel:
-#         inferred_networks = []
-#         for spec in simulation_specifications:
-#             inferred_networks.append(infer_network_method(spec))
-#     else:
-#         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-#             # The map command is lazy and returns an generator.
-#             # The list makes it execute. Otherwise it tries to pickle the 
-#             # generator below
-#             inferred_networks = list(executor.map(
-#                 infer_network_method, 
-#                 simulation_specifications,
-#                 ))
-#
-#     outdir = Path(f'outputs/inference/{method}')
-#     outdir.mkdir(exist_ok = True, parents = True)
-#     anton_util.pickle_object(
-#         inferred_networks,
-#         outdir / 'networks.pkl'
-#         )
-#
-#
