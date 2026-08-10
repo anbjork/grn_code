@@ -9,8 +9,9 @@ def plot_metrics_with_jitter(df):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     metrics = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    plt.subplots_adjust(bottom=0.5)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
+    # Incompatible with constrained_layout
+    # plt.subplots_adjust(bottom=0.5)
     for i, metric in enumerate(metrics):
         ax = axes[i]
         methods = df['method'].unique()
@@ -26,7 +27,9 @@ def plot_metrics_with_jitter(df):
         ax.set_xticks(x_positions)
         ax.set_xticklabels(methods, rotation=45, ha='right')
         ax.grid(True, alpha=0.3)
-    plt.tight_layout()
+    # Incompatible with constrained_layout
+    # plt.tight_layout()
+    fig.suptitle(plot_name)
     return fig
 
 if __name__ == "__main__":
@@ -40,6 +43,7 @@ if __name__ == "__main__":
     df = df.loc[df['inference error'].isna(), :]
 
     vars_to_stratify = [
+            'data_case',
             'cell normalised',
             'read normalised',
             'transform 1',
@@ -63,7 +67,7 @@ if __name__ == "__main__":
     # pprint(configs)
 
     from copy import deepcopy
-    # configs = configs[:3]  # Debug
+    # configs = configs[:1]  # Debug
     for config in configs:
         df_subset = deepcopy(df)
         plot_name = ' | '.join([f'{k} {v}' for k, v in config.items()])
@@ -74,10 +78,10 @@ if __name__ == "__main__":
         fig.savefig(
             f'{output_dir}/{plot_name}.png',
             dpi=300,
-            # bbox_inches='tight'
             )
         plt.close()
 
+    anton_util.log_timestamp('plotting done')
 
 
 

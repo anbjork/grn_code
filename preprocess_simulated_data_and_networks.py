@@ -6,26 +6,19 @@ from grn_code import functions
 
 anton_util.log_timestamp('loading...')
 data_set_name = 'simulated'
-path = Path(
-        '/home/anbjork/projects/replogle_round_2/versions/2/replogle_round_2/data_simulation/outputs/gathered_simulations.pkl'
-        )
+path = Path('src/grn_code/data_simulation/outputs/')
 # Debug, subset for speed
 # path = Path(
 #         'data/simulated/subset.pkl'
 #         )
 
-data_raw = anton_util.unpickle_object(path)
-datasets = data_raw
 
 
-reference_networks = []
-for ii, d in enumerate(datasets):
-    reference_networks.append({'meta': {'replicate': ii}, 'data': d['A']})
-    d.pop('A')
-outfile = Path('outputs__in_pipeline/simulated/reference_networks.pkl')
-outfile.parent.mkdir(exist_ok=True, parents=True)
-anton_util.pickle_object(reference_networks, outfile)
-
+import shutil
+shutil.copy(
+    path / 'reference_networks.pkl',
+    Path('outputs__in_pipeline/simulated/reference_networks.pkl')
+    )
 
 
 def update_datasets(
@@ -45,29 +38,9 @@ def update_datasets(
     return updated
 
 
-def basic_formatting(dataset, _, **kwargs):
-    d = dataset
-    Y = d['Y']
-    Y = functions.merge_p_into_y(Y, d['P'])
-    controls = d['SCC']
-    controls.index = ['control'] * len(controls)
-    all = pd.concat([controls, d['Y']], axis = 0)
-    out = ({
-        'meta': {
-            'replicate': kwargs['index']
-            },
-        'Y': all,
-        })
-    return out
 
-# because kwargs['index'] is assigned to replicate in basic_formatting,
-# this update must happen first for the replicate to correspond to original
-# dataset replicates
-datasets = update_datasets(
-    datasets = datasets,
-    update_function = basic_formatting,
-    function_options = [None],
-    )
+data_raw = anton_util.unpickle_object(path / 'simulations.pkl')
+datasets = data_raw
 
 
 # datasets = datasets[:1]  # Debug
@@ -107,9 +80,9 @@ datasets = update_datasets(
 
 
 
-# options = [False, True]
+options = [False, True]
 # options = [False]
-options = [True]
+# options = [True]
 function_kwargs = {'meta_data_label': 'cell normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -124,8 +97,8 @@ datasets = update_datasets(
 # n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
 # # Debug versions
 # n_pseudo_bulk_options = [10]
-n_pseudo_bulk_options = [False]
-# n_pseudo_bulk_options = [False, 10]
+# n_pseudo_bulk_options = [False]
+n_pseudo_bulk_options = [False, 10]
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
@@ -135,9 +108,9 @@ datasets = update_datasets(
 
 
 
-# options = [False, True]
+options = [False, True]
 # options = [True]
-options = [False]
+# options = [False]
 function_kwargs = {'meta_data_label': 'read normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -188,8 +161,8 @@ css = deepcopy(datasets)
 
 
 
-# options = [False, True]
-options = [False]
+options = [False, True]
+# options = [False]
 datasets = update_datasets(
     datasets = datasets, 
     update_function = functions.compute_differences, 

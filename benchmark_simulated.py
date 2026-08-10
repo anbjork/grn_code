@@ -11,7 +11,14 @@ reference_networks = anton_util.unpickle_object(
     base_path / 'reference_networks.pkl'
     )
 reference_networks_dict = {
-        r['meta']['replicate']: r['data'] for r in reference_networks
+        # frozensets are immutable, and so can be used as keys.
+        # This way, it matches keys on all meta data fields, without
+        # me needing to construct those keys manually.
+        # Guarantees only matching if all meta data fits,
+        # so no risk of errors
+        # (Well, as long as meta data is complete, to uniquely identify)
+        frozenset(r['meta']['dataset_parameters'].items()): r['data'] 
+        for r in reference_networks
         }
 
 anton_util.log_timestamp('benchmarking...')
@@ -29,7 +36,8 @@ for ii, inference in enumerate(inferred):
             'data': mstats,
         })
         continue
-    reference_network = reference_networks_dict[meta['replicate']]
+    meta_key = frozenset(meta['dataset_parameters'].items())
+    reference_network = reference_networks_dict[meta_key]
     try:
         mstats = benchmark_method_against_reference(
             method = meta['method'],

@@ -1,7 +1,7 @@
 
 from pathlib import Path
 import anton_util
-
+import pandas as pd
 
 def extract_matrix_from_matlab_hdf5(file_path):
 
@@ -29,17 +29,9 @@ def extract_matrix_from_matlab_hdf5(file_path):
     return df
 
 
+def get_simuation_matrices_from_specification(specification):
 
-
-simulation_specifications = anton_util.unpickle_object(
-        'outputs/simulation_specifications.pkl'
-        )
-simulations = []
-for spec in simulation_specifications:
-
-    simulation_files = spec['simulation_matrix_files']
-    parameter_tag = spec['parameter_tag']
-    print(parameter_tag, flush = True)
+    simulation_files = specification['simulation_matrix_files']
 
     # # Note: 
     # # hdf5 does not enforce interpretation of the data,
@@ -58,60 +50,41 @@ for spec in simulation_specifications:
             }
     output_matrices['A'].index = output_matrices['A'].columns
 
-    # # zscore can run on either counts or fold changes
-    # for_inference, _ = Y, SCC
-    # #
-    # # fold_changes = np.log2(Y + 1) - np.log2(SCC + 1)
-    # # for_inference = fold_changes
-
-    simulations.append(output_matrices)
+    return output_matrices
 
 
+from grn_code.functions import merge_p_into_y
 
+simulation_specifications = anton_util.unpickle_object(
+        'outputs/simulation_specifications.pkl'
+        )
+datasets = []
+reference_networks = []
+for specification in simulation_specifications:
 
+    m = get_simuation_matrices_from_specification(specification)
+    Y = m['Y']
+    meta = {
+            'dataset_parameters': {
+                **specification['python_global_parameters_for_matlab'],
+                **specification['parameters'],
+                }
+            }
+    reference_networks.append({'meta': meta, 'data': m['A']})
 
-# Cleanup when sure. REMOVE
-# def basic_formatting(dataset, _, **kwargs):
-# def basic_formatting(dataset):
-
-import pandas as pd
-import replogle_round_2.functions
-updated = []
-for ii, dataset in enumerate(simulations):
-
-    d = dataset
-    Y = d['Y']
-    Y = replogle_round_2.functions.merge_p_into_y(Y, d['P'])
-    controls = d['SCC']
+    Y = merge_p_into_y(Y, m['P'])
+    controls = m['SCC']
     controls.index = ['control'] * len(controls)
-    all = pd.concat([controls, d['Y']], axis = 0)
-
+    all = pd.concat([controls, m['Y']], axis = 0)
     out = ({
-        'meta': {
-            # Add simulation parameeters, FIX
-            'replicate': ii,
-            },
+        'meta': meta,
         'Y': all,
-        'A': d['A'],
         })
-    updated.append(out)
-
-# # because kwargs['index'] is assigned to replicate in basic_formatting,
-# # this update must happen first for the replicate to correspond to original
-# # dataset replicates
-# datasets = update_datasets(
-#     datasets = datasets,
-#     update_function = basic_formatting,
-#     function_options = [None],
-#     )
-
-
+    datasets.append(out)
 
 outdir = Path(f'outputs/')
 outdir.mkdir(exist_ok = True, parents = True)
-anton_util.pickle_object(
-    simulations,
-    outdir / 'gathered_simulations.pkl'
-    )
+anton_util.pickle_object(reference_networks, outdir / 'reference_networks.pkl')
+anton_util.pickle_object(datasets, outdir / 'simulations.pkl')
 
 

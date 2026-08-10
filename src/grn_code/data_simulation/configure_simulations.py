@@ -42,8 +42,8 @@ def initialise_simulations(parameter_sets):
         sim_flag_file = str(flag_files / get_uuid())
         job_specification = {
             'parameters': parameters,
-            'parameter_tag': parameter_tag,
             'python_global_parameters_for_matlab': python_global_parameters,
+            'parameter_tag': parameter_tag,
             'simulation_matrix_names': simulation_matrix_names,
             'simulation_matrix_files': files,
             'simulation_completed_flag_file': sim_flag_file,
@@ -68,26 +68,6 @@ python_global_parameters = {
         'average_network_degree': 3
         }
 
-# data_cases = {
-#         'easy': {
-#             'negbin_prob': 0.5,
-#             'dispersion': 0.1,
-#             'cell_count': 125,
-#             'snr': 0.5,
-#             },
-#         'low snr': {
-#             'negbin_prob': 0.5,
-#             'dispersion': 0.1,
-#             'cell_count': 125,
-#             'snr': 0.05,
-#             },
-#         'high dropout': {
-#             'negbin_prob': 0.5,
-#             'dispersion': 10,
-#             'cell_count': 125,
-#             'snr': 0.5,
-#             },
-#         }
 data_cases = {
         'easy': {
             'negbin_prob': 0.5,
@@ -95,19 +75,27 @@ data_cases = {
             'cell_count': 125,
             'snr': 0.5,
             },
-        # 'low snr': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.05,
-        #     },
-        # 'high dropout': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 10,
-        #     'cell_count': 125,
-        #     'snr': 0.5,
-        #     },
+        'low snr': {
+            'negbin_prob': 0.5,
+            'dispersion': 0.1,
+            'cell_count': 125,
+            'snr': 0.05,
+            },
+        'high dropout': {
+            'negbin_prob': 0.5,
+            'dispersion': 10,
+            'cell_count': 125,
+            'snr': 0.5,
+            },
         }
+# data_cases = {
+#         'easy': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.5,
+#             },
+#         }
 
 # # This adjusted for the genesnake version. snrs are a bit different scale
 # # for this one
@@ -132,13 +120,23 @@ data_cases = {
 #             },
 #         }
 
+# Commented out to see if anything uses this
+# If so, I need to go find out how and why
 anton_util.pickle_object(data_cases, 'outputs/data_cases.pkl')
+# Could run the all of pipeline without it, so probably nothing uses it
+# Plain text for people with no python
+import json
+with open('outputs/data_cases.json', 'w') as f:
+    json.dump(data_cases, f, indent = 4)
 
-repeats = 5
+repeats = 10
 parameter_sets = []
+from copy import deepcopy
 for data_case, parameters in data_cases.items():
-    for _ in range(repeats):
-        parameter_sets.append(parameters)
+    parameters['data_case'] = data_case
+    for ii in range(repeats):
+        parameters['replicate'] = ii
+        parameter_sets.append(deepcopy(parameters))
 
 simulation_specifications = initialise_simulations(parameter_sets = parameter_sets)
 anton_util.pickle_object(
