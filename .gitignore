@@ -1,28 +1,16 @@
 
 /outputs/
-/old/
-/data/
-/old_from_30/
-*.log
-/inferences/
-/benchmarks/
-/plots/
-/figures/
-/not_used/
 /saved_results/
-/simulate_data/
 /tmp/
-/archived/
-/data_processed/
 /saved_data/
 /outputs__in_pipeline/
-/dspin_files_from_troubleshooting/
+
 __*
+*egg-info*
+*log
 
 /genesnake/
 /ground-truth-grns/
-/getting_networks/
-
 
 .aider*
 
@@ -30,8 +18,5 @@ __*
 /GENIE3/
 /inspre/
 
-data.tar.gz_to_eris_for_deepsem_on_gpu
-
-
-
+/archived/not_for_git/
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 import anton_util
-from functions import benchmark_method_against_reference
+from grn_code.functions import benchmark_method_against_reference
 
 base_path = Path('outputs__in_pipeline/simulated')
 

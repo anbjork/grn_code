@@ -1,7 +1,7 @@
 
 from pathlib import Path
-from pipeline_functions import inference
-import functions
+from grn_code.pipeline_functions import inference
+from grn_code import functions
 
 base_path = Path('outputs__in_pipeline/simulated')
 (base_path / 'inferences.pkl').unlink(missing_ok=True)

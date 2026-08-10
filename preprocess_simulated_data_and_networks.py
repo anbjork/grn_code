@@ -2,7 +2,7 @@
 import pandas as pd
 from pathlib import Path
 import anton_util
-import functions
+from grn_code import functions
 
 anton_util.log_timestamp('loading...')
 data_set_name = 'simulated'

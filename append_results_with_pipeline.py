@@ -1,4 +1,4 @@
-from pipeline_functions import append_pickle
+from grn_code.pipeline_functions import append_pickle
 import anton_util
 
 anton_util.log_timestamp('appending to results...')
