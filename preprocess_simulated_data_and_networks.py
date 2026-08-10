@@ -57,7 +57,6 @@ def basic_formatting(dataset, _, **kwargs):
             'replicate': kwargs['index']
             },
         'Y': all,
-        'A': d['A'],
         })
     return out
 
