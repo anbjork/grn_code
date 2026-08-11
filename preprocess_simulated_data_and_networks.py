@@ -6,18 +6,18 @@ from grn_code import functions
 
 anton_util.log_timestamp('loading...')
 data_set_name = 'simulated'
-path = Path('src/grn_code/data_simulation/outputs/')
+input_path = Path('src/grn_code/data_simulation/outputs/')
 # Debug, subset for speed
 # path = Path(
 #         'data/simulated/subset.pkl'
 #         )
-
-
+output_path = Path('outputs__in_pipeline/simulated/')
+output_path.mkdir(parents = True, exist_ok = True)
 
 import shutil
 shutil.copy(
-    path / 'reference_networks.pkl',
-    Path('outputs__in_pipeline/simulated/reference_networks.pkl')
+    input_path / 'reference_networks.pkl',
+    Path(output_path / 'reference_networks.pkl')
     )
 
 
@@ -39,7 +39,7 @@ def update_datasets(
 
 
 
-data_raw = anton_util.unpickle_object(path / 'simulations.pkl')
+data_raw = anton_util.unpickle_object(input_path / 'simulations.pkl')
 datasets = data_raw
 
 
@@ -190,9 +190,7 @@ metas = [d['meta'] for d in datasets]
 df = pd.DataFrame(metas)
 
 
-
-outfile = Path('outputs__in_pipeline/simulated/data_processed.pkl')
-outfile.parent.mkdir(exist_ok=True, parents=True)
+outfile = Path(output_path / 'data_processed.pkl')
 anton_util.log_timestamp('saving...')
 anton_util.pickle_object(datasets, outfile)
 
