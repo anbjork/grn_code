@@ -510,15 +510,6 @@ def genie3_inference(data):
     import copy
     expression_data = copy.deepcopy(data['Y'])
 
-    # Genie3 normalises the the output gene in each RF regression by
-    # it's standard deviation. Some are 0 and crashes.
-    # Took a note of looking into why they are 0
-    # Filtering those out in the meantime
-    all_genes = expression_data.columns
-    stds = expression_data.std(axis = 0)
-    non_zero_stds = stds > 0
-    expression_data = expression_data.loc[:, non_zero_stds]
-
     # # Debug
     # expression_data = expression_data.iloc[:, :5]
 
@@ -537,15 +528,6 @@ def genie3_inference(data):
     # helping out by transposing.
     estimated_network = estimated_network.T
 
-    # Using these conversions to put the previously filtered out genes in again
-    edgelist = gs.util.matrix_to_edgelist(estimated_network)
-    estimated_network = gs.util.edgelist_to_matrix(
-        regulators = edgelist['regulator'],
-        targets = edgelist['target'],
-        values = edgelist['value'],
-        all_genes = all_genes,
-        )
-
     return estimated_network
 
 
@@ -562,11 +544,6 @@ def deepsem_inference(data):
 
     # # Debug
     # expression_data = expression_data.iloc[:, :10]
-
-    all_genes = expression_data.columns
-    stds = expression_data.std(axis = 0)
-    non_zero_stds = stds > 0
-    expression_data = expression_data.loc[:, non_zero_stds]
 
     # Save the original working directory so we can restore it later
     original_dir = os.getcwd()
@@ -633,21 +610,6 @@ def deepsem_inference(data):
 
     estimated_network = result_df
 
-    # Using these conversions to put the previously filtered out genes in again
-
-    # NOTE:
-    # changed the edgelist_to_matrix function interface.
-    # deepsem needs a gpu, so cannot be tested on octa.
-    # adjusted the code, but haven't tested it since.
-    # so if it crashes, look at the format of estimated_network
-    # //AB
-    estimated_network = gs.util.edgelist_to_matrix(
-        regulators = estimated_network.iloc[:, 0],
-        targets = estimated_network.iloc[:, 1],
-        values = estimated_network.iloc[:, 2],
-        all_genes = all_genes,
-        )
-
     return {'deepsem': estimated_network}
 
 
@@ -661,13 +623,6 @@ def psgrn_inference(data):
 
     import copy
     expression_data = copy.deepcopy(data['Y'])
-    # The method normalises by standard deviation. Some are 0 and crashes.
-    # Took a note of looking into why they are 0
-    # Filtering those out in the meantime
-    all_genes = expression_data.columns
-    stds = expression_data.std(axis = 0)
-    non_zero_stds = stds > 0
-    expression_data = expression_data.loc[:, non_zero_stds]
 
     Y = expression_data
     # Follows PSGRN code variable naming below.
@@ -678,9 +633,6 @@ def psgrn_inference(data):
     # control cells that were not perturbed
     interventions_train[interventions_train == 'control'] = 'non-targeting'
     gene_names = list(Y.columns)
-
-
-
 
     with np.errstate(divide='ignore', invalid='ignore'):
 		# psgrn spams warnings
@@ -711,12 +663,10 @@ def psgrn_inference(data):
             # self.model_seed,
         )
 
-    # Using these conversions to put the previously filtered out genes in again
     estimated_network = gs.util.edgelist_to_matrix(
         regulators = edgelist['regulator'],
         targets = edgelist['target'],
         values = edgelist['value'],
-        all_genes = all_genes,
         )
     print(estimated_network)
 
@@ -733,12 +683,6 @@ def inspre_inference(data):
     import anndata as ad
 
     expression_data = copy.deepcopy(data['Y'])
-    all_genes = expression_data.columns
-
-    # Filter out zero-std genes since methods crashes with those
-    stds = expression_data.std(axis=0)
-    non_zero_stds = stds > 0
-    expression_data = expression_data.loc[:, non_zero_stds]
 
     # Get temporary file paths
     with tempfile.NamedTemporaryFile(suffix='.h5ad', delete=False) as f:
@@ -852,7 +796,6 @@ def inspre_inference(data):
         regulators=edgelist['regulator'],
         targets=edgelist['target'],
         values=edgelist['value'],
-        all_genes=all_genes,
     )
 
     # Clean up temporary files
@@ -887,12 +830,6 @@ def inspre_inference_hdf5(data):
     import h5py
 
     expression_data = copy.deepcopy(data['Y'])
-    all_genes = expression_data.columns
-
-    # Filter out zero-std genes
-    stds = expression_data.std(axis=0)
-    non_zero_stds = stds > 0
-    expression_data = expression_data.loc[:, non_zero_stds]
 
     # Map 'control' -> 'non-targeting' as expected by fit_inspre_from_h5X
     perturbations = expression_data.index.to_series().replace('control', 'non-targeting')
@@ -995,7 +932,6 @@ def inspre_inference_hdf5(data):
         regulators=edgelist['regulator'],
         targets=edgelist['target'],
         values=edgelist['value'],
-        all_genes=all_genes,
     )
 
     # Clean up temporary files
@@ -1249,3 +1185,6 @@ def merge_p_into_y(Y, P):
         index[perturbed_cell_indices] = gene
     Y.index = index
     return Y
+
+
+
