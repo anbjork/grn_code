@@ -514,7 +514,7 @@ def genie3_inference(data):
     # expression_data = expression_data.iloc[:, :5]
 
     from GENIE3.GENIE3_python.GENIE3 import GENIE3  # pyright: ignore
-    VIM = GENIE3(np.array(expression_data))
+    VIM = GENIE3(np.array(expression_data), nthreads = 12)
     estimated_network = pd.DataFrame(
         data = VIM,
         index = expression_data.columns,
