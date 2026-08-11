@@ -98,7 +98,7 @@ datasets = update_datasets(
 # # Debug versions
 # n_pseudo_bulk_options = [10]
 # n_pseudo_bulk_options = [False]
-n_pseudo_bulk_options = [False, 10]
+n_pseudo_bulk_options = [False, 5]
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
@@ -125,7 +125,7 @@ datasets = update_datasets(
 # transforms = ['none', 'log1p', 'zscores']
 # Debug versions
 transforms = ['log1p']
-# transforms = ['none', 'log1p']
+transforms = ['none', 'log1p']
 function_kwargs = {'meta_data_label': 'transform 1'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -162,7 +162,7 @@ css = deepcopy(datasets)
 
 
 options = [False, True]
-# options = [False]
+options = [False]
 datasets = update_datasets(
     datasets = datasets, 
     update_function = functions.compute_differences, 
