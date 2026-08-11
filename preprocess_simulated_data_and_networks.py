@@ -11,7 +11,7 @@ input_path = Path('src/grn_code/data_simulation/outputs/')
 # path = Path(
 #         'data/simulated/subset.pkl'
 #         )
-output_path = Path('outputs__in_pipeline/simulated/')
+from grn_code.pipeline_configuration import pipeline_base_path as output_path
 output_path.mkdir(parents = True, exist_ok = True)
 
 import shutil

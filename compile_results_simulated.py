@@ -4,8 +4,11 @@ import anton_util
 
 
 anton_util.log_timestamp('reading data...')
-benchmarks = anton_util.unpickle_object(f'outputs/simulated/benchmarks.pkl')
+from grn_code.pipeline_configuration import output_base_path
+benchmarks = anton_util.unpickle_object(f'{output_base_path}/simulated/benchmarks.pkl')
 # data_sources, inferred, benchmarks = [
+        # broken on purpose, since not updated and tested for
+        # import of paths from pipeline configuration
 #     anton_util.unpickle_object(f'outputs/simulated/{name}.pkl')
 #     for name in ['data_processed', 'inferences', 'benchmarks']
 #     ]
@@ -32,7 +35,7 @@ for benchmark in benchmarks:
     tmp = recursive_flatten_dict(benchmark)
     results.append(tmp)
 
-output_path = 'outputs/simulated/compiled_results'
+output_path = f'{output_base_path}/simulated/compiled_results'
 df = pd.DataFrame(results)
 cs = ['shuffle', 'method', 'pseudo_bulk']
 df = df.sort_values(by = cs)

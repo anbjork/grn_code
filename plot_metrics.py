@@ -35,10 +35,13 @@ def plot_metrics_with_jitter(df):
 if __name__ == "__main__":
 
     import anton_util
+    from grn_code.pipeline_configuration import output_base_path
     anton_util.log_timestamp('plotting...')
     anton_util.log_timestamp('reading data...')
-    df = anton_util.unpickle_object('outputs/simulated/compiled_results.pkl')
-    output_dir = 'outputs/simulated/plots'
+
+    df = anton_util.unpickle_object(
+            f'{output_base_path}/simulated/compiled_results.pkl')
+    output_dir = f'{output_base_path}/simulated/plots'
 
     df = df.loc[df['inference error'].isna(), :]
 

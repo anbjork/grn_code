@@ -1,9 +1,8 @@
 
-from pathlib import Path
 from grn_code.pipeline_functions import inference
 from grn_code import functions
 
-base_path = Path('outputs__in_pipeline/simulated')
+from grn_code.pipeline_configuration import pipeline_base_path as base_path
 (base_path / 'inferences.pkl').unlink(missing_ok=True)
 
 functions = [

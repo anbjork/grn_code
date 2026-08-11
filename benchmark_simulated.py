@@ -1,8 +1,7 @@
-from pathlib import Path
 import anton_util
 from grn_code.functions import benchmark_method_against_reference
 
-base_path = Path('outputs__in_pipeline/simulated')
+from grn_code.pipeline_configuration import pipeline_base_path as base_path
 
 inferred = anton_util.unpickle_object(
     base_path / 'inferences.pkl'
