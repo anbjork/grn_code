@@ -15,7 +15,7 @@ outputs = [
 for output in outputs:
     anton_util.log_timestamp(f'{output}...')
     output_in_pipeline = anton_util.unpickle_object(
-        f'{pipeline_base_path}/simulated/{output}.pkl'
+        f'{pipeline_base_path}/{output}.pkl'
         )
     append_pickle(
         output_in_pipeline,
