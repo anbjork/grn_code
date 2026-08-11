@@ -943,60 +943,6 @@ def inspre_inference_hdf5(data):
 
 
 
-# def pseudo_bulk_group(Y, n_pseudo_bulks, verbose = True):
-#
-#     complain = False
-#     complain_more = False
-#
-#     import math
-#     smallest_intended_bin = 5
-#     intended_n_pseudo_bulks = n_pseudo_bulks
-#     chunk_size = floor(Y.shape[0] / n_pseudo_bulks)
-#     if chunk_size < smallest_intended_bin:
-#         complain = True
-#         n_pseudo_bulks = floor(Y.shape[0] / smallest_intended_bin)
-#         if n_pseudo_bulks == 0:
-#             complain_more = True
-#             n_pseudo_bulks = 1
-#         chunk_size = floor(Y.shape[0] / n_pseudo_bulks)
-#         if verbose:
-#             print(f'smallest bin size is {smallest_intended_bin}')
-#             print(f'cells in group is {Y.shape[0]}')
-#             print(f'not enough cells for {intended_n_pseudo_bulks} pseudo bulks')
-#             print(f'using {n_pseudo_bulks} pseudo bulks instead')
-#             print(f'set chunk size to {chunk_size}')
-#             print('remaining cells go with the last chunk')
-#             if complain_more:
-#                 print(f'not enough cells for even 1 pseudo bulk of intended size, so using 1 pseudo bulk with all cells')
-#             print()
-#     chunk_indices = chunk_size * np.array(range(n_pseudo_bulks))
-#     chunks = []
-#     for ii in chunk_indices:
-#         chunk = Y.iloc[ii : ii + chunk_size, :]
-#         chunks.append(chunk)
-#     # Redo the last chunk to include the remainder.
-#     # A chunk that is slightly bigger at the end should be much
-#     # better than a small remainder chunk, for the statistical properties
-#     # of the pseudo bulks. Size difference should be negligible too
-#     chunks.pop()
-#     chunks.append(Y.iloc[chunk_indices[-1] : , :])
-#     #
-#     # Probably a smarter way, except that the last chunk is not handled.
-#     # Maybe inspiration for improvement
-#     # //AB
-#     # chunks = [
-#     #     Y[i : i + chunk_size, :]
-#     #     for i in range(0, Y.shape[0], chunk_size)
-#     #     ]
-#
-#     tmp = [f'psb{i}' for i in range(n_pseudo_bulks)]
-#     pseudo_bulk = {l: list(chunk.mean(axis = 0)) for l, chunk in zip(tmp, chunks)}
-#     return pseudo_bulk, complain
-
-
-
-
-
 
 def chunk_array(arr, n_chunks):
     # Separated this mostly to avoid index ception, since the arrays
