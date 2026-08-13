@@ -134,6 +134,16 @@ def benchmark_method_against_reference(
         reference_network))
     harmonised_estimated_network, harmonised_reference_network = tmp
 
+    # # Make benchmarking undirected
+    # # Temporary. Horribly slow. Will fix if I want to keep running this
+    # for network in (harmonised_estimated_network, harmonised_reference_network):
+    #     for ii in range(network.shape[0]):
+    #         for jj in range(network.shape[1]):
+    #             m = max(network.iloc[ii, jj], network.iloc[jj, ii])
+    #             network.iloc[ii, jj] = m
+    #             network.iloc[jj, ii] = m
+
+
     # Plots overwrite each other, because the assumptions of this function
     # does not match the file path structure of the pipeline.
     # Pipeline code is typically the outer code, it tends to change
