@@ -154,6 +154,8 @@ def benchmark_method_against_reference(
     # function to return the plots instead, so that the outer pipeline code
     # can attach meta data and save to disk as suitable for the case.
     # Won't fix right now, but should come back to do it. Took a todo on that.
+    #
+    # Done by now! REMOVE
     tmp = gs.benchmarking.benchmark(
         estimated_network=harmonised_estimated_network,
         reference_network=harmonised_reference_network.astype(bool),
