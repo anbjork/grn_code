@@ -9,6 +9,7 @@ functions = [
     functions.fast_methods_inference,
     functions.random_inference,
     functions.correlation_inference,
+    functions.zscore_variants,
     # functions.inspre_inference,
     # functions.inspre_inference_hdf5,
     # functions.psgrn_inference,

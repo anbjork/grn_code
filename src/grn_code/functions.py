@@ -274,6 +274,66 @@ def fast_methods_inference(data):
 
 
 
+
+
+
+def zscore_variants(data):
+
+    estimated_networks = {}
+
+    P = data['P']
+    Y = data['Y']
+
+    m = 'zscore_ab'
+    anton_util.log_timestamp(f'Running {m}...')
+    en = gs.inference.infer_networks(
+        Y=Y, P=P,
+        method=m)
+    en[np.isnan(en)] = 0
+    for jj in range(en.shape[1]):
+        for ii in range(en.shape[0]):
+            a = en.iloc[ii, jj]
+            b = en.iloc[jj, ii]
+            minimum = np.argmin([a, b])
+            if minimum == 0:
+                en.iloc[ii, jj] = 0
+            elif minimum == 1:
+                en.iloc[jj, ii] = 0
+    m = m + '_max'
+    estimated_networks[m] = en
+
+    # print(en)
+
+    m = 'zscore_dream3'
+    anton_util.log_timestamp(f'Running {m}...')
+    en = gs.inference.infer_networks(
+        Y=Y, P=P,
+        method=m)
+    en[np.isnan(en)] = 0
+    for jj in range(en.shape[1]):
+        for ii in range(en.shape[0]):
+            a = en.iloc[ii, jj]
+            b = en.iloc[jj, ii]
+            minimum = np.argmin([a, b])
+            if minimum == 0:
+                en.iloc[ii, jj] = 0
+            elif minimum == 1:
+                en.iloc[jj, ii] = 0
+    m = m + '_max'
+    estimated_networks[m] = en
+
+
+
+    return estimated_networks
+
+
+
+
+
+
+
+
+
 def dspin_inference_wrapper(data):
     from pprint import pprint
 
