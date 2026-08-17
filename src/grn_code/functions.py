@@ -277,7 +277,7 @@ def fast_methods_inference(data):
 
 
 
-def zscore_variants(data):
+def zscore_max_variants(data):
 
     estimated_networks = {}
 
@@ -327,6 +327,68 @@ def zscore_variants(data):
     return estimated_networks
 
 
+
+
+
+
+
+def zscore_without_controls(data):
+
+    estimated_networks = {}
+
+    P = data['P']
+    Y = data['Y']
+
+    Y = Y.loc[Y.index != 'control', :]
+    P = P.loc[P.index != 'control', :]
+
+    m = 'zscore_ab'
+    anton_util.log_timestamp(f'Running {m}...')
+    en = gs.inference.infer_networks(
+        Y=Y, P=P,
+        method=m)
+
+    en[np.isinf(en)] = 0
+    en[np.isnan(en)] = 0
+    m = m + '_without_controls'
+    estimated_networks[m] = en
+
+    return estimated_networks
+
+
+
+
+
+def lsco_T_without_controls(data):
+
+    estimated_networks = {}
+
+    P = data['P']
+    Y = data['Y']
+
+    Y = Y.loc[Y.index != 'control', :]
+    P = P.loc[P.index != 'control', :]
+
+    stds = Y.std(axis = 0)
+    print('0 stds:')
+    print(sum(stds == 0))
+    Y = Y.loc[:, stds > 0]
+    P = P.loc[:, stds > 0]
+
+    m = 'lsco'
+    m_name = f'{m}.T_without_controls_and_stange_columns'
+    anton_util.log_timestamp(f'Running {m_name}...')
+    try:
+        en = gs.inference.infer_networks(
+            Y = Y,
+            P = P,
+            method=m)
+        estimated_networks[m_name] = en.T
+    except Exception as e:
+        print(f'{m_name} failed with:')
+        print(e)
+
+    return estimated_networks
 
 
 
