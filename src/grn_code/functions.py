@@ -147,6 +147,7 @@ def benchmark_method_against_reference(
         estimated_network=harmonised_estimated_network,
         reference_network=harmonised_reference_network.astype(bool),
         method_name=method,
+        fix_pr_ylim = True,
         )
     ntps = np.nonzero(harmonised_reference_network)[0].shape[0]
     n_genes_after_harmonisation = harmonised_reference_network.shape[0]
