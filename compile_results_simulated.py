@@ -28,32 +28,41 @@ def recursive_flatten_dict(dd):
             flat[k] = v
     return flat
 
-results = []
-for benchmark in benchmarks:
+benchmark_results = []
+for ii, benchmark in enumerate(benchmarks):
     tmp = {}
     # anton_util.log_timestamp(f'copying')
     # Performance optimisation. Sacrifices f1_scores from outputs
     # in the pickle below, but goes from 20 s to negligible
     # benchmark = deepcopy(benchmark)
     # anton_util.log_timestamp(f'popping')
-    benchmark['data'].pop('f1_scores')
+    try:
+        benchmark['data'].pop('f1_scores')
+    except AttributeError:
+        anton_util.log_timestamp(f'benchmark {ii} data is None, skipping f1_scores pop')
+        pass
     # anton_util.log_timestamp(f'flattening benchmark')
     tmp = recursive_flatten_dict(benchmark)
     # anton_util.log_timestamp(f'the rest')
-    results.append(tmp)
+    benchmark_results.append(tmp)
 
 output_path = f'{output_base_path}/simulated/compiled_results'
-df = pd.DataFrame(results)
+df = pd.DataFrame(benchmark_results)
 cs = ['shuffle', 'method', 'pseudo_bulk']
 df = df.sort_values(by = cs)
 df['AUPR ratio'] = df['AUPR'] / df['ERMA']
 
+anton_util.log_timestamp('saving results...')
+anton_util.pickle_object(df, f'{output_path}.pkl')
+drop_cols = ['plot_roc', 'plot_pr']
+df = df.drop(drop_cols, axis = 1)
+df.to_csv(f'{output_path}.csv')
 
 
 
 
 
-CONFIG_plot_roc_and_pr = True
+CONFIG_plot_roc_and_pr = False
 
 if CONFIG_plot_roc_and_pr:
 
@@ -72,7 +81,7 @@ if CONFIG_plot_roc_and_pr:
     parameters_flat = [recursive_flatten_dict(p) for p in parameters]
 
 
-    for ps, rs in zip(parameters_flat, results):
+    for ii, (ps, rs) in enumerate(zip(parameters_flat, benchmark_results)):
         for plot_type in ['plot_roc', 'plot_pr']:
             ps['plot_type'] = plot_type
             tag = ' / '.join([f'{k} {v}' for k, v in ps.items()])
@@ -82,20 +91,15 @@ if CONFIG_plot_roc_and_pr:
             # Here, the actual savefig command is taking all the time
             # So no reason to optimise anything else
             # anton_util.log_timestamp(f'saving plot')
-            rs[plot_type].savefig(filename)
+            try:
+                rs[plot_type].savefig(filename)
+            except KeyError:
+                anton_util.log_timestamp(f'benchmark {ii} has no {plot_type}, skipping')
+                continue
             # anton_util.log_timestamp(f'the rest')
 
 
 
-
-
-
-
-anton_util.log_timestamp('saving results...')
-anton_util.pickle_object(df, f'{output_path}.pkl')
-drop_cols = ['plot_roc', 'plot_pr']
-df = df.drop(drop_cols, axis = 1)
-df.to_csv(f'{output_path}.csv')
 
 anton_util.log_timestamp('compilation done')
 
