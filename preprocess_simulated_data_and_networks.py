@@ -52,10 +52,26 @@ datasets = data_raw
 #     dataset['A'] = dataset['A'].iloc[:10, :10]
 
 
+
 for d in datasets:
-    d['meta']['0_fraction'] = functions.calculate_zero_fraction(d['Y'])
+    Y = d['Y']
+    all = Y
+    controls = Y.loc[Y.index == 'control', :]
+    perturbed = Y.loc[~(Y.index == 'control'), :]
+    for subset, name in zip(
+                [all, controls, perturbed], 
+                ['all', 'controls', 'perturbed']
+                ):
+        d['meta'][f'0_fraction_{name}'] = functions.calculate_zero_fraction(subset)
 
 
+# dropouts = []
+# for d in datasets:
+#     cols = {k: v for k, v in d['meta'].items() if 'fraction' in k}
+#     tmp = 'data_case'
+#     cols[tmp] = d['meta']['dataset_parameters'][tmp]
+#     dropouts.append(cols)
+# dropouts = pd.DataFrame(dropouts)
 
 
 for dataset in datasets:
