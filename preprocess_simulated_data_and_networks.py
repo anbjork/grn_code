@@ -98,7 +98,7 @@ datasets = update_datasets(
 
 options = [False, True]
 # options = [False]
-# options = [True]
+options = [True]
 function_kwargs = {'meta_data_label': 'cell normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -113,8 +113,8 @@ datasets = update_datasets(
 # n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
 # # Debug versions
 # n_pseudo_bulk_options = [10]
-# n_pseudo_bulk_options = [False]
-n_pseudo_bulk_options = [False, 5]
+n_pseudo_bulk_options = [False]
+# n_pseudo_bulk_options = [False, 5]
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
@@ -124,9 +124,9 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
+# options = [False, True]
 # options = [True]
-# options = [False]
+options = [False]
 function_kwargs = {'meta_data_label': 'read normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -141,7 +141,7 @@ datasets = update_datasets(
 # transforms = ['none', 'log1p', 'zscores']
 # Debug versions
 transforms = ['log1p']
-transforms = ['none', 'log1p']
+# transforms = ['none', 'log1p']
 function_kwargs = {'meta_data_label': 'transform 1'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
@@ -160,8 +160,8 @@ bss = deepcopy(datasets)
 # separate those steps. Can reuse the transform function though.
 # transforms = ['none', 'log1p', 'zscores']
 # Debug versions
-# transforms = ['zscores']
-transforms = ['none', 'zscores']
+transforms = ['zscores']
+# transforms = ['none', 'zscores']
 # transforms = ['none']
 function_kwargs = {'meta_data_label': 'transform 2'}
 anton_util.log_timestamp(f'{function_kwargs = }')
@@ -177,7 +177,7 @@ css = deepcopy(datasets)
 
 
 
-options = [False, True]
+# options = [False, True]
 options = [False]
 datasets = update_datasets(
     datasets = datasets, 
