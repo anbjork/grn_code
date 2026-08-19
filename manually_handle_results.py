@@ -34,6 +34,24 @@ data_processed, reference_networks, inferences, benchmarks = outputs
 
 
 
+# Checking dropouts in a convenient fashion
+dropouts = []
+for d in data_processed:
+    cols = {k: v for k, v in d['meta'].items() if 'fraction' in k}
+    tmp = 'data_case'
+    cols[tmp] = d['meta']['dataset_parameters'][tmp]
+    dropouts.append(cols)
+import pandas as pd
+dropouts = pd.DataFrame(dropouts)
+
+
+
+
+
+
+
+
+
 def save_results():
     anton_util.log_timestamp('saving results...')
     for output_type, output in zip(output_types, outputs):
