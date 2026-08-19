@@ -52,26 +52,20 @@ datasets = data_raw
 #     dataset['A'] = dataset['A'].iloc[:10, :10]
 
 
+def record_dropout_fractions(datasets, when):
+    for d in datasets:
+        Y = d['Y']
+        all = Y
+        controls = Y.loc[Y.index == 'control', :]
+        perturbed = Y.loc[~(Y.index == 'control'), :]
+        for subset, name in zip(
+                    [all, controls, perturbed], 
+                    ['all', 'controls', 'perturbed']
+                    ):
+            d['meta'][f'0_fraction__{when}__{name}'] = (
+                    functions.calculate_zero_fraction(subset))
 
-for d in datasets:
-    Y = d['Y']
-    all = Y
-    controls = Y.loc[Y.index == 'control', :]
-    perturbed = Y.loc[~(Y.index == 'control'), :]
-    for subset, name in zip(
-                [all, controls, perturbed], 
-                ['all', 'controls', 'perturbed']
-                ):
-        d['meta'][f'0_fraction_{name}'] = functions.calculate_zero_fraction(subset)
-
-
-# dropouts = []
-# for d in datasets:
-#     cols = {k: v for k, v in d['meta'].items() if 'fraction' in k}
-#     tmp = 'data_case'
-#     cols[tmp] = d['meta']['dataset_parameters'][tmp]
-#     dropouts.append(cols)
-# dropouts = pd.DataFrame(dropouts)
+record_dropout_fractions(datasets, 'before_gene_filtering')
 
 
 for dataset in datasets:
@@ -84,6 +78,11 @@ for dataset in datasets:
     Y = Y.loc[:, stds > 0]
     dataset['Y'] = Y
     print(Y.shape)
+
+
+record_dropout_fractions(datasets, 'after_gene_filtering')
+
+
 
 
 
