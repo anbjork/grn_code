@@ -8,7 +8,7 @@ output_types = [
         'benchmarks',
         ]
 
-# base_path = 'outputs__in_pipeline/simulated'
+# base_path = 'outputs/in_pipeline'
 base_path = 'outputs/simulated'
 
 outputs = []
