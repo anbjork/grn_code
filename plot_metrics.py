@@ -9,9 +9,10 @@ def plot_metrics_with_jitter(df):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     metrics = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
+    # fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
     # Incompatible with constrained_layout
-    # plt.subplots_adjust(bottom=0.5)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    plt.subplots_adjust(bottom=0.5)
     for i, metric in enumerate(metrics):
         ax = axes[i]
         methods = df['method'].unique()
