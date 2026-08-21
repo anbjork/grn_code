@@ -1184,12 +1184,13 @@ def calculate_zero_fraction(df):
 
 
 
-def update_dataset_default(dataset, new_Y, meta_field, label):
-    from copy import deepcopy
-    ds = deepcopy(dataset)
-    ds['meta'][meta_field] = label
-    ds['Y'] = new_Y
-    return ds
+def update_dataset_default(dataset, new_Y, meta_field = None, label = None):
+    # Note that this function updates dataset in place.
+    # Caller has to handle copying if needed
+    if meta_field is not None:
+        dataset['meta'][meta_field] = label
+    dataset['Y'] = new_Y
+    return dataset
 
 
 
@@ -1209,6 +1210,84 @@ def transform(dataset, transform, **kwargs):
     updated_dataset = update_dataset_default(
             dataset, df, kwargs['meta_data_label'], transform)
     return updated_dataset
+
+
+
+
+
+def scanpy_preprocess(dataset, option, **kwargs):
+    import scanpy as sc
+    _ = option
+    Y = dataset['Y']
+    adata = sc.AnnData(
+            X = Y.values, 
+            obs = pd.DataFrame(index = Y.index), 
+            var = pd.DataFrame(index = Y.columns)
+            )
+    # sc.pp.calculate_qc_metrics(
+    #         adata, 
+    #         inplace=True,
+    #         # Need to disable this, because data dimensions doesn't match
+    #         # its default assumption.
+    #         # Not using the metric calculated with this argument anyway
+    #         percent_top = None,
+    #         )
+    # sc.pl.violin(
+    #         adata, ['n_genes_by_counts', 'total_counts'],
+    #         jitter=0.4, multi_panel=True, 
+    #         save=f"_dataset_{kwargs['index']}_qc_violin.png")
+    # sc.pl.scatter(
+    #         adata, x='total_counts', y='n_genes_by_counts',
+    #         save=f"_dataset_{kwargs['index']}_counts_vs_genes.png"
+    #         )
+    # print()
+    # print(kwargs['index'])
+    # print(dataset['meta']['dataset_parameters']['data_case'])
+    # print(adata.shape)
+    # Remove cells with too few genes detected
+    sc.pp.filter_cells(adata, min_genes=5)
+    # print(adata.shape)
+    # Remove cells with too few total counts
+    # sc.pp.filter_cells(adata, min_counts=500)
+    # print(adata.shape)
+    # print()
+    df = pd.DataFrame(
+            adata.X,
+            index = adata.obs.index,
+            columns = adata.var.index
+            )
+    updated_dataset = update_dataset_default(dataset, df)
+    return updated_dataset
+
+
+
+
+
+
+def differential_expression_gene_filtering(dataset, option, **kwargs):
+    import scanpy as sc
+    _ = option
+    Y = dataset['Y']
+    adata = sc.AnnData(
+            X = Y.values, 
+            obs = pd.DataFrame(index = Y.index), 
+            var = pd.DataFrame(index = Y.columns)
+            )
+    sc.pp.highly_variable_genes(adata, n_top_genes=50, flavor='seurat_v3')
+    sc.pl.highly_variable_genes(
+            adata, 
+            save = f'_dataset_{kwargs["index"]}_highly_variable_genes.png'
+            )
+    adata = adata[:, adata.var['highly_variable']]
+    df = pd.DataFrame(
+            adata.X,
+            index = adata.obs.index,
+            columns = adata.var.index
+            )
+    updated_dataset = update_dataset_default(dataset, df)
+    return updated_dataset
+
+
 
 
 

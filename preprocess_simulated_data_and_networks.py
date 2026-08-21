@@ -27,19 +27,23 @@ def update_datasets(
         function_options,
         function_kwargs = {},
         ):
+    from copy import deepcopy
     anton_util.log_timestamp(f'{update_function}...')
     updated = []
     for ii, dataset in enumerate(datasets):
         function_kwargs['index'] = ii
         anton_util.log_timestamp(f'dataset {ii}...')
         for option in function_options:
+            # In case the update function modifies in place
+            dataset = deepcopy(dataset)
             anton_util.log_timestamp(f'{option}...')
             updated.append(update_function(dataset, option, **function_kwargs))
     return updated
 
 
-
+# anton_util.log_timestamp('reading..')
 data_raw = anton_util.unpickle_object(input_path / 'simulations.pkl')
+# anton_util.log_timestamp('reading done')
 datasets = data_raw
 
 
@@ -68,16 +72,33 @@ def record_dropout_fractions(datasets, when):
 record_dropout_fractions(datasets, 'before_gene_filtering')
 
 
+
+
+datasets = update_datasets(
+        datasets = datasets,
+        update_function = functions.scanpy_preprocess,
+        function_options = [None],
+        )
+datasets = update_datasets(
+        datasets = datasets,
+        update_function = functions.differential_expression_gene_filtering,
+        function_options = [None],
+        )
+
+# Leaving this in as a sanity check on the DE filtering for now,
+# but can be removed unless I see something strange
 for dataset in datasets:
     Y = dataset['Y']
     stds = Y.std(axis = 0)
-    print('0 stds:')
-    print(sum(stds == 0))
+    if (stds == 0).any():
+        raise ValueError('0 stds found')
+    # print('0 stds:')
+    # print(sum(stds == 0))
     # Hmm, comparing floats to 0
     # Not optimal. Let's see though
-    Y = Y.loc[:, stds > 0]
-    dataset['Y'] = Y
-    print(Y.shape)
+    # Y = Y.loc[:, stds > 0]
+    # dataset['Y'] = Y
+    # print(Y.shape)
 
 
 record_dropout_fractions(datasets, 'after_gene_filtering')
@@ -95,7 +116,7 @@ datasets = update_datasets(
 
 
 
-options = [False, True]
+# options = [False, True]
 # options = [False]
 options = [True]
 function_kwargs = {'meta_data_label': 'cell normalised'}
@@ -159,8 +180,8 @@ bss = deepcopy(datasets)
 # separate those steps. Can reuse the transform function though.
 # transforms = ['none', 'log1p', 'zscores']
 # Debug versions
-transforms = ['zscores']
-# transforms = ['none', 'zscores']
+# transforms = ['zscores']
+transforms = ['none', 'zscores']
 # transforms = ['none']
 function_kwargs = {'meta_data_label': 'transform 2'}
 anton_util.log_timestamp(f'{function_kwargs = }')
