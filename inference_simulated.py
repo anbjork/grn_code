@@ -6,9 +6,10 @@ from grn_code.pipeline_configuration import pipeline_base_path as base_path
 (base_path / 'inferences.pkl').unlink(missing_ok=True)
 
 functions = [
-    functions.fast_methods_inference,
-    functions.random_inference,
-    functions.correlation_inference,
+    # functions.fast_methods_inference,
+    # functions.random_inference,
+    # functions.correlation_inference,
+    functions.perfect_inference,
     # functions.zscore_max_variants,
     # functions.zscore_without_controls,
     # functions.lsco_T_without_controls,

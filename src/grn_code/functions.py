@@ -396,6 +396,40 @@ def lsco_T_without_controls(data):
 
 
 
+def perfect_inference(data):
+
+    from grn_code.pipeline_configuration import pipeline_base_path as base_path
+
+    reference_networks = anton_util.unpickle_object(
+        base_path / 'reference_networks.pkl'
+        )
+    reference_networks_dict = {
+            # frozensets are immutable, and so can be used as keys.
+            # This way, it matches keys on all meta data fields, without
+            # me needing to construct those keys manually.
+            # Guarantees only matching if all meta data fits,
+            # so no risk of errors
+            # (Well, as long as meta data is complete, to uniquely identify)
+            frozenset(r['meta']['dataset_parameters'].items()): r['data'] 
+            for r in reference_networks
+            }
+
+    meta = data['meta']
+    meta_key = frozenset(meta['dataset_parameters'].items())
+    full = reference_networks_dict[meta_key]
+
+    Y = data['Y']
+    genes_in_data = Y.columns
+    filtered = full.loc[genes_in_data, genes_in_data]
+
+    return {
+            'perfect_inference_all_genes': full,
+            'perfect_inference_filtered_genes': filtered
+            }
+
+
+
+
 def dspin_inference_wrapper(data):
     from pprint import pprint
 
