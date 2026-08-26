@@ -76,7 +76,10 @@ if CONFIG_plot_roc_and_pr:
     for benchmark in benchmarks:
         p = deepcopy(benchmark['meta'])
         for k in ['0_fraction', 'any nan', 'inference error']:
-            p.pop(k)
+            try:
+                p.pop(k)
+            except KeyError:
+                pass
         parameters.append(p)
     parameters_flat = [recursive_flatten_dict(p) for p in parameters]
 
