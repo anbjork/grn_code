@@ -14,6 +14,12 @@ input_path = Path('src/grn_code/data_simulation/outputs/')
 from grn_code.pipeline_configuration import pipeline_base_path as output_path
 output_path.mkdir(parents = True, exist_ok = True)
 
+
+
+from grn_code.pipeline_configuration import preprocessing_options as options
+
+
+
 import shutil
 shutil.copy(
     input_path / 'reference_networks.pkl',
@@ -56,20 +62,7 @@ datasets = data_raw
 #     dataset['A'] = dataset['A'].iloc[:10, :10]
 
 
-def record_dropout_fractions(datasets, when):
-    for d in datasets:
-        Y = d['Y']
-        all = Y
-        controls = Y.loc[Y.index == 'control', :]
-        perturbed = Y.loc[~(Y.index == 'control'), :]
-        for subset, name in zip(
-                    [all, controls, perturbed], 
-                    ['all', 'controls', 'perturbed']
-                    ):
-            d['meta'][f'0_fraction__{when}__{name}'] = (
-                    functions.calculate_zero_fraction(subset))
-
-record_dropout_fractions(datasets, 'before_gene_filtering')
+functions.record_dropout_fractions(datasets, 'before_gene_filtering')
 
 
 
@@ -101,7 +94,7 @@ for dataset in datasets:
     # print(Y.shape)
 
 
-record_dropout_fractions(datasets, 'after_gene_filtering')
+functions.record_dropout_fractions(datasets, 'after_gene_filtering')
 
 
 
@@ -110,64 +103,47 @@ record_dropout_fractions(datasets, 'after_gene_filtering')
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.shuffle_y,
-        # function_options = [False, True],
-        function_options = [False],
+        function_options = options['shuffle'],
         )
 
 
 
-# options = [False, True]
-# options = [False]
-options = [True]
 function_kwargs = {'meta_data_label': 'cell normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.normalise,
-        function_options = options,
+        function_options = options['cell normalised'],
         function_kwargs = function_kwargs,
         )
 
 
 
-# n_pseudo_bulk_options = [False, 1, 2, 3, 5, 10]
-# # Debug versions
-# n_pseudo_bulk_options = [10]
-n_pseudo_bulk_options = [False]
-# n_pseudo_bulk_options = [False, 5]
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
-        function_options = n_pseudo_bulk_options,
+        function_options = options['pseudo_bulk'],
         )
 
 
 
 
-# options = [False, True]
-# options = [True]
-options = [False]
 function_kwargs = {'meta_data_label': 'read normalised'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.normalise,
-        function_options = options,
+        function_options = options['read normalised'],
         function_kwargs = function_kwargs,
         )
 
 
-
-# transforms = ['none', 'log1p', 'zscores']
-# Debug versions
-transforms = ['log1p']
-# transforms = ['none', 'log1p']
 function_kwargs = {'meta_data_label': 'transform 1'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
-    function_options = transforms,
+    function_options = options['transform 1'],
     function_kwargs = function_kwargs,
     )
 
@@ -178,17 +154,12 @@ bss = deepcopy(datasets)
 
 # zscores are often calculated after log1p, not instead of, so
 # separate those steps. Can reuse the transform function though.
-# transforms = ['none', 'log1p', 'zscores']
-# Debug versions
-# transforms = ['zscores']
-transforms = ['none', 'zscores']
-# transforms = ['none']
 function_kwargs = {'meta_data_label': 'transform 2'}
 anton_util.log_timestamp(f'{function_kwargs = }')
 datasets = update_datasets(
     datasets = datasets,
     update_function = functions.transform,
-    function_options = transforms,
+    function_options = options['transform 2'],
     function_kwargs = function_kwargs,
     )
 
@@ -197,12 +168,11 @@ css = deepcopy(datasets)
 
 
 
-# options = [False, True]
-options = [False]
 datasets = update_datasets(
     datasets = datasets, 
     update_function = functions.compute_differences, 
-    function_options = options)
+    function_options = options['compute differences'],
+    )
 
 
 dss = deepcopy(datasets)

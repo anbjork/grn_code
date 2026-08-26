@@ -1324,6 +1324,18 @@ def differential_expression_gene_filtering(dataset, option, **kwargs):
 
 
 
+def record_dropout_fractions(datasets, when):
+    for d in datasets:
+        Y = d['Y']
+        all = Y
+        controls = Y.loc[Y.index == 'control', :]
+        perturbed = Y.loc[~(Y.index == 'control'), :]
+        for subset, name in zip(
+                    [all, controls, perturbed], 
+                    ['all', 'controls', 'perturbed']
+                    ):
+            d['meta'][f'0_fraction__{when}__{name}'] = (
+                    calculate_zero_fraction(subset))
 
 
 
