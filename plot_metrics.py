@@ -8,7 +8,6 @@ def plot_metrics_with_jitter(df):
     """
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
-    metrics = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
     # fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
     # Incompatible with constrained_layout
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -22,6 +21,8 @@ def plot_metrics_with_jitter(df):
             jitter = np.random.normal(0, 0.1, len(method_data))
             x_jittered = np.full(len(method_data), j) + jitter
             ax.scatter(x_jittered, method_data, alpha=0.7, s=50)
+        y_max = y_maxes[metric]
+        ax.set_ylim(None, y_max * 1.1)
         ax.set_xlabel('Method')
         ax.set_ylabel(metric)
         ax.set_title(f'{metric} by Method')
@@ -69,6 +70,12 @@ if __name__ == "__main__":
     # print('Configs to plot:')
     # from pprint import pprint
     # pprint(configs)
+
+
+    metrics = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
+    y_maxes = {}
+    for metric in metrics:
+        y_maxes[metric] = df[metric].max()
 
     from copy import deepcopy
     # configs = configs[:1]  # Debug
