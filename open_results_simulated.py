@@ -21,3 +21,16 @@ dfd = df.reset_index(drop = True)
 
 # print(dfd)
 
+
+if False:
+    # Checking dropouts
+    import numpy as np
+    tmp = [True if 'fraction' in name else False for name in dfd.columns]
+    tmp = (np.array(tmp) | (dfd.columns == 'data_case'))
+    aa = dfd.loc[:, tmp]
+    means = {}
+    for gn, g in aa.groupby('data_case'):
+        means[gn] = g.drop('data_case', axis = 1).mean()
+    dfm = pd.DataFrame(means).T
+
+
