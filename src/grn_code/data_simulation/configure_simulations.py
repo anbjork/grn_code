@@ -75,18 +75,72 @@ data_cases = {
             'cell_count': 125,
             'snr': 0.5,
             },
-        'low snr': {
+        # 'low snr': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 0.1,
+        #     'cell_count': 125,
+        #     'snr': 0.05,
+        #     },
+        # 'low snr 0.1': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 0.1,
+        #     'cell_count': 125,
+        #     'snr': 0.1,
+        #     },
+        # 'low snr 0.3': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 0.1,
+        #     'cell_count': 125,
+        #     'snr': 0.3,
+        #     },
+        'low snr 0.03': {
             'negbin_prob': 0.5,
             'dispersion': 0.1,
             'cell_count': 125,
-            'snr': 0.05,
+            'snr': 0.03,
             },
-        'high dropout': {
+        # 'low snr 0.035': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 0.1,
+        #     'cell_count': 125,
+        #     'snr': 0.035,
+        #     },
+        # 'low snr 0.04': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 0.1,
+        #     'cell_count': 125,
+        #     'snr': 0.04,
+        #     },
+        # 'low snr 0.045': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 0.1,
+        #     'cell_count': 125,
+        #     'snr': 0.045,
+        #     },
+        # 'high dropout': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 10,
+        #     'cell_count': 125,
+        #     'snr': 0.5,
+        #     },
+        # 'high dropout 50': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 50,
+        #     'cell_count': 125,
+        #     'snr': 0.5,
+        #     },
+        'high dropout 20': {
             'negbin_prob': 0.5,
-            'dispersion': 10,
+            'dispersion': 20,
             'cell_count': 125,
             'snr': 0.5,
             },
+        # 'high dropout 15': {
+        #     'negbin_prob': 0.5,
+        #     'dispersion': 15,
+        #     'cell_count': 125,
+        #     'snr': 0.5,
+        #     },
         }
 # data_cases = {
 #         'easy': {
