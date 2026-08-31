@@ -62,9 +62,9 @@ df.to_csv(f'{output_path}.csv')
 
 
 
-CONFIG_plot_roc_and_pr = False
+CONFIG_write_auroc_and_aupr = False
 
-if CONFIG_plot_roc_and_pr:
+if CONFIG_write_auroc_and_aupr:
 
     anton_util.log_timestamp('plotting rocs and prs...')
 
