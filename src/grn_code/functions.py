@@ -1253,13 +1253,15 @@ def scanpy_preprocess(dataset, option, **kwargs):
     import scanpy as sc
     _ = option
     Y = dataset['Y']
-    adata = sc.AnnData(
-            X = Y.values, 
-            obs = pd.DataFrame(index = Y.index), 
-            var = pd.DataFrame(index = Y.columns)
-            )
+    obs = pd.DataFrame({'perturbation': list(Y.index)})
+    obs.index = obs.index.astype(str)
+    var = pd.DataFrame({'gene_name': list(Y.columns)})
+    var.index = var.index.astype(str)
+    adata = sc.AnnData(X = Y.values, obs = obs, var = var)
+
+    # Diagnostics. Commented out for performance when not actually looked at
     # sc.pp.calculate_qc_metrics(
-    #         adata, 
+    #         adata,
     #         inplace=True,
     #         # Need to disable this, because data dimensions doesn't match
     #         # its default assumption.
@@ -1279,44 +1281,47 @@ def scanpy_preprocess(dataset, option, **kwargs):
     # print(dataset['meta']['dataset_parameters']['data_case'])
     # print(adata.shape)
     # Remove cells with too few genes detected
-    sc.pp.filter_cells(adata, min_genes=5)
-    # print(adata.shape)
-    # Remove cells with too few total counts
-    # sc.pp.filter_cells(adata, min_counts=500)
-    # print(adata.shape)
-    # print()
-    df = pd.DataFrame(
-            adata.X,
-            index = adata.obs.index,
-            columns = adata.var.index
-            )
-    updated_dataset = update_dataset_default(dataset, df)
-    return updated_dataset
 
+    nz = (Y > 0)
+    genes_per_cell = np.sum(nz, axis = 1)
+    genes_cutoff = np.quantile(genes_per_cell, 0.1)
 
+    cell_counts = np.sum(Y, axis = 1)
+    counts_cutoff = np.quantile(cell_counts, 0.1)
 
+    sc.pp.filter_cells(adata, min_genes = genes_cutoff)
+    sc.pp.filter_cells(adata, min_counts = counts_cutoff)
 
-
-
-def differential_expression_gene_filtering(dataset, option, **kwargs):
-    import scanpy as sc
-    _ = option
-    Y = dataset['Y']
-    adata = sc.AnnData(
-            X = Y.values, 
-            obs = pd.DataFrame(index = Y.index), 
-            var = pd.DataFrame(index = Y.columns)
-            )
     sc.pp.highly_variable_genes(adata, n_top_genes=50, flavor='seurat_v3')
-    sc.pl.highly_variable_genes(
-            adata, 
-            save = f'_dataset_{kwargs["index"]}_highly_variable_genes.png'
-            )
-    adata = adata[:, adata.var['highly_variable']]
+    # Commented out for performance when not actually looked at
+    # sc.pl.highly_variable_genes(
+    #         adata,
+    #         save = f'_dataset_{kwargs["index"]}_highly_variable_genes.png'
+    #         )
+    adata = adata[:, adata.var['highly_variable']]  # pyright: ignore
+    # Slicing makes view, but then subsequent sc.pp functions cannot operate
+    # on view, so they copy. However, they also incessantly warn that they
+    # are copying. Very annoying. In practice, they defferred the copying
+    # from the slicing to the next thing, which is rarely a practically
+    # useful optimisation. This at the cost of spamming users with
+    # warnings, even when they are executing a supported happy case.
+    # Very strange design.. Anyhow, already spent a bunch of time
+    # understanding how and why it's broken like this, so moving on
+    adata = adata.copy()
+
+    # Specifically remove cells that have 0 HVG counts.
+    # Could remove ones with low counts too, but that's not 
+    # biologically and statistically sound on a HVG subset, and 
+    # might theoretically also reduce some genes to 0 counts, making the
+    # data column rank deficient.
+    # The reason for cleaning up empty cells is to avoid NaN values in
+    # subsequent normalisation
+    sc.pp.filter_cells(adata, min_counts = 1)
+
     df = pd.DataFrame(
             adata.X,
-            index = adata.obs.index,
-            columns = adata.var.index
+            index = adata.obs.perturbation,
+            columns = adata.var.gene_name
             )
     updated_dataset = update_dataset_default(dataset, df)
     return updated_dataset

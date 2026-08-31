@@ -1,5 +1,7 @@
 
-import pandas as pd
+# import warnings
+# warnings.filterwarnings("error")
+
 from pathlib import Path
 import anton_util
 from grn_code import functions
@@ -47,6 +49,8 @@ def update_datasets(
     return updated
 
 
+
+
 # anton_util.log_timestamp('reading..')
 data_raw = anton_util.unpickle_object(input_path / 'simulations.pkl')
 # anton_util.log_timestamp('reading done')
@@ -62,39 +66,15 @@ datasets = data_raw
 #     dataset['A'] = dataset['A'].iloc[:10, :10]
 
 
-functions.record_dropout_fractions(datasets, 'before_gene_filtering')
-
-
-
+functions.record_dropout_fractions(datasets, 'before_filtering')
 
 datasets = update_datasets(
         datasets = datasets,
         update_function = functions.scanpy_preprocess,
         function_options = [None],
         )
-datasets = update_datasets(
-        datasets = datasets,
-        update_function = functions.differential_expression_gene_filtering,
-        function_options = [None],
-        )
 
-# Leaving this in as a sanity check on the DE filtering for now,
-# but can be removed unless I see something strange
-for dataset in datasets:
-    Y = dataset['Y']
-    stds = Y.std(axis = 0)
-    if (stds == 0).any():
-        raise ValueError('0 stds found')
-    # print('0 stds:')
-    # print(sum(stds == 0))
-    # Hmm, comparing floats to 0
-    # Not optimal. Let's see though
-    # Y = Y.loc[:, stds > 0]
-    # dataset['Y'] = Y
-    # print(Y.shape)
-
-
-functions.record_dropout_fractions(datasets, 'after_gene_filtering')
+functions.record_dropout_fractions(datasets, 'after_filtering')
 
 
 
@@ -147,10 +127,6 @@ datasets = update_datasets(
     function_kwargs = function_kwargs,
     )
 
-from copy import deepcopy
-
-bss = deepcopy(datasets)
-
 
 # zscores are often calculated after log1p, not instead of, so
 # separate those steps. Can reuse the transform function though.
@@ -164,9 +140,6 @@ datasets = update_datasets(
     )
 
 
-css = deepcopy(datasets)
-
-
 
 datasets = update_datasets(
     datasets = datasets, 
@@ -174,8 +147,6 @@ datasets = update_datasets(
     function_options = options['compute differences'],
     )
 
-
-dss = deepcopy(datasets)
 
 
 
@@ -185,15 +156,24 @@ for ii, dataset in enumerate(datasets):
     dataset['P'] = functions.get_P(dataset['Y'])
 
 
+# A few sanity checks on pre processed data
+def throw_if_any_nan(datasets):
+    import numpy as np
+    for dataset in datasets:
+        Y = dataset['Y']
+        if np.any(np.isnan(Y)):
+            raise ValueError('NaN found in Y')
+throw_if_any_nan(datasets)
 
-import numpy as np
 for dataset in datasets:
     Y = dataset['Y']
-    # print(dataset['meta'])
-    dataset['meta']['any nan'] = np.any(np.isnan(Y))
-metas = [d['meta'] for d in datasets]
+    stds = Y.std(axis = 0)
+    if (stds == 0).any():
+        raise ValueError('0 stds found')
+
 # For debugging and manual inspection, not saved
-df = pd.DataFrame(metas)
+# metas = [d['meta'] for d in datasets]
+# df = pd.DataFrame(metas)
 
 
 outfile = Path(output_path / 'data_processed.pkl')
