@@ -1,6 +1,5 @@
 
 rm -rf genespider
-rm -rf genesnake
 
 git clone git@bitbucket.org:sonnhammergrni/genespider.git
 cd genespider
