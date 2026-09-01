@@ -7,5 +7,6 @@ git clone https://antonbjork@bitbucket.org/sonnhammergrni/genesnake.git
 
 pip install numpy pandas matplotlib anton_util
 
+pip install -e .
 
 
