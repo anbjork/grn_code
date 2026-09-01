@@ -5,8 +5,12 @@ cd -
 
 git clone https://antonbjork@bitbucket.org/sonnhammergrni/genesnake.git
 
-pip install numpy pandas matplotlib anton_util
+cd genesnake
+pip install -e .
+cd -
+
+
+pip install numpy pandas matplotlib anton_util h5py
 
 pip install -e .
-
 
