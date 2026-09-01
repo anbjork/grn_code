@@ -9,6 +9,9 @@ cd genesnake
 pip install -e .
 cd -
 
+cd src/grn_code/data_simulation
+bash setup.sh
+cd -
 
 pip install numpy pandas matplotlib anton_util h5py
 
