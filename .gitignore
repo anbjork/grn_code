@@ -21,3 +21,5 @@ __*
 /archived/not_for_git/
 
 src/grn_code/pipeline_configuration.py
+run_simulated.sh
+

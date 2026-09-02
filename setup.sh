@@ -3,6 +3,8 @@ cd src/grn_code/
 cp pipeline_configuration_template.py pipeline_configuration.py
 cd -
 
+cp run_simulated_template.sh run_simulated.sh
+
 git clone git@bitbucket.org:sonnhammergrni/genesnake.git
 
 cd genesnake
