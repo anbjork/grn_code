@@ -25,27 +25,37 @@ CATEGORICAL_PREDICTORS = {
     'replicate':        '0',
     'control_delta':    'False',
 }
-CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'n_genes_after_harmonisation',
+CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs',
                           'ERMA', '0_fraction__before_filtering__all']
 
 # Cast categorical predictors to string to avoid bool/int coercion issues
 for col in CATEGORICAL_PREDICTORS:
     df[col] = df[col].astype(str)
 
-# Standardize continuous predictors so coefficients are in units of 1 SD
+# Scale continuous predictors by IQR (Q25 to Q75).
+# Coefficients then represent the effect of going from Q25 to Q75.
 df_model_base = df.copy()
-print('\nContinuous predictor scaling (mean, std):')
+print('\nContinuous predictor distributions (min, Q25, median, Q75, max):')
 for col in CONTINUOUS_PREDICTORS:
-    mean, std = df[col].mean(), df[col].std()
-    print(f'  {col}: mean={mean:.3g}, std={std:.3g}')
-    df_model_base[col] = (df[col] - mean) / std
+    lo, q25, med, q75, hi = df[col].quantile([0, 0.25, 0.5, 0.75, 1.0])
+    print(f'  {col}: {lo:.3g}, {q25:.3g}, {med:.3g}, {q75:.3g}, {hi:.3g}')
+
+zero_fraction_cols = [c for c in df.columns if '0_fraction' in c]
+print('\nZero fraction variable distributions (min, Q25, median, Q75, max):')
+for col in zero_fraction_cols:
+    lo, q25, med, q75, hi = df[col].quantile([0, 0.25, 0.5, 0.75, 1.0])
+    print(f'  {col}: {lo:.3g}, {q25:.3g}, {med:.3g}, {q75:.3g}, {hi:.3g}')
 
 print('\nLevels of categorical predictors:')
 for col, ref_level in CATEGORICAL_PREDICTORS.items():
     levels = sorted(df[col].unique())
     print(f'  {col}: {levels}  (reference: {ref_level})')
 
-print(f'\nContinuous predictors (standardized): {CONTINUOUS_PREDICTORS}')
+for col in CONTINUOUS_PREDICTORS:
+    q25, q75 = df[col].quantile([0.25, 0.75])
+    df_model_base[col] = (df[col] - q25) / (q75 - q25)
+
+print(f'\nContinuous predictors (IQR-scaled): {CONTINUOUS_PREDICTORS}')
 
 def needs_quoting(name):
     return ' ' in name or name[0].isdigit()
