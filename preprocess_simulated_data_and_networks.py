@@ -51,6 +51,27 @@ def update_datasets(
 
 
 
+def find_variable_columns(Y):
+    stds = Y.std(axis=0)
+    means = Y.abs().mean(axis=0)
+    atol = 1e-10
+    rtol = 1e-3
+    valid_cols = stds > (atol + rtol * means)
+    return valid_cols
+
+
+def find_flat_datasets(datasets):
+    flat_datasets = [
+            not find_variable_columns(dataset['Y']).all() 
+            for dataset in datasets]
+    return flat_datasets
+
+
+
+
+
+
+
 # anton_util.log_timestamp('reading..')
 data_raw = anton_util.unpickle_object(input_path / 'simulations.pkl')
 # anton_util.log_timestamp('reading done')
@@ -140,14 +161,22 @@ datasets = update_datasets(
     )
 
 
+# Checking before control deltas, since I know they can sometimes
+# introduce 0 stds. If 0 stds before that, something is unexpected and
+# I want to know.
+flat_datasets_1 = find_flat_datasets(datasets)
 
 datasets = update_datasets(
-    datasets = datasets, 
+    datasets = datasets,
     update_function = functions.compute_differences, 
     function_options = options['compute differences'],
     )
 
-
+for dataset in datasets:
+    Y = dataset['Y']
+    cols = find_variable_columns(Y)
+    Y = Y.loc[:, cols]
+    dataset['Y'] = Y
 
 
 anton_util.log_timestamp('extracting P...')
@@ -156,32 +185,60 @@ for ii, dataset in enumerate(datasets):
     dataset['P'] = functions.get_P(dataset['Y'])
 
 
-# A few sanity checks on pre processed data
-def throw_if_any_nan(datasets):
+
+# outfile = Path(output_path / 'data_processed.pkl')
+# anton_util.log_timestamp('saving...')
+# anton_util.pickle_object(datasets, outfile)
+
+
+
+
+###### A few sanity checks on pre processed data #########
+# Doing this after saving, so that data remains for inspection if crash.
+
+def throw_if_any_nan_or_inf(datasets):
     import numpy as np
     for dataset in datasets:
         Y = dataset['Y']
         if np.any(np.isnan(Y)):
             raise ValueError('NaN found in Y')
-throw_if_any_nan(datasets)
+        if np.any(np.isinf(Y)):
+            raise ValueError('inf found in Y')
 
-for dataset in datasets:
-    Y = dataset['Y']
-    stds = Y.std(axis = 0)
-    if (stds == 0).any():
+throw_if_any_nan_or_inf(datasets)
+
+flat_datasets = find_flat_datasets(datasets)
+import numpy as np
+for df in [flat_datasets, flat_datasets_1]:
+    if any(np.array(df)):
         raise ValueError('0 stds found')
 
-# For debugging and manual inspection, not saved
-# metas = [d['meta'] for d in datasets]
-# df = pd.DataFrame(metas)
+metas = [d['meta'] for d in datasets]
+for meta in metas:
+    for k, v in meta['dataset_parameters'].items():
+        meta[k] = v
+    meta.pop('dataset_parameters')
+import pandas as pd
+df = pd.DataFrame(metas)
 
 
-outfile = Path(output_path / 'data_processed.pkl')
-anton_util.log_timestamp('saving...')
-anton_util.pickle_object(datasets, outfile)
 
+def plot_counts(array):
+    from collections  import Counter
+    tmp = sorted(Counter(array).items())
+    rows, counts = zip(*tmp)
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    plt.plot(rows, counts)
+    return fig
 
-
+cols = [d['Y'].shape[1] for d in datasets]
+rows = [d['Y'].shape[0] for d in datasets]
+plot_dir = Path(f'{output_path}/unsorted/')
+plot_dir.mkdir(parents = True, exist_ok = True)
+for name, var in zip(['observations', 'genes'], [rows, cols]):
+    fig = plot_counts(var)
+    fig.savefig(f'{output_path}/unsorted/dataset_counts_against_number_of_{name}.png')
 
 
 
