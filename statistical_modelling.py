@@ -1,4 +1,6 @@
 import statsmodels.formula.api as smf
+import pandas as pd
+import numpy as np
 from pathlib import Path
 import anton_util
 
@@ -14,28 +16,59 @@ print(f'Columns available: {list(df.columns)}')
 # OUTCOMES = ['AUPR ratio', 'AUPR', 'AUROC', 'top_k_accuracy']
 OUTCOMES = ['AUROC']  # Debug
 
-CATEGORICAL_PREDICTORS = ['method', 'pseudo_bulk', 'cell normalised',
-                           'transform 1', 'transform 2', 'replicate', 'control_delta']
-CONTINUOUS_PREDICTORS  = ['snr', 'cell_count', 'n_TPs', 'n_genes_after_harmonisation',
-                           'ERMA', '0_fraction__before_filtering__all']
+CATEGORICAL_PREDICTORS = {
+    'method':           'random',
+    'pseudo_bulk':      'False',
+    'cell normalised':  'False',
+    'transform 1':      'none',
+    'transform 2':      'none',
+    'replicate':        '0',
+    'control_delta':    'False',
+}
+CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'n_genes_after_harmonisation',
+                          'ERMA', '0_fraction__before_filtering__all']
 
-print(f'Categorical predictors: {CATEGORICAL_PREDICTORS}')
-print(f'Continuous predictors:  {CONTINUOUS_PREDICTORS}')
+# Cast categorical predictors to string to avoid bool/int coercion issues
+for col in CATEGORICAL_PREDICTORS:
+    df[col] = df[col].astype(str)
+
+# Standardize continuous predictors so coefficients are in units of 1 SD
+df_model_base = df.copy()
+print('\nContinuous predictor scaling (mean, std):')
+for col in CONTINUOUS_PREDICTORS:
+    mean, std = df[col].mean(), df[col].std()
+    print(f'  {col}: mean={mean:.3g}, std={std:.3g}')
+    df_model_base[col] = (df[col] - mean) / std
+
+print('\nLevels of categorical predictors:')
+for col, ref_level in CATEGORICAL_PREDICTORS.items():
+    levels = sorted(df[col].unique())
+    print(f'  {col}: {levels}  (reference: {ref_level})')
+
+print(f'\nContinuous predictors (standardized): {CONTINUOUS_PREDICTORS}')
 
 def needs_quoting(name):
     return ' ' in name or name[0].isdigit()
 
-def term(name, categorical=False):
-    q = f'Q("{name}")' if needs_quoting(name) else name
-    return f'C({q})' if categorical else q
+def ref(name):
+    """Return a formula reference to a column, quoting if necessary."""
+    return f'Q("{name}")' if needs_quoting(name) else name
+
+def cat_term(name, ref_level):
+    """Categorical term with explicit reference level."""
+    return f'C({ref(name)}, Treatment("{ref_level}"))'
+
+def cont_term(name):
+    """Continuous term."""
+    return ref(name)
 
 formula_terms = (
-    [term(p, categorical=True) for p in CATEGORICAL_PREDICTORS] +
-    [term(p, categorical=False) for p in CONTINUOUS_PREDICTORS]
+    [cat_term(col, ref_level) for col, ref_level in CATEGORICAL_PREDICTORS.items()] +
+    [cont_term(p) for p in CONTINUOUS_PREDICTORS]
 )
 
 for outcome in OUTCOMES:
-    lhs = term(outcome)
+    lhs = ref(outcome)
     formula = lhs + ' ~ ' + ' + '.join(formula_terms)
 
     print('\n' + '=' * 72)
@@ -43,8 +76,8 @@ for outcome in OUTCOMES:
     print(f'Formula : {formula}')
     print('=' * 72)
 
-    cols = [outcome] + CATEGORICAL_PREDICTORS + CONTINUOUS_PREDICTORS
-    df_model = df[cols].dropna()
+    cols = [outcome] + list(CATEGORICAL_PREDICTORS.keys()) + CONTINUOUS_PREDICTORS
+    df_model = df_model_base[cols].dropna()
 
     model = smf.ols(formula, data=df_model).fit()
     print(model.summary())
