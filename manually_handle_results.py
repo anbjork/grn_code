@@ -28,6 +28,25 @@ anton_util.log_timestamp('done reading')
 # Note; Only for convenience, and how contents of outputs are written to disk
 # in the save function prepared below
 data_processed, reference_networks, inferences, benchmarks = outputs
+# Convenience alias
+datasets = data_processed
+
+
+
+
+
+from copy import deepcopy
+metas = deepcopy([d['meta'] for d in datasets])
+for meta in metas:
+    for k, v in meta['dataset_parameters'].items():
+        meta[k] = v
+    meta.pop('dataset_parameters')
+dataset_dict = {}
+for meta, data in zip(metas, datasets):
+    dataset_dict[frozenset(meta.items())] = data
+
+
+
 
 
 # The intention is to do whatever manual handling desired interactively here

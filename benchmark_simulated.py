@@ -53,9 +53,15 @@ for ii, inference in enumerate(inferred):
         'data': mstats,
     })
 
+anton_util.log_timestamp('saving benchmark results...')
 outfile = base_path / 'benchmarks.pkl'
 outfile.parent.mkdir(parents = True, exist_ok = True)
 anton_util.pickle_object(stats, outfile)
+anton_util.log_timestamp('benchmarking done')
+
+
+
+
 
 
 

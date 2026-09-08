@@ -55,7 +55,10 @@ df['AUPR ratio'] = df['AUPR'] / df['ERMA']
 anton_util.log_timestamp('saving results...')
 anton_util.pickle_object(df, f'{output_path}.pkl')
 drop_cols = ['plot_roc', 'plot_pr']
-df = df.drop(drop_cols, axis = 1)
+try:
+    df = df.drop(drop_cols, axis = 1)
+except KeyError:
+    pass
 df.to_csv(f'{output_path}.csv')
 
 
