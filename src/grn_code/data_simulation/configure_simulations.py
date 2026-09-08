@@ -68,80 +68,80 @@ python_global_parameters = {
         'average_network_degree': 3
         }
 
-data_cases = {
-        'easy': {
-            'negbin_prob': 0.5,
-            'dispersion': 0.1,
-            'cell_count': 125,
-            'snr': 0.5,
-            },
-        # 'low snr': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.05,
-        #     },
-        # 'low snr 0.1': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.1,
-        #     },
-        # 'low snr 0.3': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.3,
-        #     },
-        'low snr 0.03': {
-            'negbin_prob': 0.5,
-            'dispersion': 0.1,
-            'cell_count': 125,
-            'snr': 0.03,
-            },
-        # 'low snr 0.035': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.035,
-        #     },
-        # 'low snr 0.04': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.04,
-        #     },
-        # 'low snr 0.045': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 0.1,
-        #     'cell_count': 125,
-        #     'snr': 0.045,
-        #     },
-        # 'high dropout': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 10,
-        #     'cell_count': 125,
-        #     'snr': 0.5,
-        #     },
-        # 'high dropout 50': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 50,
-        #     'cell_count': 125,
-        #     'snr': 0.5,
-        #     },
-        'high dropout 20': {
-            'negbin_prob': 0.5,
-            'dispersion': 20,
-            'cell_count': 125,
-            'snr': 0.5,
-            },
-        # 'high dropout 15': {
-        #     'negbin_prob': 0.5,
-        #     'dispersion': 15,
-        #     'cell_count': 125,
-        #     'snr': 0.5,
-        #     },
-        }
+# data_cases = {
+#         'easy': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.5,
+#             },
+#         # 'low snr': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 0.1,
+#         #     'cell_count': 125,
+#         #     'snr': 0.05,
+#         #     },
+#         # 'low snr 0.1': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 0.1,
+#         #     'cell_count': 125,
+#         #     'snr': 0.1,
+#         #     },
+#         # 'low snr 0.3': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 0.1,
+#         #     'cell_count': 125,
+#         #     'snr': 0.3,
+#         #     },
+#         'low snr 0.03': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.03,
+#             },
+#         # 'low snr 0.035': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 0.1,
+#         #     'cell_count': 125,
+#         #     'snr': 0.035,
+#         #     },
+#         # 'low snr 0.04': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 0.1,
+#         #     'cell_count': 125,
+#         #     'snr': 0.04,
+#         #     },
+#         # 'low snr 0.045': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 0.1,
+#         #     'cell_count': 125,
+#         #     'snr': 0.045,
+#         #     },
+#         # 'high dropout': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 10,
+#         #     'cell_count': 125,
+#         #     'snr': 0.5,
+#         #     },
+#         # 'high dropout 50': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 50,
+#         #     'cell_count': 125,
+#         #     'snr': 0.5,
+#         #     },
+#         'high dropout 20': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 20,
+#             'cell_count': 125,
+#             'snr': 0.5,
+#             },
+#         # 'high dropout 15': {
+#         #     'negbin_prob': 0.5,
+#         #     'dispersion': 15,
+#         #     'cell_count': 125,
+#         #     'snr': 0.5,
+#         #     },
+#         }
 # data_cases = {
 #         'easy': {
 #             'negbin_prob': 0.5,
@@ -183,47 +183,47 @@ data_cases = {
 # with open('outputs/data_cases.json', 'w') as f:
 #     json.dump(data_cases, f, indent = 4)
 
-repeats = 5
-parameter_sets = []
-from copy import deepcopy
-for data_case, parameters in data_cases.items():
-    parameters['data_case'] = data_case
-    for ii in range(repeats):
-        parameters['replicate'] = ii
-        parameter_sets.append(deepcopy(parameters))
-
-
-
-# parameter_values = {
-#     'negbin_prob': [0.5],
-#     'cell_count': [125],
-#     'dispersion': [0.1, 10],
-#     'snr': [0.05, 0.5],
-#     }
-# def recursive_combos(parameter_values, determined):
-#     from copy import deepcopy
-#     if len(parameter_values) == 0:
-#         return [determined]
-#     full_sets = []
-#     k, options = parameter_values.popitem()
-#     for option in options:
-#         determined[k] = option
-#         full_sets.extend(recursive_combos(
-#                 deepcopy(parameter_values), deepcopy(determined)
-#                 ))
-#     return full_sets
-# parameter_factorial_design = recursive_combos(parameter_values, {})
-# from pprint import pprint
-# pprint(parameter_factorial_design)
-#
-#
 # repeats = 5
 # parameter_sets = []
 # from copy import deepcopy
-# for parameter_set in parameter_factorial_design:
+# for data_case, parameters in data_cases.items():
+#     parameters['data_case'] = data_case
 #     for ii in range(repeats):
-#         parameter_set['replicate'] = ii
-#         parameter_sets.append(deepcopy(parameter_set))
+#         parameters['replicate'] = ii
+#         parameter_sets.append(deepcopy(parameters))
+
+
+
+parameter_values = {
+    'negbin_prob': [0.5],
+    'cell_count': [50, 200],
+    'dispersion': [0.1, 20],
+    'snr': [0.03, 0.5],
+    }
+def recursive_combos(parameter_values, determined):
+    from copy import deepcopy
+    if len(parameter_values) == 0:
+        return [determined]
+    full_sets = []
+    k, options = parameter_values.popitem()
+    for option in options:
+        determined[k] = option
+        full_sets.extend(recursive_combos(
+                deepcopy(parameter_values), deepcopy(determined)
+                ))
+    return full_sets
+parameter_factorial_design = recursive_combos(parameter_values, {})
+from pprint import pprint
+pprint(parameter_factorial_design)
+
+
+repeats = 5
+parameter_sets = []
+from copy import deepcopy
+for parameter_set in parameter_factorial_design:
+    for ii in range(repeats):
+        parameter_set['replicate'] = ii
+        parameter_sets.append(deepcopy(parameter_set))
 
 
 
