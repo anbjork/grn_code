@@ -22,14 +22,22 @@ CATEGORICAL_PREDICTORS = {
     'cell normalised':  'False',
     'transform 1':      'none',
     'transform 2':      'none',
-    'replicate':        '0',
     'control_delta':    'False',
 }
 CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs',
                           'ERMA', '0_fraction__before_filtering__all']
 
+# Predictors screened for significance before inclusion in the main model.
+# Categoricals use a joint F-test; continuous use the t-test p-value.
+SCREENED_CATEGORICAL = {
+    'replicate': '0',
+}
+SCREENED_CONTINUOUS = ['n_genes_after_harmonisation']
+
+SIGNIFICANCE_THRESHOLD = 0.05
+
 # Cast categorical predictors to string to avoid bool/int coercion issues
-for col in CATEGORICAL_PREDICTORS:
+for col in list(CATEGORICAL_PREDICTORS) + list(SCREENED_CATEGORICAL):
     df[col] = df[col].astype(str)
 
 # Scale continuous predictors by IQR (Q25 to Q75).
@@ -51,9 +59,13 @@ for col, ref_level in CATEGORICAL_PREDICTORS.items():
     levels = sorted(df[col].unique())
     print(f'  {col}: {levels}  (reference: {ref_level})')
 
-for col in CONTINUOUS_PREDICTORS:
+for col in CONTINUOUS_PREDICTORS + SCREENED_CONTINUOUS:
     q25, q75 = df[col].quantile([0.25, 0.75])
-    df_model_base[col] = (df[col] - q25) / (q75 - q25)
+    iqr = q75 - q25
+    if iqr > 0:
+        df_model_base[col] = (df[col] - q25) / iqr
+    else:
+        df_model_base[col] = 0.0
 
 print(f'\nContinuous predictors (IQR-scaled): {CONTINUOUS_PREDICTORS}')
 
@@ -77,9 +89,58 @@ formula_terms = (
     [cont_term(p) for p in CONTINUOUS_PREDICTORS]
 )
 
+def joint_f_pvalue(model, term_prefix):
+    """F-test p-value for all levels of a categorical term."""
+    matching = [t for t in model.params.index if t.startswith(term_prefix)]
+    if not matching:
+        return float('nan')
+    return model.f_test([f'{t} = 0' for t in matching]).pvalue
+
 for outcome in OUTCOMES:
     lhs = ref(outcome)
-    formula = lhs + ' ~ ' + ' + '.join(formula_terms)
+
+    # --- Screening stage ---
+    all_cat = {**CATEGORICAL_PREDICTORS, **SCREENED_CATEGORICAL}
+    all_cont = CONTINUOUS_PREDICTORS + SCREENED_CONTINUOUS
+    screen_terms = (
+        [cat_term(col, ref_level) for col, ref_level in all_cat.items()] +
+        [cont_term(p) for p in all_cont]
+    )
+    screen_formula = lhs + ' ~ ' + ' + '.join(screen_terms)
+    cols_screen = [outcome] + list(all_cat.keys()) + all_cont
+    df_screen = df_model_base[cols_screen].dropna()
+    screen_model = smf.ols(screen_formula, data=df_screen).fit()
+
+    print('\n' + '=' * 72)
+    print(f'Screening stage for outcome: {outcome}')
+    print(f'  {"Predictor":<45} {"p-value":>10}  {"included?":>10}')
+    print(f'  {"-"*45} {"-"*10}  {"-"*10}')
+
+    active_cat = dict(CATEGORICAL_PREDICTORS)
+    active_cont = list(CONTINUOUS_PREDICTORS)
+
+    for col, ref_level in SCREENED_CATEGORICAL.items():
+        prefix = f'C({ref(col)}, Treatment("{ref_level}"))'
+        pval = joint_f_pvalue(screen_model, prefix)
+        keep = pval < SIGNIFICANCE_THRESHOLD
+        if keep:
+            active_cat[col] = ref_level
+        print(f'  {col:<45} {pval:>10.4f}  {"yes" if keep else "no":>10}')
+
+    for col in SCREENED_CONTINUOUS:
+        term = cont_term(col)
+        pval = screen_model.pvalues.get(term, float('nan'))
+        keep = pval < SIGNIFICANCE_THRESHOLD
+        if keep:
+            active_cont.append(col)
+        print(f'  {col:<45} {pval:>10.4f}  {"yes" if keep else "no":>10}')
+
+    # --- Main model ---
+    formula_terms_active = (
+        [cat_term(col, ref_level) for col, ref_level in active_cat.items()] +
+        [cont_term(p) for p in active_cont]
+    )
+    formula = lhs + ' ~ ' + ' + '.join(formula_terms_active)
 
     print('\n' + '=' * 72)
     print(f'Outcome : {outcome}')
