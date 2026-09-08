@@ -148,7 +148,17 @@ def benchmark_method_against_reference(
         reference_network=harmonised_reference_network.astype(bool),
         method_name=method,
         fix_pr_ylim = True,
+        return_plots = False,
         )
+    # Does this reduce space use? For a relatively large run,
+    # it saved about 2 GB of disk. The preprocessed data for that run
+    # takes 7.6 GB, so no important difference. Also didn't notice
+    # a meaningful speed difference, based on time stamps in logs,
+    # for some partial test runs. Leaving the plots in by default.
+    # [tmp.pop(s) for s in ['plot_roc', 'plot_pr']]
+    #
+    # Above outdated, because added option to return the data rather
+    # than the plots themselves
     ntps = np.nonzero(harmonised_reference_network)[0].shape[0]
     n_genes_after_harmonisation = harmonised_reference_network.shape[0]
     stats = {
