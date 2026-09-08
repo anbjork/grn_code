@@ -1135,6 +1135,7 @@ def bin_bulk(
         dataset,
         n_pseudo_bulks = 5,
         verbose = False,
+        terse = False,
         **kwargs,
         ):
     # Based on initial testing, pseudo bulking is a
@@ -1156,6 +1157,8 @@ def bin_bulk(
     max_complaints = 3
     complaints_count = 0
     complain = True
+    if terse:
+        complain = False
 
     mat_bulk = []
     mat_indices = []
@@ -1181,6 +1184,9 @@ def bin_bulk(
             n_pseudo_bulks = n_requested_pseudo_bulks
         elif n_pseudo_bulks < n_requested_pseudo_bulks:
             complaints_count = complaints_count + 1
+            if terse:
+                print('some pseudo bulks have few cells')
+                terse = False
             if complain:
                 print()
                 print(f'smallest intended bin size is {smallest_intended_bin}')

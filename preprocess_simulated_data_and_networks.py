@@ -124,6 +124,7 @@ datasets = update_datasets(
         datasets = datasets,
         update_function = functions.bin_bulk,
         function_options = options['pseudo_bulk'],
+        function_kwargs = {'terse' : True},
         )
 
 
