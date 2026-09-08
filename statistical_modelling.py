@@ -16,28 +16,25 @@ print(f'Columns available: {list(df.columns)}')
 # OUTCOMES = ['AUPR ratio', 'AUPR', 'AUROC', 'top_k_accuracy']
 OUTCOMES = ['AUROC']  # Debug
 
+# All categorical predictors with their reference levels.
+# All are screened; insignificant ones are dropped before the main model.
 CATEGORICAL_PREDICTORS = {
-    'method':           'random',
-    'pseudo_bulk':      'False',
-    'cell normalised':  'False',
-    'transform 1':      'none',
-    'transform 2':      'none',
-    'control_delta':    'False',
+    'method':                    'random',
+    'pseudo_bulk':               'False',
+    'cell normalised':           'False',
+    'transform 1':               'none',
+    'transform 2':               'none',
+    'control_delta':             'False',
+    'replicate':                 '0',
 }
-CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs',
-                          'ERMA', '0_fraction__before_filtering__all']
-
-# Predictors screened for significance before inclusion in the main model.
-# Categoricals use a joint F-test; continuous use the t-test p-value.
-SCREENED_CATEGORICAL = {
-    'replicate': '0',
-}
-SCREENED_CONTINUOUS = ['n_genes_after_harmonisation']
+CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'ERMA',
+                          '0_fraction__before_filtering__all',
+                          'n_genes_after_harmonisation']
 
 SIGNIFICANCE_THRESHOLD = 0.05
 
 # Cast categorical predictors to string to avoid bool/int coercion issues
-for col in list(CATEGORICAL_PREDICTORS) + list(SCREENED_CATEGORICAL):
+for col in CATEGORICAL_PREDICTORS:
     df[col] = df[col].astype(str)
 
 # Scale continuous predictors by IQR (Q25 to Q75).
@@ -59,13 +56,12 @@ for col, ref_level in CATEGORICAL_PREDICTORS.items():
     levels = sorted(df[col].unique())
     print(f'  {col}: {levels}  (reference: {ref_level})')
 
-for col in CONTINUOUS_PREDICTORS + SCREENED_CONTINUOUS:
+for col in CONTINUOUS_PREDICTORS:
     q25, q75 = df[col].quantile([0.25, 0.75])
     iqr = q75 - q25
-    if iqr > 0:
-        df_model_base[col] = (df[col] - q25) / iqr
-    else:
-        df_model_base[col] = 0.0
+    if iqr == 0:
+        raise ValueError(f'IQR is zero for {col!r} — cannot scale. ')
+    df_model_base[col] = (df[col] - q25) / iqr
 
 print(f'\nContinuous predictors (IQR-scaled): {CONTINUOUS_PREDICTORS}')
 
@@ -84,11 +80,6 @@ def cont_term(name):
     """Continuous term."""
     return ref(name)
 
-formula_terms = (
-    [cat_term(col, ref_level) for col, ref_level in CATEGORICAL_PREDICTORS.items()] +
-    [cont_term(p) for p in CONTINUOUS_PREDICTORS]
-)
-
 def joint_f_pvalue(model, term_prefix):
     """F-test p-value for all levels of a categorical term."""
     matching = [t for t in model.params.index if t.startswith(term_prefix)]
@@ -99,27 +90,23 @@ def joint_f_pvalue(model, term_prefix):
 for outcome in OUTCOMES:
     lhs = ref(outcome)
 
-    # --- Screening stage ---
-    all_cat = {**CATEGORICAL_PREDICTORS, **SCREENED_CATEGORICAL}
-    all_cont = CONTINUOUS_PREDICTORS + SCREENED_CONTINUOUS
-    screen_terms = (
-        [cat_term(col, ref_level) for col, ref_level in all_cat.items()] +
-        [cont_term(p) for p in all_cont]
+    # --- Screening: fit full model, drop insignificant predictors ---
+    all_terms = (
+        [cat_term(col, ref_level) for col, ref_level in CATEGORICAL_PREDICTORS.items()] +
+        [cont_term(p) for p in CONTINUOUS_PREDICTORS]
     )
-    screen_formula = lhs + ' ~ ' + ' + '.join(screen_terms)
-    cols_screen = [outcome] + list(all_cat.keys()) + all_cont
-    df_screen = df_model_base[cols_screen].dropna()
-    screen_model = smf.ols(screen_formula, data=df_screen).fit()
+    screen_formula = lhs + ' ~ ' + ' + '.join(all_terms)
+    cols_all = [outcome] + list(CATEGORICAL_PREDICTORS.keys()) + CONTINUOUS_PREDICTORS
+    df_model = df_model_base[cols_all].dropna()
+    screen_model = smf.ols(screen_formula, data=df_model).fit()
 
     print('\n' + '=' * 72)
     print(f'Screening stage for outcome: {outcome}')
     print(f'  {"Predictor":<45} {"p-value":>10}  {"included?":>10}')
     print(f'  {"-"*45} {"-"*10}  {"-"*10}')
 
-    active_cat = dict(CATEGORICAL_PREDICTORS)
-    active_cont = list(CONTINUOUS_PREDICTORS)
-
-    for col, ref_level in SCREENED_CATEGORICAL.items():
+    active_cat = {}
+    for col, ref_level in CATEGORICAL_PREDICTORS.items():
         prefix = f'C({ref(col)}, Treatment("{ref_level}"))'
         pval = joint_f_pvalue(screen_model, prefix)
         keep = pval < SIGNIFICANCE_THRESHOLD
@@ -127,7 +114,8 @@ for outcome in OUTCOMES:
             active_cat[col] = ref_level
         print(f'  {col:<45} {pval:>10.4f}  {"yes" if keep else "no":>10}')
 
-    for col in SCREENED_CONTINUOUS:
+    active_cont = []
+    for col in CONTINUOUS_PREDICTORS:
         term = cont_term(col)
         pval = screen_model.pvalues.get(term, float('nan'))
         keep = pval < SIGNIFICANCE_THRESHOLD
@@ -135,7 +123,7 @@ for outcome in OUTCOMES:
             active_cont.append(col)
         print(f'  {col:<45} {pval:>10.4f}  {"yes" if keep else "no":>10}')
 
-    # --- Main model ---
+    # --- Main model: refit with only significant predictors ---
     formula_terms_active = (
         [cat_term(col, ref_level) for col, ref_level in active_cat.items()] +
         [cont_term(p) for p in active_cont]
@@ -146,9 +134,6 @@ for outcome in OUTCOMES:
     print(f'Outcome : {outcome}')
     print(f'Formula : {formula}')
     print('=' * 72)
-
-    cols = [outcome] + list(CATEGORICAL_PREDICTORS.keys()) + CONTINUOUS_PREDICTORS
-    df_model = df_model_base[cols].dropna()
 
     model = smf.ols(formula, data=df_model).fit()
     print(model.summary())
