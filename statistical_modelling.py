@@ -43,15 +43,15 @@ def print_distributions(cols, header):
 # Scale continuous predictors by 2 standard deviations (mean ± 1 std).
 # Coefficients then represent the effect of going from mean-1sd to mean+1sd.
 df_model_base = df.copy()
-print_distributions(CONTINUOUS_PREDICTORS, 'Continuous predictor distributions')
-
-zero_fraction_cols = [c for c in df.columns if '0_fraction' in c]
-print_distributions(zero_fraction_cols, 'Zero fraction variable distributions')
 
 print('\nLevels of categorical predictors:')
 for col, ref_level in CATEGORICAL_PREDICTORS.items():
     levels = sorted(df[col].unique())
     print(f'  {col}: {levels}  (reference: {ref_level})')
+zero_fraction_cols = [c for c in df.columns if '0_fraction' in c]
+print_distributions(zero_fraction_cols, 'Zero fraction variable distributions')
+
+print_distributions(CONTINUOUS_PREDICTORS, 'Continuous predictor distributions')
 
 print('\nContinuous predictor scaling (mean, sd, mean-1sd, mean+1sd):')
 for col in CONTINUOUS_PREDICTORS:
