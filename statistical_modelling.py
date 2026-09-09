@@ -1,5 +1,9 @@
 import statsmodels.formula.api as smf
+import statsmodels.stats.outliers_influence as oi
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import scipy.stats as stats
+import numpy as np
 import pandas as pd
 from pathlib import Path
 import anton_util
@@ -211,6 +215,132 @@ for outcome in OUTCOMES:
     plt.savefig(plot_path, dpi=150)
     plt.close()
     print(f'\nCoefficient plot saved to {plot_path}')
+
+    # --- Diagnostics ---
+    fitted = model.fittedvalues
+    residuals = model.resid
+    influence = model.get_influence()
+    leverage = influence.hat_matrix_diag
+    cooks_d = influence.cooks_distance[0]
+    std_resid = influence.resid_studentized_internal
+
+    fig = plt.figure(figsize=(14, 10))
+    gs = gridspec.GridSpec(2, 3, figure=fig)
+
+    # Residuals vs fitted
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.scatter(fitted, residuals, alpha=0.2, s=3)
+    ax1.axhline(0, color='red', linewidth=0.8)
+    ax1.set_xlabel('Fitted values')
+    ax1.set_ylabel('Residuals')
+    ax1.set_title('Residuals vs Fitted')
+
+    # Q-Q plot
+    ax2 = fig.add_subplot(gs[0, 1])
+    stats.probplot(residuals, plot=ax2)
+    ax2.set_title('Q-Q plot of residuals')
+
+    # Scale-location
+    ax3 = fig.add_subplot(gs[0, 2])
+    ax3.scatter(fitted, np.sqrt(np.abs(std_resid)), alpha=0.2, s=3)
+    ax3.set_xlabel('Fitted values')
+    ax3.set_ylabel('√|Standardised residuals|')
+    ax3.set_title('Scale-Location')
+
+    # Leverage vs residuals
+    ax4 = fig.add_subplot(gs[1, 0])
+    ax4.scatter(leverage, std_resid, alpha=0.2, s=3)
+    ax4.axhline(0, color='red', linewidth=0.8)
+    ax4.set_xlabel('Leverage')
+    ax4.set_ylabel('Standardised residuals')
+    ax4.set_title('Leverage vs Residuals')
+
+    # Cook's distance
+    ax5 = fig.add_subplot(gs[1, 1])
+    cooks_threshold = 4 / len(cooks_d)
+    ax5.stem(range(len(cooks_d)), cooks_d, markerfmt=',', linefmt='grey', basefmt='k-')
+    ax5.axhline(cooks_threshold, color='red', linewidth=0.8, linestyle='--',
+                label=f'4/n={cooks_threshold:.4f}')
+    ax5.legend(fontsize=7)
+    ax5.set_xlabel('Observation index')
+    ax5.set_ylabel("Cook's distance")
+    ax5.set_title("Cook's Distance")
+
+    # VIF
+    ax6 = fig.add_subplot(gs[1, 2])
+    vif_terms = [t for t in model.model.exog_names if t != 'Intercept']
+    vif_vals = [oi.variance_inflation_factor(model.model.exog, i)
+                for i, t in enumerate(model.model.exog_names) if t != 'Intercept']
+    vif_y = range(len(vif_terms))
+    ax6.barh(list(vif_y), vif_vals, color='steelblue')
+    ax6.axvline(5, color='orange', linewidth=0.8, linestyle='--', label='VIF=5')
+    ax6.axvline(10, color='red', linewidth=0.8, linestyle='--', label='VIF=10')
+    ax6.set_yticks(list(vif_y))
+    ax6.set_yticklabels(vif_terms, fontsize=6)
+    ax6.set_xlabel('VIF')
+    ax6.set_title('Variance Inflation Factors')
+    ax6.legend(fontsize=7)
+
+    plt.suptitle(f'Diagnostics: {outcome}', fontsize=12)
+    plt.tight_layout()
+    diag_path = output_dir / f'diagnostics_{outcome}.png'
+    plt.savefig(diag_path, dpi=150)
+    plt.close()
+    print(f'Diagnostics plot saved to {diag_path}')
+
+    # Top outliers by Cook's distance
+    n_top = 10
+    top_idx = np.argsort(cooks_d)[-n_top:][::-1]
+    print(f"\nTop {n_top} observations by Cook's distance (threshold=4/n={cooks_threshold:.4f}):")
+    print(f'  {"idx":>6}  {"cook_d":>10}  {"std_resid":>10}  {"fitted":>8}  {"actual":>8}')
+    for i in top_idx:
+        print(f'  {i:>6}  {cooks_d[i]:>10.5f}  {std_resid[i]:>10.3f}  '
+              f'{fitted.iloc[i]:>8.3f}  {df_model[outcome].iloc[i]:>8.3f}')
+
+    # Residuals vs each predictor (to diagnose pattern sources)
+    all_pred_cols = list(active_cat.keys()) + active_cont
+    ncols = 3
+    nrows = int(np.ceil(len(all_pred_cols) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 3))
+    axes = axes.flatten()
+    for ax, col in zip(axes, all_pred_cols):
+        ax.scatter(df_model[col].astype(str) if col in active_cat else df_model[col],
+                   residuals, alpha=0.15, s=3)
+        ax.axhline(0, color='red', linewidth=0.8)
+        ax.set_xlabel(col, fontsize=8)
+        ax.set_ylabel('Residual', fontsize=8)
+        ax.set_title(col, fontsize=8)
+        if col in active_cat:
+            ax.tick_params(axis='x', labelrotation=30, labelsize=6)
+    for ax in axes[len(all_pred_cols):]:
+        ax.set_visible(False)
+    plt.suptitle(f'Residuals vs predictors: {outcome}', fontsize=10)
+    plt.tight_layout()
+    resid_pred_path = output_dir / f'residuals_vs_predictors_{outcome}.png'
+    plt.savefig(resid_pred_path, dpi=150)
+    plt.close()
+    print(f'Residuals vs predictors plot saved to {resid_pred_path}')
+
+    # Predictor correlation heatmap (continuous predictors only)
+    cont_cols = active_cont
+    if len(cont_cols) > 1:
+        corr = df_model[cont_cols].corr()
+        fig, ax = plt.subplots(figsize=(max(4, len(cont_cols)), max(3, len(cont_cols))))
+        im = ax.imshow(corr.values, vmin=-1, vmax=1, cmap='RdBu_r')
+        ax.set_xticks(range(len(cont_cols)))
+        ax.set_yticks(range(len(cont_cols)))
+        ax.set_xticklabels(cont_cols, rotation=45, ha='right', fontsize=8)
+        ax.set_yticklabels(cont_cols, fontsize=8)
+        for i in range(len(cont_cols)):
+            for j in range(len(cont_cols)):
+                ax.text(j, i, f'{corr.values[i, j]:.2f}', ha='center', va='center', fontsize=7)
+        plt.colorbar(im, ax=ax)
+        ax.set_title(f'Continuous predictor correlations: {outcome}')
+        plt.tight_layout()
+        corr_path = output_dir / f'predictor_correlations_{outcome}.png'
+        plt.savefig(corr_path, dpi=150)
+        plt.close()
+        print(f'Correlation heatmap saved to {corr_path}')
 
     anton_util.log_timestamp(f'done with {outcome}')
 
