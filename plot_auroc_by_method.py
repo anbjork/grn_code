@@ -9,6 +9,7 @@ output_path = Path(f'{output_base_path}/simulated/plots/auroc_by_method.png')
 output_path.parent.mkdir(parents=True, exist_ok=True)
 
 df = anton_util.unpickle_object(str(compiled_results_path))
+df = df[df['method'] != 'perfect_inference_all_genes'].copy()
 
 methods = sorted(df['method'].unique())
 x_positions = {m: i for i, m in enumerate(methods)}

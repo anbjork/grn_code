@@ -10,6 +10,9 @@ compiled_results_path = Path(f'{output_base_path}/simulated/compiled_results.pkl
 output_dir = Path(f'{output_base_path}/simulated/statistical_modelling')
 
 df = anton_util.unpickle_object(str(compiled_results_path))
+# Excluded: perfect_inference_all_genes operates on unfiltered genes, giving it
+# artificially high n_TPs and AUROC=1, making it incomparable to other methods.
+df = df[df['method'] != 'perfect_inference_all_genes'].copy()
 anton_util.log_timestamp(f'data loaded, shape: {df.shape}')
 print(f'Columns available: {list(df.columns)}')
 
@@ -25,10 +28,12 @@ CATEGORICAL_PREDICTORS = {
     'control_delta':             'False',
     'replicate':                 '0',
 }
-CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'ERMA',
+CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'n_genes_after_harmonisation', 'ERMA',
                           '0_fraction__before_filtering__all']
 
-# n_genes_after_harmonisation: tested, IQR=0 (median=50 for most datasets), not usable as continuous predictor
+# n_TPs and n_genes_after_harmonisation both included to compare their significance.
+# n_TPs was previously distorted by perfect_inference_all_genes (now excluded).
+# n_genes_after_harmonisation previously had IQR=0 for the same reason; now re-tested.
 
 SIGNIFICANCE_THRESHOLD = 0.05
 
