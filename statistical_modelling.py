@@ -1,6 +1,4 @@
 import statsmodels.formula.api as smf
-import pandas as pd
-import numpy as np
 from pathlib import Path
 import anton_util
 
@@ -16,8 +14,6 @@ print(f'Columns available: {list(df.columns)}')
 # OUTCOMES = ['AUPR ratio', 'AUPR', 'AUROC', 'top_k_accuracy']
 OUTCOMES = ['AUROC']  # Debug
 
-# All categorical predictors with their reference levels.
-# All are screened; insignificant ones are dropped before the main model.
 CATEGORICAL_PREDICTORS = {
     'method':                    'random',
     'pseudo_bulk':               'False',
@@ -28,8 +24,9 @@ CATEGORICAL_PREDICTORS = {
     'replicate':                 '0',
 }
 CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'ERMA',
-                          '0_fraction__before_filtering__all',
-                          'n_genes_after_harmonisation']
+                          '0_fraction__before_filtering__all']
+
+# n_genes_after_harmonisation: tested, IQR=0 (median=50 for most datasets), not usable as continuous predictor
 
 SIGNIFICANCE_THRESHOLD = 0.05
 
@@ -37,33 +34,36 @@ SIGNIFICANCE_THRESHOLD = 0.05
 for col in CATEGORICAL_PREDICTORS:
     df[col] = df[col].astype(str)
 
-# Scale continuous predictors by IQR (Q25 to Q75).
-# Coefficients then represent the effect of going from Q25 to Q75.
+def print_distributions(cols, header):
+    print(f'\n{header} (min, Q25, median, Q75, max):')
+    for col in cols:
+        lo, q25, med, q75, hi = df[col].quantile([0, 0.25, 0.5, 0.75, 1.0])
+        print(f'  {col}: {lo:.3g}, {q25:.3g}, {med:.3g}, {q75:.3g}, {hi:.3g}')
+
+# Scale continuous predictors by 2 standard deviations (mean ± 1 std).
+# Coefficients then represent the effect of going from mean-1sd to mean+1sd.
 df_model_base = df.copy()
-print('\nContinuous predictor distributions (min, Q25, median, Q75, max):')
-for col in CONTINUOUS_PREDICTORS:
-    lo, q25, med, q75, hi = df[col].quantile([0, 0.25, 0.5, 0.75, 1.0])
-    print(f'  {col}: {lo:.3g}, {q25:.3g}, {med:.3g}, {q75:.3g}, {hi:.3g}')
+print_distributions(CONTINUOUS_PREDICTORS, 'Continuous predictor distributions')
 
 zero_fraction_cols = [c for c in df.columns if '0_fraction' in c]
-print('\nZero fraction variable distributions (min, Q25, median, Q75, max):')
-for col in zero_fraction_cols:
-    lo, q25, med, q75, hi = df[col].quantile([0, 0.25, 0.5, 0.75, 1.0])
-    print(f'  {col}: {lo:.3g}, {q25:.3g}, {med:.3g}, {q75:.3g}, {hi:.3g}')
+print_distributions(zero_fraction_cols, 'Zero fraction variable distributions')
 
 print('\nLevels of categorical predictors:')
 for col, ref_level in CATEGORICAL_PREDICTORS.items():
     levels = sorted(df[col].unique())
     print(f'  {col}: {levels}  (reference: {ref_level})')
 
+print('\nContinuous predictor scaling (mean, sd, mean-1sd, mean+1sd):')
 for col in CONTINUOUS_PREDICTORS:
-    q25, q75 = df[col].quantile([0.25, 0.75])
-    iqr = q75 - q25
-    if iqr == 0:
-        raise ValueError(f'IQR is zero for {col!r} — cannot scale. ')
-    df_model_base[col] = (df[col] - q25) / iqr
+    mean = df[col].mean()
+    sd = df[col].std()
+    if sd == 0:
+        raise ValueError(f'SD is zero for {col!r} — cannot scale.')
+    lo, hi = mean - sd, mean + sd
+    print(f'  {col}: mean={mean:.3g}, sd={sd:.3g}, range=[{lo:.3g}, {hi:.3g}]')
+    df_model_base[col] = (df[col] - mean) / (2 * sd)
 
-print(f'\nContinuous predictors (IQR-scaled): {CONTINUOUS_PREDICTORS}')
+print(f'\nContinuous predictors (±1sd-scaled): {CONTINUOUS_PREDICTORS}')
 
 def needs_quoting(name):
     return ' ' in name or name[0].isdigit()
