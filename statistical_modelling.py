@@ -1,4 +1,6 @@
 import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+import pandas as pd
 from pathlib import Path
 import anton_util
 
@@ -137,6 +139,73 @@ for outcome in OUTCOMES:
 
     model = smf.ols(formula, data=df_model).fit()
     print(model.summary())
+
+    # --- Effect size summary ---
+    # Each row is one coefficient (categorical levels individually, continuous as-is).
+    # Categorical coefficients are relative to their reference level.
+    # Continuous coefficients represent the effect of ±1sd around the mean.
+    rows = []
+    for col, ref_level in active_cat.items():
+        prefix = f'C({ref(col)}, Treatment("{ref_level}"))'
+        for term, coef in model.params.items():
+            if not term.startswith(prefix):
+                continue
+            ci = model.conf_int().loc[term]
+            # Extract the level name from the term string, e.g. "[T.True]" -> "True"
+            level = term[len(prefix):]
+            if level.startswith('[T.') and level.endswith(']'):
+                level = level[3:-1]
+            rows.append({
+                'predictor': f'{col} = {level}',
+                'abs_coef': abs(coef),
+                'coef': coef,
+                'ci_lo': ci[0],
+                'ci_hi': ci[1],
+            })
+    for col in active_cont:
+        term = cont_term(col)
+        coef = model.params[term]
+        ci = model.conf_int().loc[term]
+        rows.append({
+            'predictor': col,
+            'abs_coef': abs(coef),
+            'coef': coef,
+            'ci_lo': ci[0],
+            'ci_hi': ci[1],
+        })
+
+    rows.sort(key=lambda r: r['abs_coef'], reverse=True)
+
+    print('\nEffect size ranking (categorical levels vs reference, continuous ±1sd):')
+    print(f'  {"predictor":<55} {"coef":>8}  {"95% CI"}')
+    print(f'  {"-"*55} {"-"*8}  {"-"*20}')
+    for r in rows:
+        print(f'  {r["predictor"]:<55} {r["coef"]:>8.4f}  [{r["ci_lo"]:.4f}, {r["ci_hi"]:.4f}]')
+
+    # --- Coefficient forest plot ---
+    # Plot all individual coefficients (excluding intercept), sorted by |coef|
+    params = model.params.drop('Intercept')
+    ci = model.conf_int().drop('Intercept')
+    order = params.abs().sort_values(ascending=True).index
+    params = params[order]
+    ci = ci.loc[order]
+
+    fig, ax = plt.subplots(figsize=(8, max(4, len(params) * 0.3)))
+    y = range(len(params))
+    ax.barh(list(y), params.values, xerr=[params.values - ci[0].values, ci[1].values - params.values],
+            align='center', height=0.6, color='steelblue', ecolor='black', capsize=3)
+    ax.axvline(0, color='black', linewidth=0.8)
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(params.index, fontsize=7)
+    ax.set_xlabel('Coefficient (AUROC scale, continuous predictors ±1sd-scaled)')
+    ax.set_title(f'Effect sizes: {outcome}')
+    plt.tight_layout()
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plot_path = output_dir / f'effect_sizes_{outcome}.png'
+    plt.savefig(plot_path, dpi=150)
+    plt.close()
+    print(f'\nCoefficient plot saved to {plot_path}')
 
     anton_util.log_timestamp(f'done with {outcome}')
 
