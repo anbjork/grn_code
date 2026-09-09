@@ -32,12 +32,15 @@ CATEGORICAL_PREDICTORS = {
     'control_delta':             'False',
     'replicate':                 '0',
 }
-CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_TPs', 'n_genes_after_harmonisation', 'ERMA',
+CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_genes_after_harmonisation', 'ERMA',
                           '0_fraction__before_filtering__all']
 
-# n_TPs and n_genes_after_harmonisation both included to compare their significance.
-# n_TPs was previously distorted by perfect_inference_all_genes (now excluded).
-# n_genes_after_harmonisation previously had IQR=0 for the same reason; now re-tested.
+# n_TPs removed: highly correlated with both n_genes_after_harmonisation (r~0.86) and ERMA (VIF ~80).
+# Structurally redundant — n_TPs counts edges in the reference network, ERMA is fully determined
+# by the same network density, and n_genes is more interpretable as a data property.
+# n_genes and ERMA are not strongly correlated with each other, so both are retained.
+# Before removal, including all three caused sign flips on ERMA (positive in univariate screen,
+# negative in joint model), a classic symptom of multicollinearity.
 
 SIGNIFICANCE_THRESHOLD = 0.05
 
