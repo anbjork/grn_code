@@ -291,7 +291,7 @@ for outcome in OUTCOMES:
     plt.close()
     print(f'Diagnostics plot saved to {diag_path}')
 
-    # Top outliers by Cook's distance
+    # Top outliers by Cook's distance — print full row from original df for inspection
     n_top = 10
     top_idx = np.argsort(cooks_d)[-n_top:][::-1]
     print(f"\nTop {n_top} observations by Cook's distance (threshold=4/n={cooks_threshold:.4f}):")
@@ -299,6 +299,12 @@ for outcome in OUTCOMES:
     for i in top_idx:
         print(f'  {i:>6}  {cooks_d[i]:>10.5f}  {std_resid[i]:>10.3f}  '
               f'{fitted.iloc[i]:>8.3f}  {df_model[outcome].iloc[i]:>8.3f}')
+    top_rows = df.iloc[top_idx].copy()
+    top_rows.insert(0, 'cook_d', [cooks_d[i] for i in top_idx])
+    top_rows.insert(1, 'std_resid', [std_resid[i] for i in top_idx])
+    outlier_path = output_dir / f'outliers_{outcome}.pkl'
+    anton_util.pickle_object(top_rows, str(outlier_path))
+    print(f'Outlier rows saved to {outlier_path}')
 
     # Residuals vs each predictor (to diagnose pattern sources)
     all_pred_cols = list(active_cat.keys()) + active_cont
