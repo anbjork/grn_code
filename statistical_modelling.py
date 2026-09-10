@@ -148,12 +148,6 @@ for outcome in OUTCOMES:
         [cont_term(p) for p in active_cont]
     )
 
-    # Interaction terms to test (theory-driven)
-    interaction_terms = [
-        f'{cat_term("method", "random")}:Q("0_fraction__before_filtering__all")',
-    ]
-    formula_terms_active = formula_terms_active + interaction_terms
-
     formula = lhs + ' ~ ' + ' + '.join(formula_terms_active)
 
     print('\n' + '=' * 72)
