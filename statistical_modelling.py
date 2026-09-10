@@ -16,7 +16,12 @@ output_dir = Path(f'{output_base_path}/simulated/statistical_modelling')
 df = anton_util.unpickle_object(str(compiled_results_path))
 # Excluded: perfect_inference_all_genes operates on unfiltered genes, giving it
 # artificially high n_TPs and AUROC=1, making it incomparable to other methods.
-df = df[df['method'] != 'perfect_inference_all_genes'].copy()
+# It also formed a separate cluster in n_TPs and n_genes_after_harmonisation,
+# which distorted the effect estimates for those predictors before exclusion.
+# Excluded: perfect_inference_filtered_genes always achieves AUROC=1 by construction,
+# creating a ceiling effect and influential outliers in the residuals vs fitted plot.
+# Excluded: lsco appears to not work correctly, excluded to avoid biasing results.
+df = df[~df['method'].isin(['perfect_inference_all_genes', 'perfect_inference_filtered_genes', 'lsco'])].copy()
 anton_util.log_timestamp(f'data loaded, shape: {df.shape}')
 print(f'Columns available: {list(df.columns)}')
 
@@ -142,6 +147,13 @@ for outcome in OUTCOMES:
         [cat_term(col, ref_level) for col, ref_level in active_cat.items()] +
         [cont_term(p) for p in active_cont]
     )
+
+    # Interaction terms to test (theory-driven)
+    interaction_terms = [
+        f'{cat_term("method", "random")}:Q("0_fraction__before_filtering__all")',
+    ]
+    formula_terms_active = formula_terms_active + interaction_terms
+
     formula = lhs + ' ~ ' + ' + '.join(formula_terms_active)
 
     print('\n' + '=' * 72)
@@ -163,6 +175,7 @@ for outcome in OUTCOMES:
             if not term.startswith(prefix):
                 continue
             ci = model.conf_int().loc[term]
+            pval = model.pvalues[term]
             # Extract the level name from the term string, e.g. "[T.True]" -> "True"
             level = term[len(prefix):]
             if level.startswith('[T.') and level.endswith(']'):
@@ -173,26 +186,49 @@ for outcome in OUTCOMES:
                 'coef': coef,
                 'ci_lo': ci[0],
                 'ci_hi': ci[1],
+                'pval': pval,
             })
     for col in active_cont:
         term = cont_term(col)
         coef = model.params[term]
         ci = model.conf_int().loc[term]
+        pval = model.pvalues[term]
         rows.append({
             'predictor': col,
             'abs_coef': abs(coef),
             'coef': coef,
             'ci_lo': ci[0],
             'ci_hi': ci[1],
+            'pval': pval,
         })
+    # Also include interaction terms not captured above
+    main_prefixes = tuple(
+        f'C({ref(col)}, Treatment("{ref_level}"))' for col, ref_level in active_cat.items()
+    ) + tuple(cont_term(p) for p in active_cont)
+    for term, coef in model.params.items():
+        if term == 'Intercept':
+            continue
+        if any(term.startswith(p) and ':' not in term for p in main_prefixes):
+            continue
+        if ':' in term:
+            ci = model.conf_int().loc[term]
+            pval = model.pvalues[term]
+            rows.append({
+                'predictor': term,
+                'abs_coef': abs(coef),
+                'coef': coef,
+                'ci_lo': ci[0],
+                'ci_hi': ci[1],
+                'pval': pval,
+            })
 
     rows.sort(key=lambda r: r['abs_coef'], reverse=True)
 
     print('\nEffect size ranking (categorical levels vs reference, continuous ±1sd):')
-    print(f'  {"predictor":<55} {"coef":>8}  {"95% CI"}')
-    print(f'  {"-"*55} {"-"*8}  {"-"*20}')
+    print(f'  {"predictor":<55} {"coef":>8}  {"95% CI"}               {"p-value":>10}')
+    print(f'  {"-"*55} {"-"*8}  {"-"*20}  {"-"*10}')
     for r in rows:
-        print(f'  {r["predictor"]:<55} {r["coef"]:>8.4f}  [{r["ci_lo"]:.4f}, {r["ci_hi"]:.4f}]')
+        print(f'  {r["predictor"]:<55} {r["coef"]:>8.4f}  [{r["ci_lo"]:.4f}, {r["ci_hi"]:.4f}]  {r["pval"]:>10.4f}')
 
     # --- Coefficient forest plot ---
     # Plot all individual coefficients (excluding intercept), sorted by |coef|
@@ -291,6 +327,15 @@ for outcome in OUTCOMES:
     plt.close()
     print(f'Diagnostics plot saved to {diag_path}')
 
+    # RESET test for functional form misspecification
+    # Tests whether adding powers of fitted values improves the model (significant = misspecified)
+    from statsmodels.stats.diagnostic import linear_reset
+    reset_result = linear_reset(model, power=3, use_f=True)
+    print(f'\nRESET test (powers 2-3 of fitted values):')
+    print(f'  F-statistic: {reset_result.statistic:.4f}')
+    print(f'  p-value:     {reset_result.pvalue:.4f}')
+    print(f'  Interpretation: {"misspecification likely" if reset_result.pvalue < 0.05 else "no evidence of misspecification"}')
+
     # Top outliers by Cook's distance — print full row from original df for inspection
     n_top = 10
     top_idx = np.argsort(cooks_d)[-n_top:][::-1]
@@ -305,6 +350,23 @@ for outcome in OUTCOMES:
     outlier_path = output_dir / f'outliers_{outcome}.pkl'
     anton_util.pickle_object(top_rows, str(outlier_path))
     print(f'Outlier rows saved to {outlier_path}')
+
+    # Cook's D vs n_genes and n_TPs to check connection between outliers and low gene counts
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    for ax, col in zip(axes, ['n_genes_after_harmonisation', 'n_TPs']):
+        ax.scatter(df.loc[df_model.index, col], cooks_d, alpha=0.2, s=3)
+        ax.axhline(cooks_threshold, color='red', linewidth=0.8, linestyle='--',
+                   label=f'4/n={cooks_threshold:.4f}')
+        ax.set_xlabel(col)
+        ax.set_ylabel("Cook's D")
+        ax.set_title(f"Cook's D vs {col}")
+        ax.legend(fontsize=7)
+    plt.suptitle(f"Cook's D vs gene/TP counts: {outcome}", fontsize=10)
+    plt.tight_layout()
+    cooks_genes_path = output_dir / f'cooks_d_vs_gene_counts_{outcome}.png'
+    plt.savefig(cooks_genes_path, dpi=150)
+    plt.close()
+    print(f"Cook's D vs gene counts plot saved to {cooks_genes_path}")
 
     # Residuals vs each predictor (to diagnose pattern sources)
     all_pred_cols = list(active_cat.keys()) + active_cont
