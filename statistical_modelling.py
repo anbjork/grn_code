@@ -1,5 +1,6 @@
 import statsmodels.formula.api as smf
 import statsmodels.stats.outliers_influence as oi
+from statsmodels.stats.diagnostic import linear_reset
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import scipy.stats as stats
@@ -26,7 +27,7 @@ anton_util.log_timestamp(f'data loaded, shape: {df.shape}')
 print(f'Columns available: {list(df.columns)}')
 
 # OUTCOMES = ['AUPR ratio', 'AUPR', 'AUROC', 'top_k_accuracy']
-OUTCOMES = ['AUROC']  # Debug
+OUTCOMES = ['AUROC']
 
 CATEGORICAL_PREDICTORS = {
     'method':                    'random',
@@ -247,6 +248,16 @@ for outcome in OUTCOMES:
     plot_path = output_dir / f'effect_sizes_{outcome}.png'
     plt.savefig(plot_path, dpi=150)
     plt.close()
+    # R² per method subgroup
+    print('\nR² per method subgroup:')
+    for method, grp in df_model.groupby('method'):
+        y = grp[outcome]
+        y_hat = model.fittedvalues.loc[grp.index]
+        ss_res = ((y - y_hat) ** 2).sum()
+        ss_tot = ((y - y.mean()) ** 2).sum()
+        r2 = 1 - ss_res / ss_tot
+        print(f'  {method:<40} R²={r2:.3f}  n={len(grp)}')
+
     print(f'\nCoefficient plot saved to {plot_path}')
 
     # --- Diagnostics ---
@@ -323,7 +334,6 @@ for outcome in OUTCOMES:
 
     # RESET test for functional form misspecification
     # Tests whether adding powers of fitted values improves the model (significant = misspecified)
-    from statsmodels.stats.diagnostic import linear_reset
     reset_result = linear_reset(model, power=3, use_f=True)
     print(f'\nRESET test (powers 2-3 of fitted values):')
     print(f'  F-statistic: {reset_result.statistic:.4f}')
