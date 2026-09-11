@@ -1,72 +1,24 @@
 
-from pathlib import Path
 import anton_util
 
 
 
-def get_uuid():
-    import uuid
-    return str(uuid.uuid4())
+template =  {
+    'negbin_prob': 0.5,
+    'dispersion': 0.1,
+    'cell_count': 125,
+    'snr': 0.5,
+    }
+old_dispersions = [0.1, 10, 15, 20, 50]
+additional_dispersions = [0.2, 0.3, 0.5, 1, 2, 3, 5]
+data_cases = {}
+from copy import deepcopy
+for dispersion in additional_dispersions:
+    dc = deepcopy(template)
+    dc['dispersion'] = dispersion
+    data_cases[f'high dropouts {dispersion}'] = dc
 
 
-
-def initialise_simulations(parameter_sets):
-
-    sim_data = d / 'data'
-    flag_files = d / 'simulation_completed_flags'
-    for path in [sim_data, flag_files]:
-        path.mkdir(exist_ok = True, parents = True)
-
-    simulation_specifications = []
-    for parameters in parameter_sets:
-
-        tmp = [k + f'_{v}' for k, v in parameters.items()]
-        parameter_tag = '__'.join(tmp)
-
-        # NOTE: If you change this list, you must make the corresponding change
-        # in simulate.m, otherwise mismatch bug.
-        # It's because I could not be fucked to look up how to do a less
-        # brittle approarch in Matlab.
-        # It bit me once, which confirms my theory that poeople shouldn't
-        # cut corners like this. As an experiment, let's see if it bites me again.
-        simulation_matrix_names = [
-            'A', 'Y', 'X', 'P', 'SCC', 'Ed', 'Eg'
-            ]
-
-        # PosixPath is not JSON serialisable, 
-        # so converting paths to strings below
-        files = {
-            name: str(sim_data / get_uuid())
-            for name in simulation_matrix_names
-            }
-        sim_flag_file = str(flag_files / get_uuid())
-        job_specification = {
-            'parameters': parameters,
-            'python_global_parameters_for_matlab': python_global_parameters,
-            'parameter_tag': parameter_tag,
-            'simulation_matrix_names': simulation_matrix_names,
-            'simulation_matrix_files': files,
-            'simulation_completed_flag_file': sim_flag_file,
-            }
-        simulation_specifications.append(job_specification)
-
-
-    # simulation_specifications = simulation_specifications[ : 5]
-
-
-    return(simulation_specifications)
-
-
-
-out_dir = Path('outputs')
-d = Path('outputs/simulation')
-for path in [out_dir, d]:
-    path.mkdir(exist_ok = True, parents = True)
-
-python_global_parameters = {
-        'number_of_genes': 100,
-        'average_network_degree': 3
-        }
 
 # data_cases = {
 #         'easy': {
@@ -75,77 +27,69 @@ python_global_parameters = {
 #             'cell_count': 125,
 #             'snr': 0.5,
 #             },
-#         # 'low snr': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 0.1,
-#         #     'cell_count': 125,
-#         #     'snr': 0.05,
-#         #     },
-#         # 'low snr 0.1': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 0.1,
-#         #     'cell_count': 125,
-#         #     'snr': 0.1,
-#         #     },
-#         # 'low snr 0.3': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 0.1,
-#         #     'cell_count': 125,
-#         #     'snr': 0.3,
-#         #     },
+#         'low snr': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.05,
+#             },
+#         'low snr 0.1': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.1,
+#             },
+#         'low snr 0.3': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.3,
+#             },
 #         'low snr 0.03': {
 #             'negbin_prob': 0.5,
 #             'dispersion': 0.1,
 #             'cell_count': 125,
 #             'snr': 0.03,
 #             },
-#         # 'low snr 0.035': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 0.1,
-#         #     'cell_count': 125,
-#         #     'snr': 0.035,
-#         #     },
-#         # 'low snr 0.04': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 0.1,
-#         #     'cell_count': 125,
-#         #     'snr': 0.04,
-#         #     },
-#         # 'low snr 0.045': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 0.1,
-#         #     'cell_count': 125,
-#         #     'snr': 0.045,
-#         #     },
-#         # 'high dropout': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 10,
-#         #     'cell_count': 125,
-#         #     'snr': 0.5,
-#         #     },
-#         # 'high dropout 50': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 50,
-#         #     'cell_count': 125,
-#         #     'snr': 0.5,
-#         #     },
+#         'low snr 0.035': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.035,
+#             },
+#         'low snr 0.04': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.04,
+#             },
+#         'low snr 0.045': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 0.1,
+#             'cell_count': 125,
+#             'snr': 0.045,
+#             },
+#         'high dropout': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 10,
+#             'cell_count': 125,
+#             'snr': 0.5,
+#             },
+#         'high dropout 50': {
+#             'negbin_prob': 0.5,
+#             'dispersion': 50,
+#             'cell_count': 125,
+#             'snr': 0.5,
+#             },
 #         'high dropout 20': {
 #             'negbin_prob': 0.5,
 #             'dispersion': 20,
 #             'cell_count': 125,
 #             'snr': 0.5,
 #             },
-#         # 'high dropout 15': {
-#         #     'negbin_prob': 0.5,
-#         #     'dispersion': 15,
-#         #     'cell_count': 125,
-#         #     'snr': 0.5,
-#         #     },
-#         }
-# data_cases = {
-#         'easy': {
+#         'high dropout 15': {
 #             'negbin_prob': 0.5,
-#             'dispersion': 0.1,
+#             'dispersion': 15,
 #             'cell_count': 125,
 #             'snr': 0.5,
 #             },
@@ -174,52 +118,18 @@ python_global_parameters = {
 #             },
 #         }
 
-# repeats = 5
-# parameter_sets = []
-# from copy import deepcopy
-# for data_case, parameters in data_cases.items():
-#     parameters['data_case'] = data_case
-#     for ii in range(repeats):
-#         parameters['replicate'] = ii
-#         parameter_sets.append(deepcopy(parameters))
-
-
-
-parameter_values = {
-    'negbin_prob': [0.5],
-    'cell_count': [50, 200],
-    'dispersion': [0.1, 20],
-    'snr': [0.03, 0.5],
-    }
-def recursive_combos(parameter_values, determined):
-    from copy import deepcopy
-    if len(parameter_values) == 0:
-        return [determined]
-    full_sets = []
-    k, options = parameter_values.popitem()
-    for option in options:
-        determined[k] = option
-        full_sets.extend(recursive_combos(
-                deepcopy(parameter_values), deepcopy(determined)
-                ))
-    return full_sets
-parameter_factorial_design = recursive_combos(parameter_values, {})
-from pprint import pprint
-pprint(parameter_factorial_design)
-
-
 repeats = 5
 parameter_sets = []
 from copy import deepcopy
-for parameter_set in parameter_factorial_design:
+for data_case, parameters in data_cases.items():
+    parameters['data_case'] = data_case
     for ii in range(repeats):
-        parameter_set['replicate'] = ii
-        parameter_sets.append(deepcopy(parameter_set))
+        parameters['replicate'] = ii
+        parameter_sets.append(deepcopy(parameters))
 
 
 
-
-
+from grn_code.data_simulation.configuration_imports import initialise_simulations
 
 simulation_specifications = initialise_simulations(parameter_sets = parameter_sets)
 anton_util.pickle_object(
