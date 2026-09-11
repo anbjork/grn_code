@@ -187,9 +187,9 @@ for ii, dataset in enumerate(datasets):
 
 
 
-# outfile = Path(output_path / 'data_processed.pkl')
-# anton_util.log_timestamp('saving...')
-# anton_util.pickle_object(datasets, outfile)
+outfile = Path(output_path / 'data_processed.pkl')
+anton_util.log_timestamp('saving...')
+anton_util.pickle_object(datasets, outfile)
 
 
 
