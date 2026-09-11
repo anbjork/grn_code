@@ -174,15 +174,6 @@ python_global_parameters = {
 #             },
 #         }
 
-# # Commented out to see if anything uses this
-# # If so, I need to go find out how and why
-# anton_util.pickle_object(data_cases, 'outputs/data_cases.pkl')
-# # Could run the all of pipeline without it, so probably nothing uses it
-# # Plain text for people with no python
-# import json
-# with open('outputs/data_cases.json', 'w') as f:
-#     json.dump(data_cases, f, indent = 4)
-
 # repeats = 5
 # parameter_sets = []
 # from copy import deepcopy
