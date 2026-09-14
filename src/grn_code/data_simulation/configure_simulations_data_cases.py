@@ -3,21 +3,6 @@ import anton_util
 
 
 
-template =  {
-    'negbin_prob': 0.5,
-    'dispersion': 0.1,
-    'cell_count': 125,
-    'snr': 0.5,
-    }
-old_dispersions = [0.1, 10, 15, 20, 50]
-additional_dispersions = [0.2, 0.3, 0.5, 1, 2, 3, 5]
-data_cases = {}
-from copy import deepcopy
-for dispersion in additional_dispersions:
-    dc = deepcopy(template)
-    dc['dispersion'] = dispersion
-    data_cases[f'high dropouts {dispersion}'] = dc
-
 
 
 # data_cases = {
@@ -117,6 +102,29 @@ for dispersion in additional_dispersions:
 #             'snr': 10,
 #             },
 #         }
+
+
+
+
+template =  {
+    'negbin_prob': 0.5,
+    'dispersion': 0.1,
+    'cell_count': 125,
+    'snr': 0.5,
+    }
+old_dispersions = [0.1, 10, 15, 20, 50]
+additional_dispersions = [0.2, 0.3, 0.5, 1, 2, 3, 5, 7]
+even_more = [30, 40]
+all_dispersions = old_dispersions + additional_dispersions + even_more
+data_cases = {}
+from copy import deepcopy
+for dispersion in all_dispersions:
+    dc = deepcopy(template)
+    dc['dispersion'] = dispersion
+    data_cases[f'high dropouts {dispersion}'] = dc
+
+
+
 
 repeats = 5
 parameter_sets = []
