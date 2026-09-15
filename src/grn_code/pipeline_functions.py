@@ -28,6 +28,8 @@ def inference(
     import anton_util
     import copy
 
+    f_name = method_function.__name__
+
     path = data_path
     data_sources = anton_util.unpickle_object(path)
     # data_sources = [data_sources[3]] # Debug
@@ -35,15 +37,16 @@ def inference(
     estimated_networks = []
     for ii, data_source in enumerate(data_sources):
         anton_util.log_timestamp(f'dataset {ii}...')
-        anton_util.log_timestamp(repr(method_function))
+        anton_util.log_timestamp(f_name)
 
         try:
             ens = method_function(data=data_source)
             error = None
         except Exception as e:
             error = repr(e)
-            anton_util.log_timestamp(f'Error in method {method_function}: {error}')
-            ens = {repr(method_function): None}
+            anton_util.log_timestamp(
+                    f'Error in method {f_name}: {error}')
+            ens = {f_name: None}
         # Debug
         # ens = method_function(data=data_source)
         # error = None
