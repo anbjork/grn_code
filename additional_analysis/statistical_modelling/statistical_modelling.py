@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import scipy.stats as stats
 import numpy as np
-import pandas as pd
 from pathlib import Path
 import anton_util
 
@@ -22,7 +21,7 @@ df = anton_util.unpickle_object(str(compiled_results_path))
 # Excluded: perfect_inference_filtered_genes always achieves AUROC=1 by construction,
 # creating a ceiling effect and influential outliers in the residuals vs fitted plot.
 # Excluded: lsco appears to not work correctly, excluded to avoid biasing results.
-df = df[~df['method'].isin(['perfect_inference_all_genes', 'perfect_inference_filtered_genes', 'lsco'])].copy()
+df = df[~df['method'].isin(['perfect_inference_all_genes', 'perfect_inference_filtered_genes', 'lsco', 'zscore_ab_without_controls'])].copy()
 anton_util.log_timestamp(f'data loaded, shape: {df.shape}')
 print(f'Columns available: {list(df.columns)}')
 
@@ -35,8 +34,6 @@ CATEGORICAL_PREDICTORS = {
     'cell normalised':           'False',
     'transform 1':               'none',
     'transform 2':               'none',
-    'control_delta':             'False',
-    'replicate':                 '0',
 }
 CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_genes_after_harmonisation', 'ERMA',
                           '0_fraction__before_filtering__all']
@@ -48,7 +45,7 @@ CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_genes_after_harmonisation', 'ER
 # Before removal, including all three caused sign flips on ERMA (positive in univariate screen,
 # negative in joint model), a classic symptom of multicollinearity.
 
-SIGNIFICANCE_THRESHOLD = 0.05
+SIGNIFICANCE_THRESHOLD = 0.01
 
 # Cast categorical predictors to string to avoid bool/int coercion issues
 for col in CATEGORICAL_PREDICTORS:
