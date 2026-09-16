@@ -18,4 +18,11 @@ Bespite those downsides, with reasonable (probably current) multiprocessing para
 And now you hopefully understand the overall structure of the code in here.
 
 
+------------------------------
+
+Update 2026-09-16
+
+Restructuring the repo to unify outputs and configuration. Other things as well, but that's the relevant bit for this sub repo. Things in src/ (so including here) are reusable. Things related to configuration and specific analyses are in root/analyses. Moved configuration bits of this code to there.
+
+//AB
 
