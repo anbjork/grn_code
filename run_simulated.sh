@@ -1,8 +1,9 @@
 set -e
 
-cd ./src/grn_code/data_simulation/
-bash run_genespider_simulation.sh
-cd -
+python configure_simulations_factorial.py
+# python configure_simulations_data_cases.py
+python simulate_genespider.py
+python gather_simulation_data.py
 
 python preprocess_simulated_data_and_networks.py
 python inference_simulated.py
