@@ -12,7 +12,7 @@ import anton_util
 #             'cell_count': 125,
 #             'snr': 0.5,
 #             },
-#         'low snr': {
+#         'low snr 0.05, old': {
 #             'negbin_prob': 0.5,
 #             'dispersion': 0.1,
 #             'cell_count': 125,
@@ -54,7 +54,7 @@ import anton_util
 #             'cell_count': 125,
 #             'snr': 0.045,
 #             },
-#         'high dropout': {
+#         'high dropout 10, old': {
 #             'negbin_prob': 0.5,
 #             'dispersion': 10,
 #             'cell_count': 125,
