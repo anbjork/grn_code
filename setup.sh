@@ -1,3 +1,4 @@
+set -e
 
 git clone git@bitbucket.org:sonnhammergrni/genesnake.git
 

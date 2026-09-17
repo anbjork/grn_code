@@ -19,11 +19,13 @@ print(f'Max workers: {max_workers}')
 print(f'Job timeout: {job_timeout}')
 print(f'Termination cleanup timeout: {termination_cleanup_timeout}')
 
+from grn_code.pipeline_code import pipeline_base_path
+
 job_specifications = anton_util.unpickle_object(
-    'outputs/simulation_specifications.pkl'
+    f'{pipeline_base_path}/simulation_specifications.pkl'
         )
 
-chunk_dir = Path('outputs/simulation/tmp_simulation_input_chunks')
+chunk_dir = Path(f'{pipeline_base_path}/simulation/tmp_simulation_input_chunks')
 chunk_dir.mkdir(exist_ok = True, parents = True)
 
 
@@ -45,7 +47,15 @@ def prepare_chunk(chunk):
     chunk_file = chunk_dir / str(uuid.uuid4())
     with open(chunk_file, 'w') as f:
         json.dump(chunk, f)
-    cmd = ["matlab", "-batch", f"simulate('{chunk_file}')"]
+
+    from grn_code.paths_anchor import package_root
+
+    genespider_dir = Path(package_root).parents[1] / "genespider"
+    sim_dir = Path(package_root) / "data_simulation"
+
+    matlab_cmd = f"addpath('{sim_dir}'); addpath(genpath('{genespider_dir}')); simulate('{chunk_file}')"
+    cmd = ["matlab", "-batch", matlab_cmd]
+
     anton_util.log_timestamp(' '.join(cmd))  # Nice for debugging Matlab separately
 
     return(cmd)
@@ -203,7 +213,7 @@ def job_manager():
         }
     anton_util.pickle_object(
             run_metadata, 
-            'outputs/simulation/simulation_run_metadata.pkl'
+            f'{pipeline_base_path}/simulation/simulation_run_metadata.pkl'
             )
     return 0
 

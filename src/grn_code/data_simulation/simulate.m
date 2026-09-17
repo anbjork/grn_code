@@ -1,6 +1,5 @@
 function simulate(input_file)
 
-addpath(genpath('genespider'));
 maxNumCompThreads(1);
 
 % Matlab is bananas and has a default seed set at startup :facepalm:
@@ -52,7 +51,8 @@ for i = 1:numel(job_specifications)
     values = {A, Y, X, P, SCC, Ed, Eg};
 
     matrix_files = job_specification.simulation_matrix_files;
-    file_dict = struct();
+    % Not used? FIX
+    % file_dict = struct();
     for idx = 1:numel(names)
         name = names{idx};
         if isfield(matrix_files, name)
@@ -69,7 +69,8 @@ for i = 1:numel(job_specifications)
         h5create(filename, '/data', size(data));
         h5write(filename, '/data', data);
 
-        file_dict.(name) = filename;
+        % Not used? FIX
+        % file_dict.(name) = filename;
     end	
 	% Make flag file to indicate completion
 	flag_file = job_specification.simulation_completed_flag_file;

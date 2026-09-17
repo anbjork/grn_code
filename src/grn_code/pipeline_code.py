@@ -1,5 +1,13 @@
 
 
+# Path handling for pipeline
+# For imports from elsewhere
+from pathlib import Path
+from grn_code.paths_anchor import output_base_path
+pipeline_base_path = Path(f'{output_base_path}/in_pipeline')
+
+
+
 
 def append_pickle(data, path):
     from pathlib import Path

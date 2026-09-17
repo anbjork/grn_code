@@ -1,5 +1,4 @@
 
-from pathlib import Path
 import anton_util
 import pandas as pd
 
@@ -54,9 +53,10 @@ def get_simuation_matrices_from_specification(specification):
 
 
 from grn_code.functions import merge_p_into_y
+from grn_code.pipeline_code import pipeline_base_path
 
 simulation_specifications = anton_util.unpickle_object(
-        'outputs/simulation_specifications.pkl'
+        f'{pipeline_base_path}/simulation_specifications.pkl'
         )
 datasets = []
 reference_networks = []
@@ -82,9 +82,9 @@ for specification in simulation_specifications:
         })
     datasets.append(out)
 
-outdir = Path(f'outputs/')
-outdir.mkdir(exist_ok = True, parents = True)
-anton_util.pickle_object(reference_networks, outdir / 'reference_networks.pkl')
-anton_util.pickle_object(datasets, outdir / 'simulations.pkl')
+tmp = pipeline_base_path
+tmp.mkdir(exist_ok = True, parents = True)
+anton_util.pickle_object(reference_networks, tmp / 'reference_networks.pkl')
+anton_util.pickle_object(datasets, tmp / 'simulations.pkl')
 
 

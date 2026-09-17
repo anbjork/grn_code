@@ -1,12 +1,7 @@
 
-from pathlib import Path
+from grn_code.pipeline_code import pipeline_base_path
 
-# These refer to an output directory local to the data simulation.
-# Not to be confused with root/outputs
-out_dir = Path('outputs')
-d = Path('outputs/simulation')
-for path in [out_dir, d]:
-    path.mkdir(exist_ok = True, parents = True)
+d = pipeline_base_path / 'simulation'
 
 python_global_parameters = {
         'number_of_genes': 100,

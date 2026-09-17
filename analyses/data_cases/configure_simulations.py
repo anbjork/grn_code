@@ -124,8 +124,6 @@ for dispersion in all_dispersions:
     data_cases[f'high dropouts {dispersion}'] = dc
 
 
-
-
 repeats = 5
 parameter_sets = []
 from copy import deepcopy
@@ -136,13 +134,15 @@ for data_case, parameters in data_cases.items():
         parameter_sets.append(deepcopy(parameters))
 
 
-
 from grn_code.data_simulation.configuration_imports import initialise_simulations
-
 simulation_specifications = initialise_simulations(parameter_sets = parameter_sets)
+
+simulation_specifications = simulation_specifications[ : 5] # Debug
+
+from grn_code.pipeline_code import pipeline_base_path
 anton_util.pickle_object(
         simulation_specifications,
-        'outputs/simulation_specifications.pkl')
+        f'{pipeline_base_path}/simulation_specifications.pkl')
 
 
 
