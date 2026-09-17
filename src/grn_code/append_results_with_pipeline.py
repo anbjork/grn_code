@@ -1,12 +1,13 @@
-from grn_code.pipeline_functions import append_pickle
+from grn_code.pipeline_code import append_pickle
 import anton_util
 
-from grn_code.pipeline_configuration import pipeline_base_path
-from grn_code.pipeline_configuration import output_base_path
+from grn_code.pipeline_code import pipeline_base_path, output_base_path
 
 anton_util.log_timestamp('appending to results...')
 outputs = [
-        'data_processed',
+        'simulation_specifications',
+        'simulations',
+        'preprocessed_data',
         'reference_networks',
         'inferences',
         'benchmarks',

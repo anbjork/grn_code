@@ -6,14 +6,8 @@ from copy import deepcopy
 anton_util.log_timestamp('compiling results...')
 
 anton_util.log_timestamp('reading data...')
-from grn_code.pipeline_configuration import output_base_path
+from grn_code.pipeline_code import output_base_path
 benchmarks = anton_util.unpickle_object(f'{output_base_path}/simulated/benchmarks.pkl')
-# data_sources, inferred, benchmarks = [
-        # broken on purpose, since not updated and tested for
-        # import of paths from pipeline configuration
-#     anton_util.unpickle_object(f'outputs/simulated/{name}.pkl')
-#     for name in ['data_processed', 'inferences', 'benchmarks']
-#     ]
 
 
 anton_util.log_timestamp('compiling results...')

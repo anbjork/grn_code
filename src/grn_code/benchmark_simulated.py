@@ -1,13 +1,13 @@
 import anton_util
 from grn_code.functions import benchmark_method_against_reference
 
-from grn_code.pipeline_configuration import pipeline_base_path as base_path
+from grn_code.pipeline_code import pipeline_base_path
 
 inferred = anton_util.unpickle_object(
-    base_path / 'inferences.pkl'
+    pipeline_base_path / 'inferences.pkl'
     )
 reference_networks = anton_util.unpickle_object(
-    base_path / 'reference_networks.pkl'
+    pipeline_base_path / 'reference_networks.pkl'
     )
 reference_networks_dict = {
         # frozensets are immutable, and so can be used as keys.
@@ -54,7 +54,7 @@ for ii, inference in enumerate(inferred):
     })
 
 anton_util.log_timestamp('saving benchmark results...')
-outfile = base_path / 'benchmarks.pkl'
+outfile = pipeline_base_path / 'benchmarks.pkl'
 outfile.parent.mkdir(parents = True, exist_ok = True)
 anton_util.pickle_object(stats, outfile)
 anton_util.log_timestamp('benchmarking done')

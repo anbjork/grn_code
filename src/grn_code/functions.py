@@ -408,7 +408,7 @@ def lsco_T_without_controls(data):
 
 def perfect_inference(data):
 
-    from grn_code.pipeline_configuration import pipeline_base_path as base_path
+    from grn_code.pipeline_code import pipeline_base_path as base_path
 
     reference_networks = anton_util.unpickle_object(
         base_path / 'reference_networks.pkl'

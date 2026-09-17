@@ -137,7 +137,7 @@ for data_case, parameters in data_cases.items():
 from grn_code.data_simulation.configuration_imports import initialise_simulations
 simulation_specifications = initialise_simulations(parameter_sets = parameter_sets)
 
-simulation_specifications = simulation_specifications[ : 5] # Debug
+# simulation_specifications = simulation_specifications[ : 5] # Debug
 
 from grn_code.pipeline_code import pipeline_base_path
 anton_util.pickle_object(

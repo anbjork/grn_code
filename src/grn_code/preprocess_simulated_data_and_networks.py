@@ -6,27 +6,6 @@ from pathlib import Path
 import anton_util
 from grn_code import functions
 
-anton_util.log_timestamp('loading...')
-data_set_name = 'simulated'
-input_path = Path('src/grn_code/data_simulation/outputs/')
-# Debug, subset for speed
-# path = Path(
-#         'data/simulated/subset.pkl'
-#         )
-from grn_code.pipeline_configuration import pipeline_base_path as output_path
-output_path.mkdir(parents = True, exist_ok = True)
-
-
-
-from grn_code.pipeline_configuration import preprocessing_options as options
-
-
-
-import shutil
-shutil.copy(
-    input_path / 'reference_networks.pkl',
-    Path(output_path / 'reference_networks.pkl')
-    )
 
 
 def update_datasets(
@@ -69,12 +48,15 @@ def find_flat_datasets(datasets):
 
 
 
+anton_util.log_timestamp('reading..')
 
+from grn_code.pipeline_code import pipeline_base_path
+pipeline_base_path.mkdir(parents = True, exist_ok = True)
 
+config = anton_util.unpickle_object(pipeline_base_path / 'pipeline_configuration.pkl')
+options = config['preprocessing_options']
 
-# anton_util.log_timestamp('reading..')
-data_raw = anton_util.unpickle_object(input_path / 'simulations.pkl')
-# anton_util.log_timestamp('reading done')
+data_raw = anton_util.unpickle_object(pipeline_base_path / 'simulations.pkl')
 datasets = data_raw
 
 
@@ -187,9 +169,10 @@ for ii, dataset in enumerate(datasets):
 
 
 
-outfile = Path(output_path / 'data_processed.pkl')
+outfile = Path(pipeline_base_path / 'preprocessed_data.pkl')
 anton_util.log_timestamp('saving...')
 anton_util.pickle_object(datasets, outfile)
+
 
 
 
@@ -235,11 +218,11 @@ def plot_counts(array):
 
 cols = [d['Y'].shape[1] for d in datasets]
 rows = [d['Y'].shape[0] for d in datasets]
-plot_dir = Path(f'{output_path}/unsorted/')
+plot_dir = Path(f'{pipeline_base_path}/unsorted/')
 plot_dir.mkdir(parents = True, exist_ok = True)
 for name, var in zip(['observations', 'genes'], [rows, cols]):
     fig = plot_counts(var)
-    fig.savefig(f'{output_path}/unsorted/dataset_counts_against_number_of_{name}.png')
+    fig.savefig(f'{pipeline_base_path}/unsorted/dataset_counts_against_number_of_{name}.png')
 
 
 

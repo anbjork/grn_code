@@ -1,59 +1,53 @@
 
-from pathlib import Path
 
-# Path handling
-# Configure
-output_base_path = Path('outputs')
-# Change when knowingly changing structure
-pipeline_base_path = Path(f'{output_base_path}/in_pipeline')
-
-
-
-preprocessing_options = {
-        'cell normalised': [False, True],
-        # 'read normalised': [False, True],
-        'read normalised': [False],
-        'transform 1': ['none', 'log1p'],
-        'transform 2': ['none', 'zscores'],
-        # 'pseudo_bulk': [False, 1, 2, 3, 5, 10],
-        'pseudo_bulk': [False, 5],
-        'shuffle': [False],
-        'compute differences': [False, True],
-        }
 # preprocessing_options = {
-#         'cell normalised': [True],
+#         'cell normalised': [False, True],
+#         # 'read normalised': [False, True],
 #         'read normalised': [False],
-#         'transform 1': ['log1p'],
-#         'transform 2': ['zscores'],
-#         'pseudo_bulk': [False],
+#         'transform 1': ['none', 'log1p'],
+#         'transform 2': ['none', 'zscores'],
+#         # 'pseudo_bulk': [False, 1, 2, 3, 5, 10],
+#         'pseudo_bulk': [False, 5],
 #         'shuffle': [False],
-#         'compute differences': [False],
+#         'compute differences': [False, True],
 #         }
+preprocessing_options = {
+        'cell normalised': [True],
+        'read normalised': [False],
+        'transform 1': ['log1p'],
+        'transform 2': ['zscores'],
+        'pseudo_bulk': [False],
+        'shuffle': [False],
+        'compute differences': [False],
+        }
 
 
-
-
-from grn_code import functions
 inference_functions = [
-    functions.fast_methods_inference,
-    functions.random_inference,
-    functions.correlation_inference,
-    functions.perfect_inference,
-    # functions.zscore_max_variants,
-    functions.zscore_without_controls,
-    # functions.lsco_T_without_controls,
-    # functions.inspre_inference,
-    # functions.inspre_inference_hdf5,
-    functions.psgrn_inference,
-    # functions.genie3_inference,
-    # functions.deepsem_inference,
-    # functions.dspin_inference,
-    # functions.dspin_inference_wrapper,
-    ]
+        'fast_methods_inference',
+        'random_inference',
+        'correlation_inference',
+        'perfect_inference',
+        # 'zscore_max_variants',
+        # 'zscore_without_controls',
+        # 'lsco_T_without_controls',
+        # 'inspre_inference',
+        # 'inspre_inference_hdf5',
+        # 'psgrn_inference',
+        # 'genie3_inference',
+        # 'deepsem_inference',
+        # 'dspin_inference',
+        # 'dspin_inference_wrapper',
+        ]
 
 
-
-
+config = {
+        'preprocessing_options': preprocessing_options,
+        'inference_functions': inference_functions,
+        }
+import anton_util
+from grn_code.pipeline_code import pipeline_base_path
+pipeline_base_path.mkdir(exist_ok=True, parents=True)
+anton_util.pickle_object(config, pipeline_base_path / 'pipeline_configuration.pkl')
 
 
 
