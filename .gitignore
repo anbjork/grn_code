@@ -10,6 +10,7 @@ __*
 *log
 
 /genesnake/
+/genespider/
 /ground-truth-grns/
 
 .aider*

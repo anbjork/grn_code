@@ -1,0 +1,7 @@
+
+from pathlib import Path
+
+package_root = Path(__file__).parent.resolve()
+output_base_path = package_root.parent.parent / 'outputs'
+
+
