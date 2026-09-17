@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import anton_util
 from pathlib import Path
-from grn_code.pipeline_configuration import output_base_path
+from grn_code.pipeline_code import output_base_path
 
 compiled_results_path = Path(f'{output_base_path}/simulated/compiled_results.pkl')
 output_path = Path(f'{output_base_path}/simulated/plots/auroc_by_method.png')

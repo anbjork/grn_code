@@ -1,6 +1,6 @@
 
 import anton_util
-from grn_code.pipeline_configuration import output_base_path
+from grn_code.pipeline_code import output_base_path
 anton_util.log_timestamp('plotting...')
 anton_util.log_timestamp('reading data...')
 

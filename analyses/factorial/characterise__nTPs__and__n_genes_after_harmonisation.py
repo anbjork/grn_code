@@ -5,12 +5,15 @@ from pathlib import Path
 import anton_util
 import numpy as np
 
-from grn_code.pipeline_configuration import output_base_path
+from grn_code.pipeline_code import output_base_path
 
 compiled_results_path = Path(f'{output_base_path}/simulated/compiled_results.pkl')
 
 df = anton_util.unpickle_object(str(compiled_results_path))
 anton_util.log_timestamp(f'data loaded, shape: {df.shape}')
+
+outdir = Path(f'{output_base_path}/simulated/plots/')
+outdir.mkdir(exist_ok=True, parents=True)
 
 import matplotlib.pyplot as plt
 

@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 import anton_util
 
-from grn_code.pipeline_configuration import output_base_path
+from grn_code.pipeline_code import output_base_path
 
 compiled_results_path = Path(f'{output_base_path}/simulated/compiled_results.pkl')
 output_dir = Path(f'{output_base_path}/simulated/statistical_modelling')
