@@ -6,12 +6,9 @@ from datetime import datetime
 
 
 def save_run_metadata(output_path):
-    try:
-        commit = subprocess.check_output(
-            ['git', 'rev-parse', 'HEAD'], text=True
-        ).strip()
-    except subprocess.CalledProcessError:
-        commit = 'unknown'
+    commit = subprocess.check_output(
+        ['git', 'rev-parse', 'HEAD'], text=True
+    ).strip()
 
     metadata = {
         'git_commit': commit,
