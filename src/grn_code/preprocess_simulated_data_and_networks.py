@@ -47,14 +47,17 @@ def find_flat_datasets(datasets):
 
 
 
+from grn_code.paths_anchor import output_base_path
+config = anton_util.unpickle_object(output_base_path / 'pipeline_configuration.pkl')
+output_path = Path(config['output_path'])
+options = config['preprocessing_options']
+from grn_code.pipeline_code import get_pipeline_path
+pipeline_base_path = get_pipeline_path(output_path)
 
 anton_util.log_timestamp('reading..')
 
-from grn_code.pipeline_code import pipeline_base_path
 pipeline_base_path.mkdir(parents = True, exist_ok = True)
 
-config = anton_util.unpickle_object(pipeline_base_path / 'pipeline_configuration.pkl')
-options = config['preprocessing_options']
 
 data_raw = anton_util.unpickle_object(pipeline_base_path / 'simulations.pkl')
 datasets = data_raw

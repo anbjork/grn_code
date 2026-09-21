@@ -1,11 +1,9 @@
 set -e
 
-# python configure_simulations.py
-#
-# python ../../src/grn_code/data_simulation/simulate_genespider.py
-# python ../../src/grn_code/data_simulation/gather_simulation_data.py
+python configuration.py
 
-python pipeline_configuration.py
+python ../../src/grn_code/data_simulation/simulate_genespider.py
+python ../../src/grn_code/data_simulation/gather_simulation_data.py
 
 python ../../src/grn_code/preprocess_simulated_data_and_networks.py
 python ../../src/grn_code/inference_simulated.py

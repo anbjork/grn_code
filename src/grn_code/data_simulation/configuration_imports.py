@@ -1,20 +1,18 @@
 
-from grn_code.pipeline_code import pipeline_base_path
-
-d = pipeline_base_path / 'simulation'
-
 python_global_parameters = {
         'number_of_genes': 100,
         'average_network_degree': 3
         }
-
 
 def get_uuid():
     import uuid
     return str(uuid.uuid4())
 
 
-def initialise_simulations(parameter_sets):
+def initialise_simulations(parameter_sets, base_path):
+
+    from grn_code.pipeline_code import get_pipeline_path
+    d = get_pipeline_path(base_path) / 'simulation'
 
     sim_data = d / 'data'
     flag_files = d / 'simulation_completed_flags'

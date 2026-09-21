@@ -3,6 +3,11 @@ import anton_util
 
 
 
+from grn_code.paths_anchor import output_base_path
+output_path = output_base_path / 'data_cases'
+
+
+
 
 
 # data_cases = {
@@ -135,17 +140,68 @@ for data_case, parameters in data_cases.items():
 
 
 from grn_code.data_simulation.configuration_imports import initialise_simulations
-simulation_specifications = initialise_simulations(parameter_sets = parameter_sets)
-
-# simulation_specifications = simulation_specifications[ : 5] # Debug
-
-from grn_code.pipeline_code import pipeline_base_path
-anton_util.pickle_object(
-        simulation_specifications,
-        f'{pipeline_base_path}/simulation_specifications.pkl')
+simulation_specifications = initialise_simulations(
+        parameter_sets = parameter_sets,
+        base_path = output_path,
+        )
 
 
 
+# preprocessing_options = {
+#         'cell normalised': [False, True],
+#         # 'read normalised': [False, True],
+#         'read normalised': [False],
+#         'transform 1': ['none', 'log1p'],
+#         'transform 2': ['none', 'zscores'],
+#         # 'pseudo_bulk': [False, 1, 2, 3, 5, 10],
+#         'pseudo_bulk': [False, 5],
+#         'shuffle': [False],
+#         'compute differences': [False, True],
+#         }
+preprocessing_options = {
+        'cell normalised': [True],
+        'read normalised': [False],
+        'transform 1': ['log1p'],
+        'transform 2': ['zscores'],
+        'pseudo_bulk': [False],
+        'shuffle': [False],
+        'compute differences': [False],
+        }
+
+
+inference_functions = [
+        'fast_methods_inference',
+        'random_inference',
+        'correlation_inference',
+        'perfect_inference',
+        # 'zscore_max_variants',
+        # 'zscore_without_controls',
+        # 'lsco_T_without_controls',
+        # 'inspre_inference',
+        # 'inspre_inference_hdf5',
+        # 'psgrn_inference',
+        # 'genie3_inference',
+        # 'deepsem_inference',
+        # 'dspin_inference',
+        # 'dspin_inference_wrapper',
+        ]
+
+
+
+
+
+
+config = {
+        'output_path': output_path,
+        'preprocessing_options': preprocessing_options,
+        'inference_functions': inference_functions,
+        'simulation_specifications': simulation_specifications,
+        }
+
+
+
+output_base_path.mkdir(exist_ok=True, parents=True)
+anton_util.pickle_object(config, output_base_path / 'running_configuration.pkl')
 
 
 
