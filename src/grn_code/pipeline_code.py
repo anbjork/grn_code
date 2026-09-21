@@ -1,8 +1,79 @@
 
+import anton_util
 
-def get_pipeline_path(output_base_path):
-    pipeline_base_path = output_base_path / 'in_pipeline'
-    return pipeline_base_path
+
+def run_pipeline(
+        config,
+        output_base_path,
+        read_simulation_specifications,
+        ):
+
+    pipeline_output_path = output_base_path / 'in_pipeline'
+    pipeline_output_path.mkdir(exist_ok=True, parents=True)
+
+    if read_simulation_specifications:
+        simulation_specifications = anton_util.unpickle_object(
+                pipeline_output_path / 'simulation_specifications.pkl'
+                )
+    else:
+        from grn_code.data_simulation.configuration_imports import initialise_simulations
+        simulation_specifications = initialise_simulations(
+                parameter_sets = config['parameter_sets'],
+                base_path = pipeline_output_path,
+                )
+        anton_util.pickle_object(
+                simulation_specifications,
+                pipeline_output_path / 'simulation_specifications.pkl'
+                )
+
+    import grn_code.data_simulation.simulate_genespider as simulate_genespider
+    simulate_genespider.main(
+            output_path = pipeline_output_path,
+            job_specifications = simulation_specifications,
+            )
+
+    import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
+    gather_simulation_data.main(
+            output_path = pipeline_output_path,
+            simulation_specifications = simulation_specifications,
+            )
+
+    import grn_code.preprocess_simulated_data_and_networks as psdn
+    psdn.main(
+            output_path = pipeline_output_path,
+            preprocessing_options = config['preprocessing_options'],
+            )
+
+    from grn_code.inference_simulated import inference_simulated
+    inference_simulated(
+            output_path = pipeline_output_path,
+            inference_functions = config['inference_functions'],
+            )
+
+    from grn_code.benchmark_simulated import benchmark_simulated
+    benchmark_simulated(
+            output_path = pipeline_output_path,
+            )
+
+    from grn_code.append_results_with_pipeline import append_results_with_pipeline
+    append_results_with_pipeline(
+            pipeline_base_path = pipeline_output_path,
+            output_base_path = output_base_path,
+            )
+
+    from grn_code.compile_results_simulated import compile_results_simulated
+    compile_results_simulated(
+            output_path = output_base_path,
+            )
+
+
+
+
+
+
+
+
+
 
 
 

@@ -11,8 +11,7 @@ def get_uuid():
 
 def initialise_simulations(parameter_sets, base_path):
 
-    from grn_code.pipeline_code import get_pipeline_path
-    d = get_pipeline_path(base_path) / 'simulation'
+    d = base_path / 'simulation'
 
     sim_data = d / 'data'
     flag_files = d / 'simulation_completed_flags'

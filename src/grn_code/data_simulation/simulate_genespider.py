@@ -7,33 +7,6 @@ import datetime
 from inspect import cleandoc
 import datetime
 
-anton_util.log_timestamp('Script start')
-
-
-chunk_size = 1
-max_workers = 10
-job_timeout = datetime.timedelta(minutes = 1)
-termination_cleanup_timeout = 10
-print(f'Chunk size: {chunk_size}')
-print(f'Max workers: {max_workers}')
-print(f'Job timeout: {job_timeout}')
-print(f'Termination cleanup timeout: {termination_cleanup_timeout}')
-
-from grn_code.pipeline_code import pipeline_base_path
-
-job_specifications = anton_util.unpickle_object(
-    f'{pipeline_base_path}/simulation_specifications.pkl'
-        )
-
-chunk_dir = Path(f'{pipeline_base_path}/simulation/tmp_simulation_input_chunks')
-chunk_dir.mkdir(exist_ok = True, parents = True)
-
-
-processes = {}
-start_times = {}
-time_taken = {}
-wip = {}
-timeouts = {}
 
 
 def block_print(s):
@@ -41,7 +14,7 @@ def block_print(s):
 
 
 
-def prepare_chunk(chunk):
+def prepare_chunk(chunk, chunk_dir):
 
     import uuid
     chunk_file = chunk_dir / str(uuid.uuid4())
@@ -116,7 +89,28 @@ def check_for_astronomical_results(job_specifications):
 
 
 
-def job_manager():
+def job_manager(output_path, job_specifications):
+
+    anton_util.log_timestamp('Script start')
+
+    print(f'Chunk size: {chunk_size}')
+    print(f'Max workers: {max_workers}')
+    print(f'Job timeout: {job_timeout}')
+    print(f'Termination cleanup timeout: {termination_cleanup_timeout}')
+
+
+    job_specifications = anton_util.unpickle_object(
+        f'{output_path}/simulation_specifications.pkl'
+            )
+
+    chunk_dir = Path(f'{output_path}/simulation/tmp_simulation_input_chunks')
+    chunk_dir.mkdir(exist_ok = True, parents = True)
+
+    processes = {}
+    start_times = {}
+    time_taken = {}
+    wip = {}
+    timeouts = {}
 
     jobs_not_started = []
     for job_specification in job_specifications:
@@ -138,7 +132,7 @@ def job_manager():
 
             chunk = jobs_not_started[-chunk_size : ]
             jobs_not_started = jobs_not_started[ : -chunk_size]
-            cmd = prepare_chunk(chunk = chunk)
+            cmd = prepare_chunk(chunk = chunk, chunk_dir = chunk_dir)
             p = subprocess.Popen(cmd)
             pid = p.pid
 
@@ -212,18 +206,23 @@ def job_manager():
         'termination_cleanup_timeout': termination_cleanup_timeout,
         }
     anton_util.pickle_object(
-            run_metadata, 
-            f'{pipeline_base_path}/simulation/simulation_run_metadata.pkl'
+            run_metadata,
+            f'{output_path}/simulation/simulation_run_metadata.pkl'
             )
-    return 0
-
-
-def main():
-    job_manager()
 
     anton_util.log_timestamp('Initial parameter grid simulated')
 
-main()
+    return 0
 
+
+
+chunk_size = 1
+max_workers = 10
+job_timeout = datetime.timedelta(minutes = 1)
+termination_cleanup_timeout = 10
+
+def main(output_path, job_specifications):
+
+    job_manager(output_path = output_path, job_specifications = job_specifications)
 
 

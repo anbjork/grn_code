@@ -52,39 +52,39 @@ def get_simuation_matrices_from_specification(specification):
     return output_matrices
 
 
-from grn_code.functions import merge_p_into_y
-from grn_code.pipeline_code import pipeline_base_path
 
-simulation_specifications = anton_util.unpickle_object(
-        f'{pipeline_base_path}/simulation_specifications.pkl'
-        )
-datasets = []
-reference_networks = []
-for specification in simulation_specifications:
+def main(output_path, simulation_specifications):
 
-    m = get_simuation_matrices_from_specification(specification)
-    Y = m['Y']
-    meta = {
-            'dataset_parameters': {
-                **specification['python_global_parameters_for_matlab'],
-                **specification['parameters'],
+    from grn_code.functions import merge_p_into_y
+    pipeline_base_path = output_path
+
+    datasets = []
+    reference_networks = []
+    for specification in simulation_specifications:
+
+        m = get_simuation_matrices_from_specification(specification)
+        Y = m['Y']
+        meta = {
+                'dataset_parameters': {
+                    **specification['python_global_parameters_for_matlab'],
+                    **specification['parameters'],
+                    }
                 }
-            }
-    reference_networks.append({'meta': meta, 'data': m['A']})
+        reference_networks.append({'meta': meta, 'data': m['A']})
 
-    Y = merge_p_into_y(Y, m['P'])
-    controls = m['SCC']
-    controls.index = ['control'] * len(controls)
-    all = pd.concat([controls, m['Y']], axis = 0)
-    out = ({
-        'meta': meta,
-        'Y': all,
-        })
-    datasets.append(out)
+        Y = merge_p_into_y(Y, m['P'])
+        controls = m['SCC']
+        controls.index = ['control'] * len(controls)
+        all = pd.concat([controls, m['Y']], axis = 0)
+        out = ({
+            'meta': meta,
+            'Y': all,
+            })
+        datasets.append(out)
 
-tmp = pipeline_base_path
-tmp.mkdir(exist_ok = True, parents = True)
-anton_util.pickle_object(reference_networks, tmp / 'reference_networks.pkl')
-anton_util.pickle_object(datasets, tmp / 'simulations.pkl')
+    tmp = pipeline_base_path
+    tmp.mkdir(exist_ok = True, parents = True)
+    anton_util.pickle_object(reference_networks, tmp / 'reference_networks.pkl')
+    anton_util.pickle_object(datasets, tmp / 'simulations.pkl')
 
 

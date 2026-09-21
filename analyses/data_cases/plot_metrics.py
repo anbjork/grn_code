@@ -2,48 +2,49 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def plot_metrics_with_jitter(df):
-    """
-    Plot AUROC, AUPR ratio, and top_k_accuracy with methods on x-axis and jitter.
-    """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    # fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
-    # Incompatible with constrained_layout
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    plt.subplots_adjust(bottom=0.5)
-    for i, metric in enumerate(metrics):
-        ax = axes[i]
-        methods = df['method'].unique()
-        x_positions = np.arange(len(methods))
-        for j, method in enumerate(methods):
-            method_data = df[df['method'] == method][metric]
-            jitter = np.random.normal(0, 0.1, len(method_data))
-            x_jittered = np.full(len(method_data), j) + jitter
-            ax.scatter(x_jittered, method_data, alpha=0.7, s=50)
-        y_max = y_maxes[metric]
-        ax.set_ylim(None, y_max * 1.1)
-        ax.set_xlabel('Method')
-        ax.set_ylabel(metric)
-        ax.set_title(f'{metric} by Method')
-        ax.set_xticks(x_positions)
-        ax.set_xticklabels(methods, rotation=45, ha='right')
-        ax.grid(True, alpha=0.3)
-    # Incompatible with constrained_layout
-    # plt.tight_layout()
-    fig.suptitle(plot_name)
-    return fig
 
-if __name__ == "__main__":
+def plot_metrics(output_path):
+
+    def plot_metrics_with_jitter(df):
+        """
+        Plot AUROC, AUPR ratio, and top_k_accuracy with methods on x-axis and jitter.
+        """
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        # fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
+        # Incompatible with constrained_layout
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        plt.subplots_adjust(bottom=0.5)
+        for i, metric in enumerate(metrics):
+            ax = axes[i]
+            methods = df['method'].unique()
+            x_positions = np.arange(len(methods))
+            for j, method in enumerate(methods):
+                method_data = df[df['method'] == method][metric]
+                jitter = np.random.normal(0, 0.1, len(method_data))
+                x_jittered = np.full(len(method_data), j) + jitter
+                ax.scatter(x_jittered, method_data, alpha=0.7, s=50)
+            y_max = y_maxes[metric]
+            ax.set_ylim(None, y_max * 1.1)
+            ax.set_xlabel('Method')
+            ax.set_ylabel(metric)
+            ax.set_title(f'{metric} by Method')
+            ax.set_xticks(x_positions)
+            ax.set_xticklabels(methods, rotation=45, ha='right')
+            ax.grid(True, alpha=0.3)
+        # Incompatible with constrained_layout
+        # plt.tight_layout()
+        fig.suptitle(plot_name)
+        return fig
+
 
     import anton_util
-    from grn_code.pipeline_code import output_base_path
     anton_util.log_timestamp('plotting...')
     anton_util.log_timestamp('reading data...')
 
     df = anton_util.unpickle_object(
-            f'{output_base_path}/simulated/compiled_results.pkl')
-    output_dir = f'{output_base_path}/simulated/plots'
+            f'{output_path}/simulated/compiled_results.pkl')
+    output_dir = f'{output_path}/simulated/plots'
 
     df = df.loc[df['inference error'].isna(), :]
 
