@@ -1,7 +1,7 @@
 
 
 
-def configure(output_path):
+def configure():
 
 
     # data_cases = {

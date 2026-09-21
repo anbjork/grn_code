@@ -12,12 +12,16 @@ def run_pipeline(
     pipeline_output_path.mkdir(exist_ok=True, parents=True)
 
     if read_simulation_specifications:
-        simulation_specifications = anton_util.unpickle_object(
-                pipeline_output_path / 'simulation_specifications.pkl'
-                )
+        p = pipeline_output_path / 'simulation_specifications.pkl'
+        try:
+            simulation_specifications = anton_util.unpickle_object(p)
+        except FileNotFoundError:
+            print(f'{p} not found')
+            import sys
+            sys.exit(1)
     else:
-        from grn_code.data_simulation.configuration_imports import initialise_simulations
-        simulation_specifications = initialise_simulations(
+        from grn_code.data_simulation import configuration_imports as ci
+        simulation_specifications = ci.initialise_simulations(
                 parameter_sets = config['parameter_sets'],
                 base_path = pipeline_output_path,
                 )
