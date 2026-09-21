@@ -1,5 +1,26 @@
 
 import anton_util
+import json
+import subprocess
+from datetime import datetime
+
+
+def save_run_metadata(output_path):
+    try:
+        commit = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], text=True
+        ).strip()
+    except subprocess.CalledProcessError:
+        commit = 'unknown'
+
+    metadata = {
+        'git_commit': commit,
+        'timestamp': datetime.now().isoformat(),
+    }
+
+    output_path.mkdir(parents=True, exist_ok=True)
+    with open(output_path / 'run_metadata.json', 'w') as f:
+        json.dump(metadata, f, indent=2)
 
 
 def run_pipeline(
@@ -7,6 +28,8 @@ def run_pipeline(
         output_base_path,
         read_simulation_specifications,
         ):
+
+    save_run_metadata(output_base_path)
 
     pipeline_output_path = output_base_path / 'in_pipeline'
     pipeline_output_path.mkdir(exist_ok=True, parents=True)
