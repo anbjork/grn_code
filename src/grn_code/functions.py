@@ -696,6 +696,25 @@ def genie3_inference(data):
 
     return estimated_network
 
+def regdiffusion_inference(data):
+    import copy
+    import regdiffusion as rd
+
+    expression_data = copy.deepcopy(data['Y_log1p'])
+    X = expression_data.to_numpy()
+
+    trainer = rd.RegDiffusionTrainer(X)
+    trainer.train()
+
+    adj = trainer.get_adj()
+
+    estimated_network = pd.DataFrame(
+        data=adj,
+        index=expression_data.columns,
+        columns=expression_data.columns,
+    )
+
+    return {'regdiffusion': estimated_network}
 
 def deepsem_inference(data):
     import argparse

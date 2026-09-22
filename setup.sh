@@ -15,7 +15,7 @@ cd src/grn_code/data_simulation
 bash setup.sh
 cd -
 
-pip install numpy pandas matplotlib anton_util h5py
+pip install numpy pandas matplotlib anton_util h5py scanpy scikit-misc
 
 pip install -e .
 
