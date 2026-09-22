@@ -26,6 +26,28 @@ def run_pipeline(
         read_simulation_specifications,
         ):
 
+    def handle_perfect_inference(config):
+        def bind_location_of_cheat(config):
+            previous_inference_function = config['inference_functions'][ii]
+            def perfect_inference(data):
+                return previous_inference_function(
+                        data,
+                        location_of_cheat_sheet = pipeline_output_path,
+                        )
+            config['inference_functions'][ii] = perfect_inference
+
+        matches = [
+                ii for ii, f in enumerate(config['inference_functions'])
+                if f.__name__ == 'perfect_inference'
+                ]
+        if len(matches) == 0:
+            pass
+        elif len(matches) == 1:
+            ii = matches[0]
+            bind_location_of_cheat(config)
+        else:
+            raise ValueError('Multiple perfect_inference functions found')
+
     save_run_metadata(output_base_path)
 
     pipeline_output_path = output_base_path / 'in_pipeline'
@@ -50,24 +72,25 @@ def run_pipeline(
                 pipeline_output_path / 'simulation_specifications.pkl'
                 )
 
-    import grn_code.data_simulation.simulate_genespider as simulate_genespider
-    simulate_genespider.main(
-            output_path = pipeline_output_path,
-            job_specifications = simulation_specifications,
-            )
+    # import grn_code.data_simulation.simulate_genespider as simulate_genespider
+    # simulate_genespider.main(
+    #         output_path = pipeline_output_path,
+    #         job_specifications = simulation_specifications,
+    #         )
+    #
+    # import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
+    # gather_simulation_data.main(
+    #         output_path = pipeline_output_path,
+    #         simulation_specifications = simulation_specifications,
+    #         )
+    #
+    # import grn_code.preprocess_simulated_data_and_networks as psdn
+    # psdn.main(
+    #         output_path = pipeline_output_path,
+    #         preprocessing_options = config['preprocessing_options'],
+    #         )
 
-    import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
-    gather_simulation_data.main(
-            output_path = pipeline_output_path,
-            simulation_specifications = simulation_specifications,
-            )
-
-    import grn_code.preprocess_simulated_data_and_networks as psdn
-    psdn.main(
-            output_path = pipeline_output_path,
-            preprocessing_options = config['preprocessing_options'],
-            )
-
+    handle_perfect_inference(config)
     from grn_code.inference_simulated import inference_simulated
     inference_simulated(
             output_path = pipeline_output_path,

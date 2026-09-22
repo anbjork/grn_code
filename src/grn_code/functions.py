@@ -406,13 +406,11 @@ def lsco_T_without_controls(data):
 
 
 
-def perfect_inference(data):
+def perfect_inference(data, location_of_cheat_sheet):
 
-    from grn_code.pipeline_code import pipeline_base_path as base_path
+    p = Path(location_of_cheat_sheet) / 'reference_networks.pkl'
 
-    reference_networks = anton_util.unpickle_object(
-        base_path / 'reference_networks.pkl'
-        )
+    reference_networks = anton_util.unpickle_object(p)
     reference_networks_dict = {
             # frozensets are immutable, and so can be used as keys.
             # This way, it matches keys on all meta data fields, without
