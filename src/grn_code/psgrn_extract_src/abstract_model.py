@@ -22,7 +22,7 @@ from abc import abstractmethod
 from typing import List, Tuple
 
 import numpy as np
-from psgrn_extract_src.training_regimes import TrainingRegime
+from grn_code.psgrn_extract_src.training_regimes import TrainingRegime
 
 
 class AbstractInferenceModel(object):

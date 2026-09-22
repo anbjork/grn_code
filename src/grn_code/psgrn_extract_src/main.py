@@ -10,8 +10,8 @@ from typing import List, Tuple
 import os
 import numpy as np
 import pandas as pd
-from psgrn_extract_src.abstract_model import AbstractInferenceModel
-from psgrn_extract_src.training_regimes import TrainingRegime
+from grn_code.psgrn_extract_src.abstract_model import AbstractInferenceModel
+from grn_code.psgrn_extract_src.training_regimes import TrainingRegime
 import lightgbm as lgb
 from tqdm import tqdm
 
