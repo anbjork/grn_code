@@ -33,9 +33,10 @@ run_pipeline(
 
 
 
-from plot_metrics import plot_metrics
+from plot_by_metric import plot_metrics
 plot_metrics(output_path = output_path)
 
-
+from plot_by_data_case import plot_metrics
+plot_metrics(output_path = output_path)
 
 
