@@ -72,23 +72,23 @@ def run_pipeline(
                 pipeline_output_path / 'simulation_specifications.pkl'
                 )
 
-    # import grn_code.data_simulation.simulate_genespider as simulate_genespider
-    # simulate_genespider.main(
-    #         output_path = pipeline_output_path,
-    #         job_specifications = simulation_specifications,
-    #         )
-    #
-    # import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
-    # gather_simulation_data.main(
-    #         output_path = pipeline_output_path,
-    #         simulation_specifications = simulation_specifications,
-    #         )
-    #
-    # import grn_code.preprocess_simulated_data_and_networks as psdn
-    # psdn.main(
-    #         output_path = pipeline_output_path,
-    #         preprocessing_options = config['preprocessing_options'],
-    #         )
+    import grn_code.data_simulation.simulate_genespider as simulate_genespider
+    simulate_genespider.main(
+            output_path = pipeline_output_path,
+            job_specifications = simulation_specifications,
+            )
+
+    import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
+    gather_simulation_data.main(
+            output_path = pipeline_output_path,
+            simulation_specifications = simulation_specifications,
+            )
+
+    import grn_code.preprocess_simulated_data_and_networks as psdn
+    psdn.main(
+            output_path = pipeline_output_path,
+            preprocessing_options = config['preprocessing_options'],
+            )
 
     handle_perfect_inference(config)
     from grn_code.inference_simulated import inference_simulated

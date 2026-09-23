@@ -2,7 +2,7 @@
 import anton_util
 
 from grn_code.paths_anchor import output_base_path
-output_path = output_base_path / 'some 4rd analysis'
+output_path = output_base_path / 'data_cases'
 
 # make_config = False
 make_config = True

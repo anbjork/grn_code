@@ -159,16 +159,16 @@ def configure():
 
     from grn_code import functions
     inference_functions = [
-            # functions.fast_methods_inference,
-            # functions.random_inference,
-            # functions.correlation_inference,
+            functions.fast_methods_inference,
+            functions.random_inference,
+            functions.correlation_inference,
             functions.perfect_inference,
             # functions.zscore_max_variants,
             # functions.zscore_without_controls,
             # functions.lsco_T_without_controls,
             # functions.inspre_inference,
             # functions.inspre_inference_hdf5,
-            # functions.psgrn_inference,
+            functions.psgrn_inference,
             # functions.genie3_inference,
             # functions.deepsem_inference,
             # functions.dspin_inference,
