@@ -3,124 +3,42 @@
 
 def configure():
 
-
-    data_cases = {
-            'easy': {
-                'negbin_prob': 0.5,
-                'dispersion': 0.1,
-                'cell_count': 125,
-                'snr': 0.5,
-                },
-    #         'low snr 0.05, old': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.05,
-    #             },
-    #         'low snr 0.1': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.1,
-    #             },
-    #         'low snr 0.3': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.3,
-    #             },
-            'low snr 0.03': {
-                'negbin_prob': 0.5,
-                'dispersion': 0.1,
-                'cell_count': 125,
-                'snr': 0.03,
-                },
-    #         'low snr 0.035': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.035,
-    #             },
-    #         'low snr 0.04': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.04,
-    #             },
-    #         'low snr 0.045': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.045,
-    #             },
-    #         'high dropout 10, old': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 10,
-    #             'cell_count': 125,
-    #             'snr': 0.5,
-    #             },
-    #         'high dropout 50': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 50,
-    #             'cell_count': 125,
-    #             'snr': 0.5,
-    #             },
-            'high dropout 20': {
-                'negbin_prob': 0.5,
-                'dispersion': 20,
-                'cell_count': 125,
-                'snr': 0.5,
-                },
-    #         'high dropout 15': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 15,
-    #             'cell_count': 125,
-    #             'snr': 0.5,
-    #             },
-            }
-
-    # # This adjusted for the genesnake version. snrs are a bit different scale
-    # # for this one
     # data_cases = {
     #         'easy': {
     #             'negbin_prob': 0.5,
     #             'dispersion': 0.1,
     #             'cell_count': 125,
-    #             'snr': 10,
+    #             'snr': 0.5,
     #             },
-    #         'low snr': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 1,
-    #             },
-    #         'high dropout': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 10,
-    #             'cell_count': 125,
-    #             'snr': 10,
-    #             },
-    #         }
 
+    # Corresponds to the easy data case, see above
+    vars = {}
 
+    old_dispersions = [0.1, 10, 15, 20, 50]
+    additional_dispersions = [0.2, 0.3, 0.5, 1, 2, 3, 5, 7]
+    even_more = [30, 40]
+    vars['dispersion'] = sorted(old_dispersions + additional_dispersions + even_more)
 
+    snrs = [0.03, 0.035, 0.04, 0.045, 0.05, 0.07, 0.1, 0.3, 0.5, 0.7, 1]
+    vars['snr'] = snrs
 
-    # template =  {
-    #     'negbin_prob': 0.5,
-    #     'dispersion': 0.1,
-    #     'cell_count': 125,
-    #     'snr': 0.5,
-    #     }
-    # old_dispersions = [0.1, 10, 15, 20, 50]
-    # additional_dispersions = [0.2, 0.3, 0.5, 1, 2, 3, 5, 7]
-    # even_more = [30, 40]
-    # all_dispersions = old_dispersions + additional_dispersions + even_more
-    # data_cases = {}
-    # from copy import deepcopy
-    # for dispersion in all_dispersions:
-    #     dc = deepcopy(template)
-    #     dc['dispersion'] = dispersion
-    #     data_cases[f'high dropouts {dispersion}'] = dc
+    cell_counts = [25, 50, 75, 100, 125, 150, 200, 250, 300]
+    vars['cell_count'] = cell_counts
+
+    template =  {
+        'negbin_prob': 0.5,
+        'dispersion': 0.1,
+        'cell_count': 125,
+        'snr': 0.5,
+        }
+
+    data_cases = {}
+    for vn, levels in vars.items():
+        from copy import deepcopy
+        for level in levels:
+            dc = deepcopy(template)
+            dc[vn] = level
+            data_cases[f'{vn}: {level}'] = dc
 
 
     repeats = 5
@@ -185,4 +103,8 @@ def configure():
 
 
     return config
+
+
+
+
 
