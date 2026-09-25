@@ -3,15 +3,6 @@
 
 def configure():
 
-    # data_cases = {
-    #         'easy': {
-    #             'negbin_prob': 0.5,
-    #             'dispersion': 0.1,
-    #             'cell_count': 125,
-    #             'snr': 0.5,
-    #             },
-
-    # Corresponds to the easy data case, see above
     vars = {}
 
     old_dispersions = [0.1, 10, 15, 20, 50]

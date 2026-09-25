@@ -48,10 +48,11 @@ def run_pipeline(
         else:
             raise ValueError('Multiple perfect_inference functions found')
 
-    save_run_metadata(output_base_path)
-
     pipeline_output_path = output_base_path / 'in_pipeline'
     pipeline_output_path.mkdir(exist_ok=True, parents=True)
+
+
+
 
     if read_simulation_specifications:
         p = pipeline_output_path / 'simulation_specifications.pkl'
@@ -71,6 +72,8 @@ def run_pipeline(
                 simulation_specifications,
                 pipeline_output_path / 'simulation_specifications.pkl'
                 )
+
+    save_run_metadata(output_base_path)
 
     import grn_code.data_simulation.simulate_genespider as simulate_genespider
     simulate_genespider.main(
