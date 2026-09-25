@@ -34,7 +34,11 @@ def compile_results_simulated(output_path):
             benchmark['data'].pop('f1_scores')
         except AttributeError:
             anton_util.log_timestamp(f'benchmark {ii} data is None, skipping f1_scores pop')
-            pass
+            # Can be None, set by benchmarking when inference error
+            # Setting to empty dict, otherwise recursive flattening
+            # will produce a 'data': None key, which leads to the
+            # data frame below having a column 'data' with NaNs
+            benchmark['data'] = {}
         # anton_util.log_timestamp(f'flattening benchmark')
         tmp = recursive_flatten_dict(benchmark)
         # anton_util.log_timestamp(f'the rest')
@@ -97,7 +101,6 @@ def compile_results_simulated(output_path):
                     anton_util.log_timestamp(f'benchmark {ii} has no {plot_type}, skipping')
                     continue
                 # anton_util.log_timestamp(f'the rest')
-
 
 
 
