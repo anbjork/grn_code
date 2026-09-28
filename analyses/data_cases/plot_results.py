@@ -113,7 +113,7 @@ def _make_plot(df_long, major_val, config_name, subplot_col, x_col):
         ax.set_xticks(x_positions)
         ax.set_xticklabels(x_values, rotation=45, ha='right')
         ax.set_title(f'{subplot_val}')
-        ax.set_ylim(None, y_max * 1.1)
+        ax.set_ylim(-0.1, y_max * 1.1)
         ax.grid(True, alpha=0.3)
         if i == 0:
             ax.set_ylabel('value')
