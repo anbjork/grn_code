@@ -1,6 +1,6 @@
 
 python_global_parameters = {
-        'number_of_genes': 100,
+        'number_of_genes': 150,
         'average_network_degree': 3
         }
 

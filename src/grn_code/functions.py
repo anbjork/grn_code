@@ -1306,7 +1306,7 @@ def scanpy_preprocess(dataset, option, **kwargs):
     sc.pp.filter_cells(adata, min_genes = genes_cutoff)
     sc.pp.filter_cells(adata, min_counts = counts_cutoff)
 
-    sc.pp.highly_variable_genes(adata, n_top_genes=50, flavor='seurat_v3')
+    sc.pp.highly_variable_genes(adata, n_top_genes=100, flavor='seurat_v3')
     # Commented out for performance when not actually looked at
     # sc.pl.highly_variable_genes(
     #         adata,
