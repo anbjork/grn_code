@@ -36,6 +36,7 @@ def benchmark_simulated(output_path):
                 'data': mstats,
             })
             continue
+        assert('simulation_id' in meta['dataset_parameters'])
         meta_key = frozenset(meta['dataset_parameters'].items())
         reference_network = reference_networks_dict[meta_key]
         try:

@@ -23,6 +23,7 @@ def initialise_simulations(parameter_sets, base_path):
 
         tmp = [k + f'_{v}' for k, v in parameters.items()]
         parameter_tag = '__'.join(tmp)
+        parameters['simulation_id'] = get_uuid()
 
         # NOTE: If you change this list, you must make the corresponding change
         # in simulate.m, otherwise mismatch bug.
