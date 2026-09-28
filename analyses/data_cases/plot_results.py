@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 
 
-METRICS = ['AUROC', 'AUPR ratio', 'top_k_accuracy']
+METRICS = ['AUROC', 'AUPR', 'AUPR ratio', 'AUPR gain', 'top_k_accuracy']
 DROPOUT_COL = '0_fraction__before_filtering__all'
 VARS_TO_STRATIFY = [
     'cell normalised',

@@ -49,6 +49,7 @@ def compile_results_simulated(output_path):
     cs = ['shuffle', 'method', 'pseudo_bulk']
     df = df.sort_values(by = cs)
     df['AUPR ratio'] = df['AUPR'] / df['ERMA']
+    df['AUPR gain'] = df['AUPR'] - df['ERMA']
 
     anton_util.log_timestamp('saving results...')
     anton_util.pickle_object(df, f'{output_path}.pkl')
