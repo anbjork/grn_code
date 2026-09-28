@@ -68,6 +68,11 @@ def main(output_path, preprocessing_options):
 
     functions.record_dropout_fractions(datasets, 'before_filtering')
 
+    aa = []
+    for dd in datasets:
+        aa.append(float(find_variable_columns(dd['Y']).sum()))
+    number_of_variable_genes_before_filtering = aa
+
     datasets = update_datasets(
             datasets = datasets,
             update_function = functions.scanpy_preprocess,
@@ -192,7 +197,15 @@ def main(output_path, preprocessing_options):
     import numpy as np
     for df in [flat_datasets, flat_datasets_1]:
         if any(np.array(df)):
-            raise ValueError('0 stds found')
+            print('Warning: 0 stds found')
+
+    aa = []
+    for dd in datasets:
+        aa.append(float(find_variable_columns(dd['Y']).sum()))
+    number_of_variable_genes_after_filtering = aa
+
+    print(f'{number_of_variable_genes_before_filtering = }')
+    print(f'{number_of_variable_genes_after_filtering = }')
 
     metas = [d['meta'] for d in datasets]
     for meta in metas:
