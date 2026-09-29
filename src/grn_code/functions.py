@@ -677,8 +677,12 @@ def genie3_inference(data):
     # # Debug
     # expression_data = expression_data.iloc[:, :5]
 
-    from GENIE3.GENIE3_python.GENIE3 import GENIE3  # pyright: ignore
-    VIM = GENIE3(np.array(expression_data), nthreads = 12)
+    from grn_code.paths_anchor import repo_root
+    import sys
+    sys.path.insert(0, str(repo_root / 'GENIE3'))
+    from GENIE3_python.GENIE3 import GENIE3  # pyright: ignore
+
+    VIM = GENIE3(np.array(expression_data), nthreads = 10)
     estimated_network = pd.DataFrame(
         data = VIM,
         index = expression_data.columns,

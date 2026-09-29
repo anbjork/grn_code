@@ -2,6 +2,7 @@
 from pathlib import Path
 
 package_root = Path(__file__).parent.resolve()
-output_base_path = package_root.parent.parent / 'outputs'
+repo_root = package_root.parent.parent
+output_base_path = repo_root / 'outputs'
 
 
