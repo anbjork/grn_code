@@ -341,6 +341,30 @@ def zscore_max_variants(data):
 
 
 
+def lasso(data):
+
+    estimated_networks = {}
+
+    P = data['P']
+    Y = data['Y']
+
+    m = 'lasso_density'
+    anton_util.log_timestamp(f'Running {m}...')
+    en = gs.inference.infer_networks(
+        Y=Y, P=P,
+        method=m,
+        target_density = 3)
+
+    if np.any(np.isnan(en)):
+        raise ValueError(f'NaN values in {m} output')
+
+    estimated_networks[m] = en
+    return estimated_networks
+
+
+
+
+
 
 def zscore_without_controls(data):
 
