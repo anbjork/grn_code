@@ -1,80 +1,83 @@
 
 
+negbin_prob = 0.5
+cell_count = 180
+
 
 def configure():
 
 
     data_cases = {
             'easy': {
-                'negbin_prob': 0.5,
+                'negbin_prob': negbin_prob,
                 'dispersion': 0.1,
-                'cell_count': 125,
+                'cell_count': cell_count,
                 'snr': 0.5,
                 },
     #         'low snr 0.05, old': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.05,
     #             },
     #         'low snr 0.1': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.1,
     #             },
     #         'low snr 0.3': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.3,
     #             },
             'low snr 0.03': {
-                'negbin_prob': 0.5,
+                'negbin_prob': negbin_prob,
                 'dispersion': 0.1,
-                'cell_count': 125,
+                'cell_count': cell_count,
                 'snr': 0.03,
                 },
     #         'low snr 0.035': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.035,
     #             },
     #         'low snr 0.04': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.04,
     #             },
     #         'low snr 0.045': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.045,
     #             },
     #         'high dropout 10, old': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 10,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.5,
     #             },
     #         'high dropout 50': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 50,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.5,
     #             },
             'high dropout 20': {
-                'negbin_prob': 0.5,
+                'negbin_prob': negbin_prob,
                 'dispersion': 20,
-                'cell_count': 125,
+                'cell_count': cell_count,
                 'snr': 0.5,
                 },
     #         'high dropout 15': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 15,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 0.5,
     #             },
             }
@@ -83,44 +86,26 @@ def configure():
     # # for this one
     # data_cases = {
     #         'easy': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 10,
     #             },
     #         'low snr': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 0.1,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 1,
     #             },
     #         'high dropout': {
-    #             'negbin_prob': 0.5,
+    #             'negbin_prob': negbin_prob,
     #             'dispersion': 10,
-    #             'cell_count': 125,
+    #             'cell_count': cell_count,
     #             'snr': 10,
     #             },
     #         }
 
 
-
-
-    # template =  {
-    #     'negbin_prob': 0.5,
-    #     'dispersion': 0.1,
-    #     'cell_count': 125,
-    #     'snr': 0.5,
-    #     }
-    # old_dispersions = [0.1, 10, 15, 20, 50]
-    # additional_dispersions = [0.2, 0.3, 0.5, 1, 2, 3, 5, 7]
-    # even_more = [30, 40]
-    # all_dispersions = old_dispersions + additional_dispersions + even_more
-    # data_cases = {}
-    # from copy import deepcopy
-    # for dispersion in all_dispersions:
-    #     dc = deepcopy(template)
-    #     dc['dispersion'] = dispersion
-    #     data_cases[f'high dropouts {dispersion}'] = dc
 
 
     repeats = 5
