@@ -527,6 +527,9 @@ def dspin_inference(
     # and the columns are the genes
     y = data['Y']
 
+    if np.any(y < 0):
+        raise ValueError('dspin is not constructed for negative values in Y')
+
     # # Debug
     # y = y.iloc[:, :10]
 
@@ -603,7 +606,7 @@ def dspin_inference(
         for ii in range(len(rows)):
             for jj in range(len(cols)):
                 if rows[ii] == cols[jj]:
-                    cur_h[ii, jj] = -1.5
+                    cur_h[ii, jj] = -3
         extra_params = {'cur_h': cur_h}
         # My intuition would have been the other transpose, ie
         # samples x genes, but in learn_network_adam, it gets dimensions as
