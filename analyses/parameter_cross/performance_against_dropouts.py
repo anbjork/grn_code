@@ -70,7 +70,8 @@ plt.close('all')
 fig, ax = plt.subplots(figsize=(10, 6))
 ax.scatter(df['dispersion'], df[dropout_col])
 fig.savefig(f'{output_dir}/dropouts_against_dispersion.png')
-
+ax.set_xlim(None, 5)
+fig.savefig(f'{output_dir}/dropouts_against_dispersion_xlim.png')
 
 
 
