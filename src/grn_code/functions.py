@@ -716,90 +716,226 @@ def regdiffusion_inference(data):
 
     return {'regdiffusion': estimated_network}
 
-def deepsem_inference(data):
-    import argparse
+
+
+def bigsm_inference(data):
+    """
+    BiGSM inference using MATLAB through an HDF5 interface.
+
+    Python controls the complete workflow:
+
+        Python -> HDF5 -> MATLAB -> HDF5 -> Python
+
+    MATLAB is only responsible for running the original bigsm.m.
+
+    Input:
+        data['Y'] : expression matrix
+                     genes x samples
+        data['P'] : perturbation matrix
+                     genes x samples
+
+    BiGSM returns:
+        A[target, regulator]
+
+    GeneSnake expects:
+        network[regulator, target]
+
+    Therefore A is transposed before converting it to an edgelist.
+    """
+
+    import subprocess
     import tempfile
     import os
-    import shutil
-    import sys
+    import copy
     from pathlib import Path
 
-    import copy
+    import h5py
+    import numpy as np
+    import pandas as pd
+    import genesnake as gs
+
     expression_data = copy.deepcopy(data['Y'])
+    perturbations = data['P']
 
-    # # Debug
-    # expression_data = expression_data.iloc[:, :10]
+    # ---------------------------------------------------------
+    # Temporary HDF5 files
+    # ---------------------------------------------------------
 
-    # Save the original working directory so we can restore it later
-    original_dir = os.getcwd()
-    temp_file = None
-    temp_dir = None
+    # Input file: Python writes Y, P and max_iter here.
+    with tempfile.NamedTemporaryFile(
+        suffix='.h5',
+        delete=False
+    ) as f:
+        input_path = f.name
+
+    # Output file:
+    # MATLAB must create the HDF5 file itself.
+    # Therefore create a temporary filename, close it, and remove it.
+    output_fd, output_path = tempfile.mkstemp(suffix='.h5')
+    os.close(output_fd)
+    os.unlink(output_path)
 
     try:
-        # Change to DeepSEM directory and add to path
-        deepsem_dir = Path('DeepSEM').resolve()
-        os.chdir(deepsem_dir)
-        sys.path.insert(0, str(deepsem_dir))
 
-        # Import DeepSEM test model (for inference without ground truth)
-        from src.DeepSEM_cell_type_test_non_specific_GRN_model import test_non_celltype_GRN_model
+        # -----------------------------------------------------
+        # Prepare HDF5 input
+        # -----------------------------------------------------
 
-        # Create opt object with test parameters (for inference without ground truth)
-        opt = argparse.Namespace(
-            task='non_celltype_GRN',
-            setting='test',
-            n_epochs=120,
-            # debug
-            # n_epochs=20,
-            batch_size=64,
-            alpha=100,
-            beta=1,
-            lr=1e-4,
-            lr_step_size=0.99,
-            gamma=0.95,
-            n_hidden=128,
-            K=1,
-            K1=1,
-            K2=2,
-            net_file=None,
+        anton_util.log_timestamp(
+            'Preparing HDF5 file for BiGSM...'
         )
 
-        # Create temporary file for data
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-            temp_file = f.name
-            expression_data.to_csv(f.name)
-            opt.data_file = f.name
+        print(
+            'Python Y shape:',
+            expression_data.shape
+        )
 
-        # Create temporary directory for save_name
-        temp_dir = tempfile.mkdtemp()
-        opt.save_name = temp_dir
+        print(
+            'Python P shape:',
+            perturbations.shape
+        )
 
-        model = test_non_celltype_GRN_model(opt)
-        model.train_model()
+        with h5py.File(input_path, 'w') as hf:
 
-        # Read the output - based on collaborator code, it creates "GRN_inference_result.tsv"
-        result_file = os.path.join(temp_dir, "GRN_inference_result.tsv")
-        if os.path.exists(result_file):
-            result_df = pd.read_csv(result_file, sep='\t')
-        else:
-            raise RuntimeError("DeepSEM did not produce expected output file")
+            hf.create_dataset(
+                'Y',
+                data=expression_data.values
+            )
+
+            hf.create_dataset(
+                'P',
+                data=perturbations.values
+            )
+
+            hf.create_dataset(
+                'max_iter',
+                data=20
+            )
+
+        # -----------------------------------------------------
+        # Run MATLAB / BiGSM
+        # -----------------------------------------------------
+
+        anton_util.log_timestamp(
+            'Running BiGSM MATLAB script...'
+        )
+
+        bigsm_dir = Path(
+            'BiGSM/BiGSM_matlab'
+        ).resolve()
+
+        cmd = (
+            f"addpath(genpath('{bigsm_dir}')); "
+            f"run_bigsm_h5('{input_path}', '{output_path}');"
+        )
+
+        result = subprocess.run(
+            [
+                'matlab',
+                '-batch',
+                cmd
+            ],
+            capture_output=True,
+            text=True
+        )
+
+        # Print MATLAB output so failures are easy to debug.
+        if result.stdout:
+            print('MATLAB stdout:')
+            print(result.stdout)
+
+        if result.stderr:
+            print('MATLAB stderr:')
+            print(result.stderr)
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                'BiGSM MATLAB script failed.\n'
+                f'MATLAB return code: {result.returncode}'
+            )
+
+        # -----------------------------------------------------
+        # Read BiGSM result
+        # -----------------------------------------------------
+
+        anton_util.log_timestamp(
+            'Reading BiGSM results...'
+        )
+
+        with h5py.File(output_path, 'r') as hf:
+
+            A = hf['A'][:]
+
+        # -----------------------------------------------------
+        # Validate BiGSM output
+        # -----------------------------------------------------
+
+        n_genes = len(
+            expression_data.columns
+        )
+
+        expected_shape = (
+            n_genes,
+            n_genes
+        )
+
+        if A.shape != expected_shape:
+            raise ValueError(
+                f'Unexpected BiGSM network shape: {A.shape}. '
+                f'Expected: {expected_shape}.'
+            )
+
+        if not np.isfinite(A).all():
+            raise ValueError(
+                'BiGSM returned NaN or Inf values.'
+            )
+
+
+        estimated_network = pd.DataFrame(
+            data=A.T,
+            index=expression_data.columns,
+            columns=expression_data.columns
+        )
+
+        # Replace missing values if any.
+        estimated_network = estimated_network.fillna(0)
+
+        # -----------------------------------------------------
+        # Convert matrix -> edgelist -> matrix
+        # -----------------------------------------------------
+
+        edgelist = gs.util.matrix_to_edgelist(
+            estimated_network
+        )
+
+        estimated_network = gs.util.edgelist_to_matrix(
+            regulators=edgelist['regulator'],
+            targets=edgelist['target'],
+            values=edgelist['value']
+        )
+
+        # -----------------------------------------------------
+        # Return result in the same format as the other
+        # inference functions.
+        # -----------------------------------------------------
+
+        return {
+            'bigsm': estimated_network
+        }
 
     finally:
-        # Restore the original working directory
-        os.chdir(original_dir)
-        # Cleanup temp file and temp dir
-        if temp_file is not None and os.path.exists(temp_file):
-            os.unlink(temp_file)
-        if temp_dir is not None and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
 
-    estimated_network = result_df
+        # -----------------------------------------------------
+        # Always remove temporary files
+        # -----------------------------------------------------
 
-    return {'deepsem': estimated_network}
+        for path in [
+            input_path,
+            output_path
+        ]:
 
-
-
-
+            if os.path.exists(path):
+                os.unlink(path)
 
 
 def psgrn_inference(data):
