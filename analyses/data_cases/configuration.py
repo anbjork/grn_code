@@ -142,14 +142,27 @@ def configure():
             'compute differences': [False],
             }
 
+
+
+
     from grn_code import functions
+
+    def lasso_factory(density):
+        def f(*args, **kwargs):
+            return functions.lasso_T_density(
+                    *args, **kwargs, target_density=density
+                    )
+        return f
+
+    densities = [1, 3, 5, 10, 20, 50]
+    lassos = [lasso_factory(density) for density in densities]
+
     inference_functions = [
             # functions.fast_methods_inference,
             # functions.random_inference,
             # functions.correlation_inference,
             # functions.perfect_inference,
-            # functions.lasso_3,
-            functions.lasso_density_50,
+            *lassos,
             # functions.zscore_max_variants,
             # functions.zscore_without_controls,
             # functions.lsco_T_without_controls,
@@ -169,7 +182,12 @@ def configure():
             'inference_functions': inference_functions,
             'parameter_sets': parameter_sets,
             }
+    fts = [repr(f) for f in inference_functions]
+    config_for_serialisation = {
+            'preprocessing_options': preprocessing_options,
+            'parameter_sets': parameter_sets,
+            'inference_functions__traces_for_serialisation': fts,
+            }
 
-
-    return config
+    return config, config_for_serialisation
 
