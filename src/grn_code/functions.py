@@ -720,27 +720,19 @@ def regdiffusion_inference(data):
 
 def bigsm_inference(data):
     """
-    BiGSM inference using MATLAB through an HDF5 interface.
+    BiGSM inference using MATLAB through an HDF5 interface (inspired by Anton)
+    Python -> HDF5 -> MATLAB -> HDF5 -> Python
 
-    Python controls the complete workflow:
-
-        Python -> HDF5 -> MATLAB -> HDF5 -> Python
-
-    MATLAB is only responsible for running the original bigsm.m.
+    MATLAB only runs the original bigsm.m.
 
     Input:
-        data['Y'] : expression matrix
-                     genes x samples
-        data['P'] : perturbation matrix
-                     genes x samples
+        data['Y'] : expression matrix, samples x genes
+        data['P'] : perturbation matrix, samples x genes
 
-    BiGSM returns:
-        A[target, regulator]
-
-    GeneSnake expects:
-        network[regulator, target]
-
-    Therefore A is transposed before converting it to an edgelist.
+    BiGSM returns A[target, regulator], GeneSnake wants
+    network[regulator, target], so I transpose A below.
+    Just realized that h5py flips the dimensions when writing to HDF5,
+    so the transpose is maybe not needed? Need to test against ground truth.
     """
 
     import subprocess
@@ -757,30 +749,22 @@ def bigsm_inference(data):
     expression_data = copy.deepcopy(data['Y'])
     perturbations = data['P']
 
-    # ---------------------------------------------------------
-    # Temporary HDF5 files
-    # ---------------------------------------------------------
-
-    # Input file: Python writes Y, P and max_iter here.
+    # temp files for the h5 input/output
     with tempfile.NamedTemporaryFile(
         suffix='.h5',
         delete=False
     ) as f:
         input_path = f.name
 
-    # Output file:
-    # MATLAB must create the HDF5 file itself.
-    # Therefore create a temporary filename, close it, and remove it.
+    # matlab has to create the output file itself, so make a name
+    # and then remove the file again
     output_fd, output_path = tempfile.mkstemp(suffix='.h5')
     os.close(output_fd)
     os.unlink(output_path)
 
     try:
 
-        # -----------------------------------------------------
-        # Prepare HDF5 input
-        # -----------------------------------------------------
-
+        # write input
         anton_util.log_timestamp(
             'Preparing HDF5 file for BiGSM...'
         )
@@ -812,10 +796,7 @@ def bigsm_inference(data):
                 data=20
             )
 
-        # -----------------------------------------------------
-        # Run MATLAB / BiGSM
-        # -----------------------------------------------------
-
+        # run matlab
         anton_util.log_timestamp(
             'Running BiGSM MATLAB script...'
         )
@@ -839,7 +820,7 @@ def bigsm_inference(data):
             text=True
         )
 
-        # Print MATLAB output so failures are easy to debug.
+        # print matlab output to make debugging easier
         if result.stdout:
             print('MATLAB stdout:')
             print(result.stdout)
@@ -854,10 +835,7 @@ def bigsm_inference(data):
                 f'MATLAB return code: {result.returncode}'
             )
 
-        # -----------------------------------------------------
-        # Read BiGSM result
-        # -----------------------------------------------------
-
+        # read result
         anton_util.log_timestamp(
             'Reading BiGSM results...'
         )
@@ -866,10 +844,7 @@ def bigsm_inference(data):
 
             A = hf['A'][:]
 
-        # -----------------------------------------------------
-        # Validate BiGSM output
-        # -----------------------------------------------------
-
+        # sanity checks on A
         n_genes = len(
             expression_data.columns
         )
@@ -890,20 +865,16 @@ def bigsm_inference(data):
                 'BiGSM returned NaN or Inf values.'
             )
 
-
+        # TODO: check if .T is needed (h5py flip), see docstring
         estimated_network = pd.DataFrame(
             data=A.T,
             index=expression_data.columns,
             columns=expression_data.columns
         )
 
-        # Replace missing values if any.
         estimated_network = estimated_network.fillna(0)
 
-        # -----------------------------------------------------
-        # Convert matrix -> edgelist -> matrix
-        # -----------------------------------------------------
-
+        # matrix -> edgelist -> matrix, same as the other methods
         edgelist = gs.util.matrix_to_edgelist(
             estimated_network
         )
@@ -914,21 +885,13 @@ def bigsm_inference(data):
             values=edgelist['value']
         )
 
-        # -----------------------------------------------------
-        # Return result in the same format as the other
-        # inference functions.
-        # -----------------------------------------------------
-
         return {
             'bigsm': estimated_network
         }
 
     finally:
 
-        # -----------------------------------------------------
-        # Always remove temporary files
-        # -----------------------------------------------------
-
+        # remove temp files
         for path in [
             input_path,
             output_path
@@ -936,7 +899,6 @@ def bigsm_inference(data):
 
             if os.path.exists(path):
                 os.unlink(path)
-
 
 def psgrn_inference(data):
 
