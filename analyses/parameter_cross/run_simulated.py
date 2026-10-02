@@ -3,33 +3,21 @@ import anton_util
 
 from local_imports import output_path
 
-make_config = False
-# make_config = True
 
-# read_simulation_specifications = False
-read_simulation_specifications = True
+read_simulation_specifications = False
+# read_simulation_specifications = True
 
 config_name = 'configuration.pkl'
 p = output_path / config_name
-if make_config:
-    from configuration import configure
-    config = configure()
-    output_path.mkdir(exist_ok=True, parents=True)
-    anton_util.pickle_object(config, p)
-else:
-    try:
-        config = anton_util.unpickle_object(p)
-    except FileNotFoundError:
-        print(f'{p} not found')
-        import sys
-        sys.exit(1)
+from configuration import configure
+config, config_for_serialization = configure()
+output_path.mkdir(exist_ok=True, parents=True)
+anton_util.pickle_object(config_for_serialization, p)
 
 from grn_code.pipeline_code import run_pipeline
 run_pipeline(
         config = config,
         output_base_path = output_path,
         read_simulation_specifications = read_simulation_specifications)
-
-
 
 
