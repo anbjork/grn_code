@@ -136,7 +136,8 @@ def configure():
             'cell normalised': [True],
             'read normalised': [False],
             'transform 1': ['log1p'],
-            'transform 2': ['none', 'zscores'],
+            # 'transform 2': ['none', 'zscores'],
+            'transform 2': ['zscores'],
             'pseudo_bulk': [False],
             'shuffle': [False],
             'compute differences': [False],
@@ -154,7 +155,8 @@ def configure():
                     )
         return f
 
-    densities = [1, 3, 5, 10, 20, 50]
+    # densities = [1, 3, 5, 10, 20, 50]
+    densities = [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 3]
     lassos = [lasso_factory(density) for density in densities]
 
     inference_functions = [
