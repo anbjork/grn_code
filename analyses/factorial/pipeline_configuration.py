@@ -38,6 +38,7 @@ inference_functions = [
         # 'deepsem_inference',
         # 'dspin_inference',
         # 'dspin_inference_wrapper',
+        'bigsm_inference',
         ]
 
 
