@@ -11,7 +11,7 @@ def configure():
     vars['dispersion'] = sorted(old_dispersions + additional_dispersions + even_more)
 
     snrs = [
-            0.010, 0.015, 0.02,
+            0.015, 0.02,
             0.03, 0.035, 0.04, 0.045, 0.05, 0.06, 0.07, 
             0.1, 0.2, 0.3, 0.5, 0.7, 
             1, 2, 5, 10, 100]
