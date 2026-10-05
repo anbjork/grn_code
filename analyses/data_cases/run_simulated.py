@@ -4,8 +4,8 @@ import anton_util
 from grn_code.paths_anchor import output_base_path
 output_path = output_base_path / 'data_cases'
 
-# read_simulation_specifications = False
-read_simulation_specifications = True
+read_simulation_specifications = False
+#ead_simulation_specifications = True
 
 config_name = 'configuration.pkl'
 p = output_path / config_name

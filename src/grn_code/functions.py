@@ -832,10 +832,10 @@ def bigsm_inference(data):
             'Running BiGSM MATLAB script...'
         )
 
-        bigsm_dir = Path(
-            'BiGSM/BiGSM_matlab'
-        ).resolve()
-
+        bigsm_dir = (
+        Path(__file__).resolve().parent / 'BiGSM' / 'BiGSM_matlab'
+        )
+        
         cmd = (
             f"addpath(genpath('{bigsm_dir}')); "
             f"run_bigsm_h5('{input_path}', '{output_path}');"

@@ -148,26 +148,26 @@ def configure():
 
     from grn_code import functions
 
-    def lasso_factory(density):
-        def f(*args, **kwargs):
-            return functions.lasso_T_density(
-                    *args, **kwargs, target_density=density
-                    )
-        return f
+#    def lasso_factory(density):
+       #def f(*args, **kwargs):
+           #return functions.lasso_T_density(
+                   #*args, **kwargs, target_density=density
+                   #)
+       #return f
 
     # densities = [1, 3, 5, 10, 20, 50]
-    densities = [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 3]
-    lassos = [lasso_factory(density) for density in densities]
+   #densities = [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 3]
+    #assos = [lasso_factory(density) for density in densities]
 
     inference_functions = [
-            # functions.fast_methods_inference,
-            # functions.random_inference,
-            # functions.correlation_inference,
-            # functions.perfect_inference,
-            *lassos,
-            # functions.zscore_max_variants,
-            # functions.zscore_without_controls,
-            # functions.lsco_T_without_controls,
+             functions.fast_methods_inference,
+             functions.random_inference,
+             functions.correlation_inference,
+             functions.perfect_inference,
+            #lassos,
+             functions.zscore_max_variants,
+             functions.zscore_without_controls,
+             functions.lsco_T_without_controls,
             # functions.inspre_inference,
             # functions.inspre_inference_hdf5,
             # functions.psgrn_inference,
@@ -175,6 +175,7 @@ def configure():
             # functions.dspin_inference,
             # functions.dspin_inference_wrapper,
             # functions.genie3_inference,
+            functions.bigsm_inference,
             ]
 
 
