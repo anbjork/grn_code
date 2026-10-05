@@ -14,7 +14,7 @@ cd genespider
 git checkout dcb208e17da01af65cfe0b92e59a822c03288361
 cd ../
 
-pip install numpy pandas matplotlib anton_util h5py
+pip install numpy pandas matplotlib anton_util h5py scanpy scikit-misc
 
 pip install -e .
 
