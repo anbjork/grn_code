@@ -17,51 +17,83 @@ output_dir = Path(f'{output_path}/simulated/plots')
 output_dir.mkdir(exist_ok=True, parents=True)
 
 dropout_col = '0_fraction__before_filtering__all'
-x_vars = ['dispersion', 'snr', 'cell_count']
-y_var = 'AUROC'
+y_vars = ['AUROC', 'AUPR gain', 'top_k_accuracy']
 
 controlled_vars = {'snr', 'cell_count'}
 dependent_vars = {'dispersion': dropout_col}
 xlims = {
-        'snr': (None, 0.1),
+        'snr': {
+            (-0.01, 0.1),
+            (-0.01, 0.2),
+            (None, 1),
+            (None, 2),
+            }
         }
-
+x_transforms = {
+        'snr': [None, 'log'],
+        }
+x_vars = sorted(controlled_vars | set(dependent_vars.keys()))
 df['controlled_var'] = [elem.split(':')[0] for elem in df.data_case]
 
-for controlled_var in x_vars:
-    dfs = df[df['controlled_var'] == controlled_var]
-    # dfs = df  # Debug
-    if controlled_var in dependent_vars.keys():
-        x_var = dependent_vars[controlled_var]
-    else:
-        x_var = controlled_var
-    plt.close('all')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    methods = sorted(set(dfs['method']))
-    colors = plt.get_cmap('tab20').colors  # pyright: ignore
-    for i, method in enumerate(methods):
-        df_method = dfs[dfs['method'] == method]
-        df_method = df_method.sort_values(by=x_var)
-
-        if x_var in controlled_vars:
-            grouped = df_method.groupby(x_var)[y_var]
-            means = grouped.mean()
-            sds = grouped.std()
-            ax.errorbar(means.index, means, yerr=sds, label=method, capsize=3, color=colors[i % len(colors)])
+def plot(y_var, x_var, x_transform):
+    for controlled_var in x_vars:
+        dfs = df[df['controlled_var'] == controlled_var]
+        if controlled_var in dependent_vars.keys():
+            x_var = dependent_vars[controlled_var]
         else:
-            x = np.array(df_method[x_var])
-            smooth_auroc = np.array(df_method[y_var].rolling(window=10, center=True).mean())
-            ax.plot(x, smooth_auroc, label=method, color=colors[i % len(colors)])
-    # ax.set_xlim(0.75, 1)
-    ax.set_xlabel(x_var)
-    ax.set_ylabel(y_var)
-    plt.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0)
-    plt.tight_layout()
+            x_var = controlled_var
 
-    fig.savefig(f'{output_dir}/auroc_against_{x_var}.png')
-    if x_var in xlims.keys():
-        ax.set_xlim(xlims[x_var])  # pyright: ignore
-        fig.savefig(f'{output_dir}/auroc_against_{x_var}__xlims.png')
+        if x_transform == 'log':
+            from copy import deepcopy
+            dfs = deepcopy(dfs)
+            dfs[x_var] = np.log10(dfs[x_var])
+        elif x_transform is None:
+            pass
+        else:
+            raise NotImplementedError(f'Unknown x_transform: {x_transform}')
+
+        plt.close('all')
+        fig, ax = plt.subplots(figsize=(10, 6))
+        methods = sorted(set(dfs['method']))
+        colors = plt.get_cmap('tab20').colors  # pyright: ignore
+        for i, method in enumerate(methods):
+            df_method = dfs[dfs['method'] == method]
+            df_method = df_method.sort_values(by=x_var)
+            if x_var in controlled_vars:
+                grouped = df_method.groupby(x_var)[y_var]
+                means = grouped.mean()
+                sds = grouped.std()
+                ax.errorbar(means.index, means, yerr=sds, label=method, capsize=3, color=colors[i % len(colors)])
+            else:
+                x = np.array(df_method[x_var])
+                smooth_auroc = np.array(df_method[y_var].rolling(window=10, center=True).mean())
+                ax.plot(x, smooth_auroc, label=method, color=colors[i % len(colors)])
+        # ax.set_xlim(0.75, 1)
+        ax.set_xlabel(x_var)
+        ax.set_ylabel(y_var)
+        plt.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0)
+        plt.tight_layout()
+
+        out_base = f'{output_dir}/{y_var}_against_{x_var}__transform_{x_transform}'
+        fig.savefig(f'{out_base}.png')
+        if x_var in xlims.keys() and x_transform is None:
+            lim_tuples = xlims[x_var]
+            for lim_tuple in lim_tuples:
+                xlim = lim_tuple[1]
+                ax.set_xlim(lim_tuple)  # pyright: ignore
+                fig.savefig(f'{out_base}__xlim__{xlim}.png')
+
+# for y_var in y_vars:
+for y_var in ['AUROC']:
+    for x_var in x_vars:
+        if x_var in x_transforms.keys():
+            print(f'{x_var = }')
+            for transform in x_transforms[x_var]:
+                print(f'{transform = }')
+                plot(y_var, x_var, transform)
+        else:
+            plot(y_var, x_var, None)
+
 
 anton_util.log_timestamp('done')
 
