@@ -341,7 +341,7 @@ def zscore_max_variants(data):
 
 
 
-def lasso_density_3(data):
+def lasso_T_density(data, target_density):
 
     estimated_networks = {}
 
@@ -353,35 +353,10 @@ def lasso_density_3(data):
     en = gs.inference.infer_networks(
         Y=Y, P=P,
         method=m,
-        target_density = 3)
+        target_density = target_density)
+    en = en.T
 
-    m = m + '_3'
-
-    if np.any(np.isnan(en)):
-        raise ValueError(f'NaN values in {m} output')
-
-    estimated_networks[m] = en
-    return estimated_networks
-
-
-
-
-
-def lasso_density_50(data):
-
-    estimated_networks = {}
-
-    P = data['P']
-    Y = data['Y']
-
-    m = 'lasso_density'
-    anton_util.log_timestamp(f'Running {m}...')
-    en = gs.inference.infer_networks(
-        Y=Y, P=P,
-        method=m,
-        target_density = 50)
-
-    m = m + '_50'
+    m = m + f'_T_density_{target_density}'
 
     if np.any(np.isnan(en)):
         raise ValueError(f'NaN values in {m} output')
@@ -736,7 +711,7 @@ def genie3_inference(data):
     sys.path.insert(0, str(repo_root / 'GENIE3'))
     from GENIE3_python.GENIE3 import GENIE3  # pyright: ignore
 
-    VIM = GENIE3(np.array(expression_data), nthreads = 10)
+    VIM = GENIE3(np.array(expression_data), nthreads = 5)
     estimated_network = pd.DataFrame(
         data = VIM,
         index = expression_data.columns,
