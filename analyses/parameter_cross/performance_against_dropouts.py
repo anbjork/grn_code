@@ -9,6 +9,7 @@ anton_util.log_timestamp('reading data...')
 
 df = anton_util.unpickle_object(
         f'{output_path}/simulated/compiled_results.pkl')
+df['controlled_var'] = [elem.split(':')[0] for elem in df.data_case]
 
 anton_util.log_timestamp('the rest...')
 
@@ -36,7 +37,6 @@ x_transforms = {
         'snr': [None, 'log'],
         }
 x_vars = sorted(controlled_vars | set(dependent_vars.keys()))
-df['controlled_var'] = [elem.split(':')[0] for elem in df.data_case]
 
 def plot(y_var, x_var, x_transform, dependent_var):
 
