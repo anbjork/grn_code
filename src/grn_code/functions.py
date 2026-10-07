@@ -1153,6 +1153,12 @@ def bigsm_inference(data):
     network[regulator, target], so I transpose A below.
     Just realized that h5py flips the dimensions when writing to HDF5,
     so the transpose is maybe not needed? Need to test against ground truth.
+
+    Figure out the transpose, and rewrite comment above, just so it doesn't 
+    cause confusion later. As far as I know, matlab and numpy have 
+    different conventions for reading 
+    hdf5 files, so the files are transposed when travelling from one
+    to the other. More on this in comment below too.
     """
 
     import subprocess
@@ -1181,6 +1187,9 @@ def bigsm_inference(data):
     output_fd, output_path = tempfile.mkstemp(suffix='.h5')
     os.close(output_fd)
     os.unlink(output_path)
+    # Maybe unnecessary? What about if you just define the path and pass
+    # it to matlab as string?
+
 
     try:
 
@@ -1221,9 +1230,11 @@ def bigsm_inference(data):
             'Running BiGSM MATLAB script...'
         )
 
-        bigsm_dir = (
-        Path(__file__).resolve().parent / 'BiGSM' / 'BiGSM_matlab'
-        )
+        # There is a file that defines some useful paths,
+        # so if you pick the repo root from there, it's hopefully more
+        # robust than basing it on the location of the current script
+        from grn_code.paths_anchor import repo_root
+        bigsm_dir = repo_root / 'BiGSM' / 'BiGSM_matlab'
         
         cmd = (
             f"addpath(genpath('{bigsm_dir}')); "
@@ -1285,6 +1296,18 @@ def bigsm_inference(data):
                 'BiGSM returned NaN or Inf values.'
             )
 
+        # Fix this todo to avoid confusion in the future. Added a comment about
+        # this to the docstring above too.
+        # I think that since bigsm and genesnake have the opposite conventions,
+        # and the network is transposed when going from matlab to python,
+        # transpose would not be needed here. But also, the results have
+        # been good with bigsm, so I do think you've had the correct transpose.
+        # So something is not matching. Maybe worth double checking which
+        # convention bigsm uses, and then if the matrix actually transposes
+        # when going through hdf5
+        # Some of my old comments on this are in
+        from grn_code.data_simulation.gather_simulation_data import extract_matrix_from_matlab_hdf5
+        # in case that helps
         # TODO: check if .T is needed (h5py flip), see docstring
         estimated_network = pd.DataFrame(
             data=A.T,
@@ -1294,6 +1317,17 @@ def bigsm_inference(data):
 
         estimated_network = estimated_network.fillna(0)
 
+        # This conversion does nothing, so I'd remove it
+        # It's used in the dspin inference method to put previously
+        # filtered out genes back in, but for that to work,
+        # one needs to save a list of all genes before filtering,
+        # and supply to edgelist_to_matrix
+        # While looking this up, I realised that the inspre inference methods
+        # seems to also do this conversion without a list of all genes.
+        # I took a note to look into that. It might be that I based them
+        # on the dspin code, but then decided to drop the inspre method
+        # because of the bugs in their package, and left the functions as was
+        # when I decided to drop it.
         # matrix -> edgelist -> matrix, same as the other methods
         edgelist = gs.util.matrix_to_edgelist(
             estimated_network

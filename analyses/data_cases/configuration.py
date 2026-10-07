@@ -173,6 +173,8 @@ def configure():
             # functions.dspin_inference,
             # functions.dspin_inference_wrapper,
             # functions.genie3_inference,
+
+            # Maybe typo in the name?
             functions.bigsmart_inference,
             ]
 
