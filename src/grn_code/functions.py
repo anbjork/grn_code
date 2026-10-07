@@ -1138,7 +1138,189 @@ def inspre_inference_hdf5(data):
 
     return {'inspre_hdf5': estimated_network}
 
+def bigsm_inference(data):
+    """
+    BiGSM inference using MATLAB through an HDF5 interface (inspired by Anton)
+    Python -> HDF5 -> MATLAB -> HDF5 -> Python
 
+    MATLAB only runs the original bigsm.m.
+
+    Input:
+        data['Y'] : expression matrix, samples x genes
+        data['P'] : perturbation matrix, samples x genes
+
+    BiGSM returns A[target, regulator], GeneSnake wants
+    network[regulator, target], so I transpose A below.
+    Just realized that h5py flips the dimensions when writing to HDF5,
+    so the transpose is maybe not needed? Need to test against ground truth.
+    """
+
+    import subprocess
+    import tempfile
+    import os
+    import copy
+    from pathlib import Path
+
+    import h5py
+    import numpy as np
+    import pandas as pd
+    import genesnake as gs
+
+    expression_data = copy.deepcopy(data['Y'])
+    perturbations = data['P']
+
+    # temp files for the h5 input/output
+    with tempfile.NamedTemporaryFile(
+        suffix='.h5',
+        delete=False
+    ) as f:
+        input_path = f.name
+
+    # matlab has to create the output file itself, so make a name
+    # and then remove the file again
+    output_fd, output_path = tempfile.mkstemp(suffix='.h5')
+    os.close(output_fd)
+    os.unlink(output_path)
+
+    try:
+
+        # write input
+        anton_util.log_timestamp(
+            'Preparing HDF5 file for BiGSM...'
+        )
+
+        print(
+            'Python Y shape:',
+            expression_data.shape
+        )
+
+        print(
+            'Python P shape:',
+            perturbations.shape
+        )
+
+        with h5py.File(input_path, 'w') as hf:
+
+            hf.create_dataset(
+                'Y',
+                data=expression_data.values
+            )
+
+            hf.create_dataset(
+                'P',
+                data=perturbations.values
+            )
+
+            hf.create_dataset(
+                'max_iter',
+                data=20
+            )
+
+        # run matlab
+        anton_util.log_timestamp(
+            'Running BiGSM MATLAB script...'
+        )
+
+        bigsm_dir = (
+        Path(__file__).resolve().parent / 'BiGSM' / 'BiGSM_matlab'
+        )
+        
+        cmd = (
+            f"addpath(genpath('{bigsm_dir}')); "
+            f"run_bigsm_h5('{input_path}', '{output_path}');"
+        )
+
+        result = subprocess.run(
+            [
+                'matlab',
+                '-batch',
+                cmd
+            ],
+            capture_output=True,
+            text=True
+        )
+
+        # print matlab output to make debugging easier
+        if result.stdout:
+            print('MATLAB stdout:')
+            print(result.stdout)
+
+        if result.stderr:
+            print('MATLAB stderr:')
+            print(result.stderr)
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                'BiGSM MATLAB script failed.\n'
+                f'MATLAB return code: {result.returncode}'
+            )
+
+        # read result
+        anton_util.log_timestamp(
+            'Reading BiGSM results...'
+        )
+
+        with h5py.File(output_path, 'r') as hf:
+
+            A = hf['A'][:]
+
+        # sanity checks on A
+        n_genes = len(
+            expression_data.columns
+        )
+
+        expected_shape = (
+            n_genes,
+            n_genes
+        )
+
+        if A.shape != expected_shape:
+            raise ValueError(
+                f'Unexpected BiGSM network shape: {A.shape}. '
+                f'Expected: {expected_shape}.'
+            )
+
+        if not np.isfinite(A).all():
+            raise ValueError(
+                'BiGSM returned NaN or Inf values.'
+            )
+
+        # TODO: check if .T is needed (h5py flip), see docstring
+        estimated_network = pd.DataFrame(
+            data=A.T,
+            index=expression_data.columns,
+            columns=expression_data.columns
+        )
+
+        estimated_network = estimated_network.fillna(0)
+
+        # matrix -> edgelist -> matrix, same as the other methods
+        edgelist = gs.util.matrix_to_edgelist(
+            estimated_network
+        )
+
+        estimated_network = gs.util.edgelist_to_matrix(
+            regulators=edgelist['regulator'],
+            targets=edgelist['target'],
+            values=edgelist['value']
+        )
+
+        return {
+            'bigsm': estimated_network
+        }
+
+    finally:
+
+        # remove temp files
+        for path in [
+            input_path,
+            output_path
+        ]:
+
+            if os.path.exists(path):
+                os.unlink(path)
+
+    
 
 
 def chunk_array(arr, n_chunks):
