@@ -931,50 +931,6 @@ def bigsm_inference(data):
             if os.path.exists(path):
                 os.unlink(path)
 
-
-def liplike_inference(data, use_l2=False, max_genes=50):
-    import copy
-    import sys
-    import time
-    from grn_code.paths_anchor import repo_root
-    sys.path.insert(0, str(repo_root / 'LipLike' / 'liplike'))
-    from LiPLike import LiPLike  # pyright: ignore
-
-    Y = copy.deepcopy(data['Y'])
-    print('LiPLike Y.shape (samples, gener):', Y.shape, flush=True)
-
-    # Begränsa till de mest varierande generna, annars tar mask-vägen
-    # orimligt lång tid (ca n^4 * samples)
-    if max_genes is not None and Y.shape[1] > max_genes:
-        top = Y.var().sort_values(ascending=False).index[:max_genes]
-        Y = Y[top]
-        print(f'LiPLike: använder {max_genes} mest varierande gener', flush=True)
-
-    genes = Y.columns
-
-    # LiPLike vill ha variabler x observationer, alltså transponerat mot Y
-    arr = Y.to_numpy().T
-    n_genes, n_samples = arr.shape
-
-    L = LiPLike()
-    t0 = time.time()
-    if use_l2:
-        L.fit(arr, arr, penalty_term='l2')
-    else:
-        if n_samples < n_genes - 1:
-            raise ValueError(
-                f'LiPLike med mask kräver minst {n_genes - 1} samples, '
-                f'men datat har {n_samples}. Prova use_l2=True.'
-            )
-        mask = ~np.eye(n_genes, dtype=bool)  # ingen självreglering
-        L.fit(arr, arr, mask=mask)
-    print(f'LiPLike klar efter {time.time() - t0:.0f} s', flush=True)
-
-    q = np.nan_to_num(L.q, nan=0.0)
-    np.fill_diagonal(q, 0)
-
-    estimated_network = pd.DataFrame(q, index=genes, columns=genes)
-    return {'liplike': estimated_network}
     
 def psgrn_inference(data):
 
