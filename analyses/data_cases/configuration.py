@@ -175,7 +175,8 @@ def configure():
             # functions.dspin_inference,
             # functions.dspin_inference_wrapper,
             # functions.genie3_inference,
-            functions.bigsm_inference,
+            #functions.bigsm_inference,
+            functions.liplike_inference,
             ]
 
 
