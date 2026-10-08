@@ -987,14 +987,6 @@ def inspre_inference(data):
     )
     estimated_network = estimated_network.fillna(0)
 
-    # Using these conversions to put the previously filtered out genes in again
-    edgelist = gs.util.matrix_to_edgelist(estimated_network)
-    estimated_network = gs.util.edgelist_to_matrix(
-        regulators=edgelist['regulator'],
-        targets=edgelist['target'],
-        values=edgelist['value'],
-    )
-
     # Clean up temporary files
     for path in [input_path, output_path, config_path]:
         if os.path.exists(path):
@@ -1122,14 +1114,6 @@ def inspre_inference_hdf5(data):
         columns=result_genes
     )
     estimated_network = estimated_network.fillna(0)
-
-    # Put previously filtered-out genes back in
-    edgelist = gs.util.matrix_to_edgelist(estimated_network)
-    estimated_network = gs.util.edgelist_to_matrix(
-        regulators=edgelist['regulator'],
-        targets=edgelist['target'],
-        values=edgelist['value'],
-    )
 
     # Clean up temporary files
     for path in [input_path, output_path, config_path]:
