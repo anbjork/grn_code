@@ -175,7 +175,7 @@ def configure():
             # functions.genie3_inference,
 
             # Maybe typo in the name?
-            functions.bigsmart_inference,
+            functions.bigsm_inference,
             ]
 
 
