@@ -1219,17 +1219,16 @@ def bigsm_inference(data):
             'Running BiGSM MATLAB script...'
         )
 
-        # There is a file that defines some useful paths,
-        # so if you pick the repo root from there, it's hopefully more
-        # robust than basing it on the location of the current script
-        
+        # The repo root comes from paths_anchor rather than from the location
+        # of this script, which is more robust if the file is moved.
         from grn_code.paths_anchor import repo_root
-        bigsm_dir = repo_root / 'BiGSM' / 'BiGSM_matlab'
-        
+        bigsm_dir = repo_root / 'BiGSM_ready' 
+ 
         cmd = (
             f"addpath(genpath('{bigsm_dir}')); "
             f"run_bigsm_h5('{input_path}', '{output_path}');"
         )
+
 
         result = subprocess.run(
             [
