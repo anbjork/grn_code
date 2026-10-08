@@ -1175,23 +1175,12 @@ def bigsm_inference(data):
     expression_data = copy.deepcopy(data['Y'])
     perturbations = data['P']
 
-    # temp files for the h5 input/output
-    with tempfile.NamedTemporaryFile(
-        suffix='.h5',
-        delete=False
-    ) as f:
-        input_path = f.name
-
-    # matlab has to create the output file itself, so make a name
-    # and then remove the file again
-    output_fd, output_path = tempfile.mkstemp(suffix='.h5')
-    os.close(output_fd)
-    os.unlink(output_path)
-    # Maybe unnecessary? What about if you just define the path and pass
-    # it to matlab as string?
 
 
-    try:
+    with tempfile.TemporaryDirectory() as tmpdir:
+
+        input_path = os.path.join(tmpdir, 'bigsm_input.h5')
+        output_path = os.path.join(tmpdir, 'bigsm_output.h5')
 
         # write input
         anton_util.log_timestamp(
@@ -1233,6 +1222,7 @@ def bigsm_inference(data):
         # There is a file that defines some useful paths,
         # so if you pick the repo root from there, it's hopefully more
         # robust than basing it on the location of the current script
+        
         from grn_code.paths_anchor import repo_root
         bigsm_dir = repo_root / 'BiGSM' / 'BiGSM_matlab'
         
