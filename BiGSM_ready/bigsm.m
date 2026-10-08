@@ -24,11 +24,13 @@ A_est_bcs = zeros(target_size);
 H = (-Y');
 
 alpha_all = zeros(target_size);
+n_converged = 0;
 
 for j = 1:target_size(1)
     p_vec = -P(j, :)';
     beta = 10;
     alpha_vec = 0.01.*ones(target_size(1), 1);
+    converged = false;
 
     for i=1:max_iter
         % Up date the mean and covariance of the Gaussian posterior
@@ -45,6 +47,7 @@ for j = 1:target_size(1)
         
         if abs(beta-beta_new) < 0.0001   % converge condition
             A_est_bcs(j, :) = Mu;
+            converged = true;
             break
         end
         beta = beta_new;
@@ -52,7 +55,14 @@ for j = 1:target_size(1)
         A_est_bcs(j, :) = Mu;
     end
     alpha_all(j, :) = alpha_vec;
+    
+    if converged
+        n_converged = n_converged + 1;
+        fprintf('Gene %d: converged after %d iterations\n', j, i);
+    else
+        fprintf('Gene %d: did NOT converge (max_iter = %d reached)\n', j, max_iter);
+    end
 end
 
-end
+fprintf('BiGSM: %d of %d genes converged\n', n_converged, target_size(1));
 
