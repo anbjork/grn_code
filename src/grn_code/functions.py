@@ -1296,28 +1296,6 @@ def bigsm_inference(data):
 
         estimated_network = estimated_network.fillna(0)
 
-        # This conversion does nothing, so I'd remove it
-        # It's used in the dspin inference method to put previously
-        # filtered out genes back in, but for that to work,
-        # one needs to save a list of all genes before filtering,
-        # and supply to edgelist_to_matrix
-        # While looking this up, I realised that the inspre inference methods
-        # seems to also do this conversion without a list of all genes.
-        # I took a note to look into that. It might be that I based them
-        # on the dspin code, but then decided to drop the inspre method
-        # because of the bugs in their package, and left the functions as was
-        # when I decided to drop it.
-        # matrix -> edgelist -> matrix, same as the other methods
-        edgelist = gs.util.matrix_to_edgelist(
-            estimated_network
-        )
-
-        estimated_network = gs.util.edgelist_to_matrix(
-            regulators=edgelist['regulator'],
-            targets=edgelist['target'],
-            values=edgelist['value']
-        )
-
         return {
             'bigsm': estimated_network
         }
