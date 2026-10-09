@@ -52,7 +52,7 @@ def run_pipeline(
     pipeline_output_path.mkdir(exist_ok=True, parents=True)
 
 
-
+    save_run_metadata(output_base_path)
 
     if read_simulation_specifications:
         p = pipeline_output_path / 'simulation_specifications.pkl'
@@ -73,7 +73,6 @@ def run_pipeline(
                 pipeline_output_path / 'simulation_specifications.pkl'
                 )
 
-    save_run_metadata(output_base_path)
 
     import grn_code.data_simulation.simulate_genespider as simulate_genespider
     simulate_genespider.main(
