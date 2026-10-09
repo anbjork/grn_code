@@ -3,7 +3,8 @@ import numpy as np
 from pathlib import Path
 
 
-METRICS = ['AUROC', 'AUPR', 'AUPR ratio', 'AUPR gain', 'top_k_accuracy']
+# METRICS = ['AUROC', 'AUPR', 'AUPR ratio', 'AUPR gain', 'top_k_accuracy']
+METRICS = ['AUROC', 'AUPR gain', 'top_k_accuracy']
 DROPOUT_COL = '0_fraction__before_filtering__all'
 VARS_TO_STRATIFY = [
     'cell normalised',
@@ -76,6 +77,13 @@ def plot_metrics(output_path, major_col, minor_col):
     output_dir.mkdir(parents=True, exist_ok=True)
     configs = get_configs(df_long, major_col, minor_col)
 
+    # tmp setting
+    configs = [c for c in configs if c['transform 2'] == 'zscores']
+
+    print('configs:')
+    for config in configs:
+        print(config)
+
     for config in configs:
         df_config = subset_df(df_long, config)
         config_name = ' | '.join([f'{k} {v}' for k, v in config.items()])
@@ -103,7 +111,14 @@ def _make_plot(df_long, major_val, config_name, subplot_col, x_col):
     plt.subplots_adjust(bottom=0.4)
 
     for i, (ax, subplot_val) in enumerate(zip(axes, subplot_values)):
-        df_sub = df_long[df_long[subplot_col] == subplot_val]
+        df_sub = df_long[df_long[subplot_col] == subplot_val].copy()
+        isinf = np.isinf(df_sub['value'])
+        if isinf.any():
+            print(f'inf values filtered out (buggy for top k accuracy)): {isinf.sum()}')
+            print('rows of df:')
+            print(df_sub[isinf])
+            print('this filtering of inf values is coupled to a previous bug in the top k accuracy calculation, where top k accuracy was set to inf when TP + FP = 0. That has been fixed now, so if youre running with new data, you can remove this')
+            df_sub = df_sub[~isinf]
         y_max = df_sub['value'].max()
         for j, x_val in enumerate(x_values):
             values = df_sub[df_sub[x_col] == x_val]['value']
@@ -111,7 +126,7 @@ def _make_plot(df_long, major_val, config_name, subplot_col, x_col):
             ax.scatter(x_positions[j] + jitter, values,
                        alpha=0.7, s=50, color=colors[j])
         ax.set_xticks(x_positions)
-        ax.set_xticklabels(x_values, rotation=45, ha='right')
+        ax.set_xticklabels(x_values, rotation=45, ha='right', fontsize=6)
         ax.set_title(f'{subplot_val}')
         ax.set_ylim(-0.1, y_max * 1.1)
         ax.grid(True, alpha=0.3)
