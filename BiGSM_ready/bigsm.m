@@ -25,9 +25,19 @@ H = (-Y');
 
 alpha_all = zeros(target_size);
 n_converged = 0;
+n_skipped = 0;
 
 for j = 1:target_size(1)
     p_vec = -P(j, :)';
+
+    % gene j is never perturbed (all-zero row in P), so its row cannot be
+    % estimated: p_vec = 0 gives Mu = 0 and a division by zero in beta_new
+    if ~any(p_vec)
+        n_skipped = n_skipped + 1;
+        fprintf('Gene %d: skipped (P row is all zero)\n', j);
+        continue
+    end
+
     beta = 10;
     alpha_vec = 0.01.*ones(target_size(1), 1);
     converged = false;
@@ -52,7 +62,7 @@ for j = 1:target_size(1)
         end
         beta = beta_new;
         alpha_vec(alpha_vec > 1e10) = 1e10; % prevent values go to infinity
-        A_est_bcs(j, :) = Mu;
+        A_est_bcs(j, :) = Mu; 
     end
     alpha_all(j, :) = alpha_vec;
     
@@ -64,5 +74,5 @@ for j = 1:target_size(1)
     end
 end
 
-fprintf('BiGSM: %d of %d genes converged\n', n_converged, target_size(1));
-
+fprintf('BiGSM: %d of %d genes converged (%d skipped)\n', ...
+    n_converged, target_size(1), n_skipped);
