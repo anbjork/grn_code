@@ -1143,7 +1143,10 @@ def bigsm_inference(data):
     BiGSM inference using MATLAB through an HDF5 interface (inspired by Anton)
     Python -> HDF5 -> MATLAB -> HDF5 -> Python
 
-    MATLAB only runs the original bigsm.m.
+    MATLAB only runs bigsm.m with two local changes:
+    The results in A are storted in row j also when the gene
+    converges(typo fix, confirmed by Hang Qin),
+    and genes with an all-zero row in P are skipped
 
     Input:
         data['Y'] : expression matrix, samples x genes
@@ -1165,18 +1168,18 @@ def bigsm_inference(data):
     import tempfile
     import os
     import copy
-    from pathlib import Path
 
     import h5py
     import numpy as np
     import pandas as pd
-    import genesnake as gs
 
     expression_data = copy.deepcopy(data['Y'])
     perturbations = data['P']
 
-
-
+    # The paths are just strings inside a temporary directory. Nothing is
+    # created up front: Python creates the input file below and MATLAB
+    # creates the output file itself. The directory (and any files in it)
+    # is removed automatically when the with-block ends, also on errors.
     with tempfile.TemporaryDirectory() as tmpdir:
 
         input_path = os.path.join(tmpdir, 'bigsm_input.h5')
@@ -1196,6 +1199,24 @@ def bigsm_inference(data):
             'Python P shape:',
             perturbations.shape
         )
+
+        # sanity checks on the input before sending it to MATLAB
+        for name, df in [('Y', expression_data), ('P', perturbations)]:
+            values = df.values
+
+            n_nan = int(np.isnan(values).sum())
+            n_inf = int(np.isinf(values).sum())
+            if n_nan or n_inf:
+                raise ValueError(
+                    f'{name} contains {n_nan} NaN and {n_inf} Inf values.'
+                )
+
+            constant_genes = np.where(values.std(axis=0) == 0)[0]
+            if len(constant_genes) > 0:
+                print(
+                    f'Warning: {len(constant_genes)} constant genes '
+                    f'in {name}: {list(df.columns[constant_genes])}'
+                )
 
         with h5py.File(input_path, 'w') as hf:
 
@@ -1222,13 +1243,12 @@ def bigsm_inference(data):
         # The repo root comes from paths_anchor rather than from the location
         # of this script, which is more robust if the file is moved.
         from grn_code.paths_anchor import repo_root
-        bigsm_dir = repo_root / 'BiGSM_ready' 
- 
+        bigsm_dir = repo_root / 'BiGSM_ready'
+
         cmd = (
             f"addpath(genpath('{bigsm_dir}')); "
             f"run_bigsm_h5('{input_path}', '{output_path}');"
         )
-
 
         result = subprocess.run(
             [
@@ -1299,17 +1319,6 @@ def bigsm_inference(data):
         return {
             'bigsm': estimated_network
         }
-
-    finally:
-
-        # remove temp files
-        for path in [
-            input_path,
-            output_path
-        ]:
-
-            if os.path.exists(path):
-                os.unlink(path)
     
 
 
