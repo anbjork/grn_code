@@ -136,7 +136,8 @@ def configure():
             'cell normalised': [True],
             'read normalised': [False],
             'transform 1': ['log1p'],
-            'transform 2': ['none', 'zscores'],
+            # 'transform 2': ['none'],'zscores'],
+            'transform 2': ['zscores'],
             'pseudo_bulk': [False],
             'shuffle': [False],
             'compute differences': [False],
@@ -158,14 +159,14 @@ def configure():
     lassos = [lasso_factory(density) for density in densities]
 
     inference_functions = [
-            # functions.fast_methods_inference,
-            # functions.random_inference,
-            # functions.correlation_inference,
-            # functions.perfect_inference,
-            *lassos,
-            # functions.zscore_max_variants,
-            # functions.zscore_without_controls,
-            # functions.lsco_T_without_controls,
+             functions.fast_methods_inference,
+             functions.random_inference,
+             functions.correlation_inference,
+             functions.perfect_inference,
+            #*lassos,
+             functions.zscore_max_variants,
+             functions.zscore_without_controls,
+             functions.lsco_T_without_controls,
             # functions.inspre_inference,
             # functions.inspre_inference_hdf5,
             # functions.psgrn_inference,
@@ -173,8 +174,6 @@ def configure():
             # functions.dspin_inference,
             # functions.dspin_inference_wrapper,
             # functions.genie3_inference,
-
-            # Maybe typo in the name?
             functions.bigsm_inference,
             ]
 
