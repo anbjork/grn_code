@@ -142,45 +142,35 @@ def job_manager(output_path, job_specifications):
             anton_util.log_timestamp(f'Started process {pid}')
 
         for pid in list(processes.keys()):
-            # anton_util.log_timestamp(f'Checking process {pid}')
             process = processes[pid]
             status = process.poll()
             anton_util.log_timestamp(f'Process {pid} status: {status}')
-            if status is not None:
+            timed_out = datetime.datetime.now() - start_times[pid] > job_timeout
+            if status is None:
+                if not timed_out:
+                    anton_util.log_timestamp(
+                            f'Process {pid} is still running within timeout'
+                            )
+                    continue
+                elif timed_out:
+                    terminate_process(process)
+                    jobs_not_started.extend(wip.pop(pid))
+                    timeouts[pid] = True
+            else:
+                timeouts[pid] = False
+                process.wait()
                 anton_util.log_timestamp(
                     f'Process {pid} returned with {status}'
                     )
-                timeouts[pid] = False
-                process.wait()
+                time_taken[pid] = datetime.datetime.now() - start_times[pid]
+                anton_util.log_timestamp(
+                    f'Process {pid} took {time_taken[pid]} to complete'
+                    )
                 if status != 0:
                     jobs_not_started.extend(wip.pop(pid))
                 else:
-                    to_redo = check_for_astronomical_results(
-                            wip[pid]
-                            )
+                    to_redo = check_for_astronomical_results(wip[pid])
                     jobs_not_started.extend(to_redo)
-            elif datetime.datetime.now() - start_times[pid] > job_timeout:
-                terminate_process(process)
-                jobs_not_started.extend(wip.pop(pid))
-                timeouts[pid] = True
-            else:
-                anton_util.log_timestamp(
-                        f'Process {pid} is still running within timeout'
-                        )
-                continue
-            # Note the continue statement in the else block above.
-            # Because of that, I can put code common to the
-            # other cases here. I remember failing to notice that once.
-            # It's not the most obvious logic, but does save
-            # procomputing 2 conditions and then checking where to go,
-            # and/or nesting control structures.
-            # Also not seeing any obvious condition inversion that
-            # wouldn't complicate things conceptually. Might be some,
-            # haven't spent that much time trying
-            time_taken[pid] = datetime.datetime.now() - start_times[pid]
-            anton_util.log_timestamp(
-                    f'Process {pid} took {time_taken[pid]} to complete'
-                    )
             processes.pop(pid)
 
         if len(processes) == 0 and len(jobs_not_started) == 0:
