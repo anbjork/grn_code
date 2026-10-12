@@ -1307,17 +1307,18 @@ def bigsm_inference(data):
                 'BiGSM returned NaN or Inf values.'
             )
 
-        # No .T here: the transpose already happened in the HDF5 round trip
+        # A is A_matlab.T after the HDF5 round trip, i.e. [regulator, target].
+        # Both orientations are returned so the benchmark can show which one
+        # matches the reference networks.
         estimated_network = pd.DataFrame(
             data=A,
             index=expression_data.columns,
             columns=expression_data.columns
         )
 
-        estimated_network = estimated_network.fillna(0)
-
         return {
-            'bigsm': estimated_network
+            'bigsm': estimated_network,
+            'bigsm_T': estimated_network.T
         }
     
 
