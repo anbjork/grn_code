@@ -170,6 +170,7 @@ def job_manager(output_path, job_specifications):
                     jobs_not_started.extend(wip.pop(pid))
                 else:
                     to_redo = check_for_astronomical_results(wip[pid])
+                    wip.pop(pid)
                     jobs_not_started.extend(to_redo)
             processes.pop(pid)
 
