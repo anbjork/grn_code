@@ -182,7 +182,6 @@ def job_manager(output_path, job_specifications):
                     timeouts[pid] = True
             else:
                 timeouts[pid] = False
-                process.wait()
                 anton_util.log_timestamp(
                     f'Process {pid} returned with {status}'
                     )
