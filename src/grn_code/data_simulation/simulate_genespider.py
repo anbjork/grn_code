@@ -6,7 +6,7 @@ import subprocess
 import datetime
 from inspect import cleandoc
 import datetime
-
+import time
 
 
 def block_print(s):
@@ -56,6 +56,15 @@ def terminate_process(process):
 
 
 def check_for_astronomical_results(job_specifications):
+
+    # # Debug
+    # mock_success = True
+    # if mock_success:
+    #     for job in job_specifications:
+    #         job['simulation_succeeded'] = True
+    #     return []
+    # else:
+    #     return job_specifications
 
     import h5py
     import pandas as pd
@@ -111,6 +120,8 @@ def job_manager(output_path, job_specifications):
     print(f'Job timeout: {job_timeout}')
     print(f'Termination cleanup timeout: {termination_cleanup_timeout}')
 
+    # job_specifications = job_specifications[:5]  # Debug
+
     for job in job_specifications:
         job['simulation_retries'] = 0
 
@@ -154,6 +165,7 @@ def job_manager(output_path, job_specifications):
             chunk = job_queue[-chunk_size : ]
             job_queue = job_queue[ : -chunk_size]
             cmd = prepare_chunk(chunk = chunk, chunk_dir = chunk_dir)
+            # cmd = ['echo', 'mocked successful run']  # Debug
 
             p = subprocess.Popen(cmd)
             pid = p.pid
@@ -162,6 +174,11 @@ def job_manager(output_path, job_specifications):
             start_times[pid] = datetime.datetime.now()
             wip[pid] = chunk
             anton_util.log_timestamp(f'Started process {pid}')
+
+        # Optional: Sleep before polling, to catch immediately returning processes
+        # in the same update iteration. So far mainly useful when debugging
+        # with mocked jobs that return fast.
+        time.sleep(1)
 
         for pid in list(processes.keys()):
             process = processes[pid]
@@ -203,7 +220,6 @@ def job_manager(output_path, job_specifications):
         # I cannot be fucked waiting for logs to finish buffering
         print('', flush=True)
 
-        import time
         time.sleep(10)
 
 
