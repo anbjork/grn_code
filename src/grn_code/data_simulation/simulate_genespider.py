@@ -109,10 +109,6 @@ def job_manager(output_path, job_specifications):
     print(f'Job timeout: {job_timeout}')
     print(f'Termination cleanup timeout: {termination_cleanup_timeout}')
 
-
-    job_specifications = anton_util.unpickle_object(
-        f'{output_path}/simulation_specifications.pkl'
-            )
     for job in job_specifications:
         job['simulation_retries'] = 0
 
@@ -222,11 +218,6 @@ def job_manager(output_path, job_specifications):
             run_metadata,
             f'{output_path}/simulation/simulation_run_metadata.pkl'
             )
-    anton_util.pickle_object(
-            job_specifications,
-            f'{output_path}/simulation_specifications.pkl'
-            )
-
 
 
     anton_util.log_timestamp(
@@ -234,7 +225,13 @@ def job_manager(output_path, job_specifications):
     anton_util.log_timestamp(f'Failed jobs:    {len(failed_jobs)}')
     anton_util.log_timestamp('Simulations finished')
 
-    return 0
+    # returns the updated job specifications, including the simulation_retries 
+    # count for each job. It would have been cleaner to return a separate
+    # object instead of duplicating and modifying the input. But that would have
+    # required adding simulation IDs to link against, and I chose to not
+    # do that this time. Can consider for the future. IDs probably scale better
+    # when adding things.
+    return job_specifications
 
 
 
@@ -248,6 +245,10 @@ max_retries = max_attempts - 1
 
 def main(output_path, job_specifications):
 
-    job_manager(output_path = output_path, job_specifications = job_specifications)
+    updated_jobs_specs = job_manager(
+            output_path = output_path, job_specifications = job_specifications)
+    return updated_jobs_specs
+
+
 
 

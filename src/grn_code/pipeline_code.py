@@ -73,11 +73,14 @@ def run_pipeline(
                 pipeline_output_path / 'simulation_specifications.pkl'
                 )
 
-
     import grn_code.data_simulation.simulate_genespider as simulate_genespider
-    simulate_genespider.main(
+    simulation_specifications = simulate_genespider.main(
             output_path = pipeline_output_path,
             job_specifications = simulation_specifications,
+            )
+    anton_util.pickle_object(
+            simulation_specifications,
+            pipeline_output_path / 'simulation_specifications.pkl'
             )
 
     import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
