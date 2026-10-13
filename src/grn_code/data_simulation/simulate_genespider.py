@@ -84,8 +84,19 @@ def check_for_astronomical_results(job_specifications):
           were astronomical and will be rerun
           """)
     anton_util.log_timestamp(s)
+
     return to_redo
 
+
+def split_on_retries(job_specifications):
+    given_up = []
+    retry = []
+    for job in job_specifications:
+        if job['simulation_retries'] < max_retries:
+            retry.append(job)
+        else:
+            given_up.append(job)
+    return given_up, retry
 
 
 
@@ -102,6 +113,8 @@ def job_manager(output_path, job_specifications):
     job_specifications = anton_util.unpickle_object(
         f'{output_path}/simulation_specifications.pkl'
             )
+    for job in job_specifications:
+        job['simulation_retries'] = 0
 
     chunk_dir = Path(f'{output_path}/simulation/tmp_simulation_input_chunks')
     chunk_dir.mkdir(exist_ok = True, parents = True)
@@ -112,27 +125,38 @@ def job_manager(output_path, job_specifications):
     wip = {}
     timeouts = {}
 
-    jobs_not_started = []
+    failed_jobs = []
+    job_queue = []
     for job_specification in job_specifications:
         f = job_specification['simulation_completed_flag_file']
         if not Path(f).exists():
-            jobs_not_started.append(job_specification)
+            job_queue.append(job_specification)
     anton_util.log_timestamp(
-            f'Found {len(jobs_not_started)} not yet started jobs, '
+            f'Found {len(job_queue)} not yet started jobs, '
             f'out of {len(job_specifications)} total jobs'
             )
 
-    # jobs_not_started = jobs_not_started[ : 5]
+    def requeue(jobs):
+        given_up, retry = split_on_retries(jobs)
+        anton_util.log_timestamp(
+                f'gave up on {len(given_up)} jobs, requeuing {len(retry)}')
+        failed_jobs.extend(given_up)
+        for job in retry:
+            job['simulation_retries'] += 1
+        job_queue.extend(retry)
+
+    # job_queue = job_queue[ : 5]
 
     while True:
 
         while len(processes) < max_workers:
-            if len(jobs_not_started) == 0:
+            if len(job_queue) == 0:
                 break
 
-            chunk = jobs_not_started[-chunk_size : ]
-            jobs_not_started = jobs_not_started[ : -chunk_size]
+            chunk = job_queue[-chunk_size : ]
+            job_queue = job_queue[ : -chunk_size]
             cmd = prepare_chunk(chunk = chunk, chunk_dir = chunk_dir)
+
             p = subprocess.Popen(cmd)
             pid = p.pid
 
@@ -154,7 +178,7 @@ def job_manager(output_path, job_specifications):
                     continue
                 elif timed_out:
                     terminate_process(process)
-                    jobs_not_started.extend(wip.pop(pid))
+                    requeue(wip.pop(pid))
                     timeouts[pid] = True
             else:
                 timeouts[pid] = False
@@ -167,19 +191,18 @@ def job_manager(output_path, job_specifications):
                     f'Process {pid} took {time_taken[pid]} to complete'
                     )
                 if status != 0:
-                    jobs_not_started.extend(wip.pop(pid))
+                    requeue(wip.pop(pid))
                 else:
-                    to_redo = check_for_astronomical_results(wip[pid])
-                    wip.pop(pid)
-                    jobs_not_started.extend(to_redo)
+                    to_redo = check_for_astronomical_results(wip.pop(pid))
+                    requeue(to_redo)
             processes.pop(pid)
 
-        if len(processes) == 0 and len(jobs_not_started) == 0:
+        if len(processes) == 0 and len(job_queue) == 0:
             anton_util.log_timestamp('All simulations completed. Exiting job manager.')
             break
 
         anton_util.log_timestamp(f'Current active processes: {len(processes)}')
-        anton_util.log_timestamp(f'Current jobs not started: {len(jobs_not_started)}')
+        anton_util.log_timestamp(f'Current jobs in queue: {len(job_queue)}')
         # I cannot be fucked waiting for logs to finish buffering
         print('', flush=True)
 
@@ -200,8 +223,17 @@ def job_manager(output_path, job_specifications):
             run_metadata,
             f'{output_path}/simulation/simulation_run_metadata.pkl'
             )
+    anton_util.pickle_object(
+            job_specifications,
+            f'{output_path}/simulation_specifications.pkl'
+            )
 
-    anton_util.log_timestamp('Initial parameter grid simulated')
+
+
+    anton_util.log_timestamp(
+            f'Completed jobs: {len(job_specifications) - len(failed_jobs)}')
+    anton_util.log_timestamp(f'Failed jobs:    {len(failed_jobs)}')
+    anton_util.log_timestamp('Simulations finished')
 
     return 0
 
@@ -209,8 +241,11 @@ def job_manager(output_path, job_specifications):
 
 chunk_size = 1
 max_workers = 10
+max_attempts = 5
 job_timeout = datetime.timedelta(minutes = 1)
 termination_cleanup_timeout = 10
+
+max_retries = max_attempts - 1
 
 def main(output_path, job_specifications):
 
