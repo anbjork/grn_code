@@ -197,9 +197,6 @@ def job_manager(output_path, job_specifications):
                     timeouts[pid] = True
             else:
                 timeouts[pid] = False
-                anton_util.log_timestamp(
-                    f'Process {pid} returned with {status}'
-                    )
                 time_taken[pid] = datetime.datetime.now() - start_times[pid]
                 anton_util.log_timestamp(
                     f'Process {pid} took {time_taken[pid]} to complete'
