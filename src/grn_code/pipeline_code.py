@@ -89,6 +89,8 @@ def run_pipeline(
             simulation_specifications = simulation_specifications,
             )
 
+    # raise RuntimeError('Debug: Stop after gathering simulation data')
+
     import grn_code.preprocess_simulated_data_and_networks as psdn
     psdn.main(
             output_path = pipeline_output_path,
