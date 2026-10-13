@@ -78,6 +78,8 @@ def check_for_astronomical_results(job_specifications):
         if mean_Y > astronomical_counts_cutoff:
             # print(f"Simulation astronomical, redoing")
             to_redo.append(job)
+        else:
+            job['simulation_succeeded'] = True
 
     s = block_print(f"""
           {len(to_redo)} out of {len(job_specifications)} simulations
@@ -121,7 +123,6 @@ def job_manager(output_path, job_specifications):
     wip = {}
     timeouts = {}
 
-    failed_jobs = []
     job_queue = []
     for job_specification in job_specifications:
         f = job_specification['simulation_completed_flag_file']
@@ -134,12 +135,13 @@ def job_manager(output_path, job_specifications):
 
     def requeue(jobs):
         given_up, retry = split_on_retries(jobs)
-        anton_util.log_timestamp(
-                f'gave up on {len(given_up)} jobs, requeuing {len(retry)}')
-        failed_jobs.extend(given_up)
+        for job in given_up:
+            job['simulation_succeeded'] = False
         for job in retry:
             job['simulation_retries'] += 1
         job_queue.extend(retry)
+        anton_util.log_timestamp(
+                f'gave up on {len(given_up)} jobs, requeuing {len(retry)}')
 
     # job_queue = job_queue[ : 5]
 
@@ -219,10 +221,9 @@ def job_manager(output_path, job_specifications):
             f'{output_path}/simulation/simulation_run_metadata.pkl'
             )
 
-
-    anton_util.log_timestamp(
-            f'Completed jobs: {len(job_specifications) - len(failed_jobs)}')
-    anton_util.log_timestamp(f'Failed jobs:    {len(failed_jobs)}')
+    tmp = [job['simulation_succeeded'] for job in job_specifications]
+    anton_util.log_timestamp(f'Successful jobs: {sum(tmp)}')
+    anton_util.log_timestamp(f'Failed jobs:     {len(job_specifications) - sum(tmp)}')
     anton_util.log_timestamp('Simulations finished')
 
     # returns the updated job specifications, including the simulation_retries 
