@@ -725,7 +725,9 @@ def genie3_inference(data):
     # helping out by transposing.
     estimated_network = estimated_network.T
 
-    return estimated_network
+    return {'genie3.T': estimated_network}
+
+
 
 
 def deepsem_inference(data):

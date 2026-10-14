@@ -4,6 +4,14 @@ negbin_prob = 0.5
 cell_count = 180
 
 
+
+from collections.abc import Callable
+from typing import Any
+InferenceMethod = Callable[[Any], dict[str, Any]]
+
+
+
+
 def configure():
 
 
@@ -159,7 +167,8 @@ def configure():
     densities = [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 3]
     lassos = [lasso_factory(density) for density in densities]
 
-    inference_functions = [
+
+    inference_functions: list[InferenceMethod] = [
             # functions.fast_methods_inference,
             # functions.random_inference,
             # functions.correlation_inference,
