@@ -193,11 +193,10 @@ def main(output_path, preprocessing_options):
 
     throw_if_any_nan_or_inf(datasets)
 
-    flat_datasets = find_flat_datasets(datasets)
     import numpy as np
-    for df in [flat_datasets, flat_datasets_1]:
-        if any(np.array(df)):
-            print('Warning: 0 stds found')
+    flat_datasets = find_flat_datasets(datasets)
+    if any(np.array(flat_datasets)):
+        raise ValueError('Warning: 0 stds found after filtering')
 
     aa = []
     for dd in datasets:
@@ -205,6 +204,8 @@ def main(output_path, preprocessing_options):
     number_of_variable_genes_after_filtering = aa
 
     print(f'{number_of_variable_genes_before_filtering = }')
+    if any(np.array(flat_datasets_1)):
+        print('0 stds found between filterings')
     print(f'{number_of_variable_genes_after_filtering = }')
 
     metas = [d['meta'] for d in datasets]
