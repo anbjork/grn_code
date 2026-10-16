@@ -1152,16 +1152,61 @@ def bigsm_inference(data):
         data['Y'] : expression matrix, samples x genes
         data['P'] : perturbation matrix, samples x genes
 
-    Orientation conventions
-    -----------------------
-    MATLAB is column-major and h5py is row-major, so a 2D dataset is seen
-    transposed on the other side of the HDF5 file. Hence:
-      - Y and P are written as (samples x genes) and arrive in MATLAB as
-        (genes x samples), which is what BiGSM expects.
-      - BiGSM's A is [target, regulator] (row-wise inference, row j is the
-        estimate for gene j). run_bigsm_h5.m writes it as is, so h5py reads
-        it back as A_matlab.T, i.e. [regulator, target]. That is the
-        GeneSnake convention, so no extra transpose is needed here.
+    Output:
+        'bigsm'   : the matrix as read back from the HDF5 file (A_matlab.T)
+        'bigsm_T' : its transpose, i.e. bigsm.m's own matrix (A_matlab).
+                    This is the variant that matches the reference networks.
+
+    Orientation
+    -----------
+    HDF5 transposes 2D data between h5py (row-major) and MATLAB
+    (column-major). Therfore:
+      - Y and P, written as samples x genes, arrive in MATLAB as
+        genes x samples, which is what bigsm.m expects.
+      - run_bigsm_h5.m writes A as bigsm.m computes it, without transposing,
+        so h5py reads it as A_matlab.T. That is 'bigsm'.
+      - 'bigsm_T' = 'bigsm'.T = A_matlab.
+
+    Why bigsm_T is the best variant
+    -------------------------------
+    In the exact, noise-free model, bigsm.m builds row j of A from the
+    equationn of gene j only (P(j, :) is regressed on Y), i.e. it solves
+    P = A Y with A[target, regulator]. One would therefore expect A_matlab to
+    need a transpose to become [regulator, target], and that 'bigsm' (the
+    array as read from the file) would be the one matching the reference
+    networks. This is what the first version of this docstring assumed.
+
+    The benchmark shows the opposite: on the simulated GeneSnake data
+    bigsm_T matches the reference networks (AUROC about 0.85) and bigsm
+    does not (about 0.55), in all dataset configurations. Checked:
+      - No unexpected transpose in the HDF5 round trip, in
+        run_bigsm_h5.m, in get_P / preprocessing or in the benchmark.
+      - bigsm agrees with lsco as returned (rank correlation of absolute
+        values about 0.98), not with lsco.T (about 0.04). So two different
+        implementations, one in MATLAB and one in pure Python, give the same
+        matrix, and bigsm_T lines up with lsco.T, which is also the variant
+        that matches the reference. The effect is shared by the methods and
+        not an artifact of the MATLAB / HDF5 route.
+      - The reference networks are [regulator, target] in the sense of the
+        data. R[j, k] = mean change of gene k in cells where gene j is
+        knocked down (row = perturbed gene), computed directly from the
+        data, matches the reference in position (AUROC about 0.85, against
+        0.50 for the transposed reference).
+
+    Likely reason (hypothesis, not verified): bigsm.m, like lsco, regresses
+    the perturbation of gene j on the expression of all genes. In noisy
+    single-cell data the best predictors of "gene j was knocked down" are
+    the genes that respond to j, so row j of A_matlab carries the targets of
+    j ([regulator, target], like the response matrix R) rather than the
+    regulators of j, as the exact model would give.
+
+    The orientation was chosen from the benchmark against the ground truth,
+    so do not change it without rerunning the benchmark.
+
+    Sign: bigsm.m fits P = +A Y, while GeneSPIDER models P = -A Y, so the
+    weights have the opposite sign to lsco (signed correlation between bigsm
+    and lsco about -0.91). This does not matter for AUROC on absolute
+    values; take it into account if signed weights are used.
     """
 
     import subprocess
@@ -1282,8 +1327,8 @@ def bigsm_inference(data):
 
         with h5py.File(output_path, 'r') as hf:
 
-            # A_matlab is [target, regulator]; h5py gives A_matlab.T,
-            # which is already [regulator, target] (see docstring)
+            # h5py sees what MATLAB wrote as transposed: A = A_matlab.T
+            # (see docstring)
             A = hf['A'][:]
 
         # sanity checks on A
@@ -1307,9 +1352,10 @@ def bigsm_inference(data):
                 'BiGSM returned NaN or Inf values.'
             )
 
-        # A is A_matlab.T after the HDF5 round trip, i.e. [regulator, target].
-        # Both orientations are returned so the benchmark can show which one
-        # matches the reference networks.
+        # 'bigsm' is the array as read from the HDF5 file (A_matlab.T).
+        # 'bigsm_T' is its transpose, i.e. bigsm.m's own matrix (A_matlab),
+        # and is the variant that matches the reference networks
+        # (see docstring). Both are returned so the benchmark shows both.
         estimated_network = pd.DataFrame(
             data=A,
             index=expression_data.columns,
@@ -1322,7 +1368,7 @@ def bigsm_inference(data):
         }
     
 
-
+    
 def chunk_array(arr, n_chunks):
     # Separated this mostly to avoid index ception, since the arrays
     # I'll be chunking here are arrays of indices
