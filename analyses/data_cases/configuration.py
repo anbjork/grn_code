@@ -164,6 +164,7 @@ def configure():
         return f
 
     # densities = [1, 3, 5, 10, 20, 50]
+    densities = [5, 10, 20, 50]
     densities = [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 3]
     lassos = [lasso_factory(density) for density in densities]
 
