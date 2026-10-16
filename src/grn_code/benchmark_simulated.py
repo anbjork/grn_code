@@ -50,6 +50,12 @@ def benchmark_simulated(output_path):
             anton_util.log_timestamp('Inference metadata:')
             anton_util.log_timestamp(f'{meta}')
             mstats = None
+        # Crash on error version
+        # mstats = benchmark_method_against_reference(
+        #     method = meta['method'],
+        #     estimated_network = estimated_network,
+        #     reference_network = reference_network,
+        #     )
         stats.append({
             'meta': meta,
             'data': mstats,
