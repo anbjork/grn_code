@@ -74,7 +74,7 @@ def configure():
 
 
 
-    from grn_code import functions
+    from grn_code import inference_functions as functions
 
     def lasso_factory(density):
         def f(*args, **kwargs):
