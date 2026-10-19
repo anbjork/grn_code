@@ -22,72 +22,60 @@ def configure():
                 'cell_count': cell_count,
                 'snr': 0.5,
                 },
-    #         'low snr 0.05, old': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 0.1,
-    #             'cell_count': cell_count,
-    #             'snr': 0.05,
-    #             },
-    #         'low snr 0.1': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 0.1,
-    #             'cell_count': cell_count,
-    #             'snr': 0.1,
-    #             },
-    #         'low snr 0.3': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 0.1,
-    #             'cell_count': cell_count,
-    #             'snr': 0.3,
-    #             },
-            'low snr 0.03': {
+            # 'less easy': {
+            #     'negbin_prob': negbin_prob,
+            #     'dispersion': 1.5,
+            #     'cell_count': cell_count,
+            #     'snr': 0.2,
+            #     },
+            # 'less easy; low snr 0.03': {
+            #     'negbin_prob': negbin_prob,
+            #     'dispersion': 1.5,
+            #     'cell_count': cell_count,
+            #     'snr': 0.03,
+            #     },
+            # 'less easy; high dropout 20': {
+            #     'negbin_prob': negbin_prob,
+            #     'dispersion': 20,
+            #     'cell_count': cell_count,
+            #     'snr': 0.2,
+            #     },
+            # 'low snr 0.03': {
+            #     'negbin_prob': negbin_prob,
+            #     'dispersion': 0.1,
+            #     'cell_count': cell_count,
+            #     'snr': 0.03,
+            #     },
+            # 'high dropout 20': {
+            #     'negbin_prob': negbin_prob,
+            #     'dispersion': 20,
+            #     'cell_count': cell_count,
+            #     'snr': 0.5,
+            #     },
+            # 'hard': {
+            #     'negbin_prob': negbin_prob,
+            #     'dispersion': 20,
+            #     'cell_count': cell_count,
+            #     'snr': 0.03,
+            #     },
+            'lower snr 0.015': {
                 'negbin_prob': negbin_prob,
                 'dispersion': 0.1,
                 'cell_count': cell_count,
-                'snr': 0.03,
+                'snr': 0.015,
                 },
-    #         'low snr 0.035': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 0.1,
-    #             'cell_count': cell_count,
-    #             'snr': 0.035,
-    #             },
-    #         'low snr 0.04': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 0.1,
-    #             'cell_count': cell_count,
-    #             'snr': 0.04,
-    #             },
-    #         'low snr 0.045': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 0.1,
-    #             'cell_count': cell_count,
-    #             'snr': 0.045,
-    #             },
-    #         'high dropout 10, old': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 10,
-    #             'cell_count': cell_count,
-    #             'snr': 0.5,
-    #             },
-    #         'high dropout 50': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 50,
-    #             'cell_count': cell_count,
-    #             'snr': 0.5,
-    #             },
-            'high dropout 20': {
+            'higher dropout 70': {
                 'negbin_prob': negbin_prob,
-                'dispersion': 20,
+                'dispersion': 70,
                 'cell_count': cell_count,
                 'snr': 0.5,
                 },
-    #         'high dropout 15': {
-    #             'negbin_prob': negbin_prob,
-    #             'dispersion': 15,
-    #             'cell_count': cell_count,
-    #             'snr': 0.5,
-    #             },
+            'hard': {
+                'negbin_prob': negbin_prob,
+                'dispersion': 70,
+                'cell_count': cell_count,
+                'snr': 0.015,
+                },
             }
 
     # # This adjusted for the genesnake version. snrs are a bit different scale
@@ -144,11 +132,11 @@ def configure():
             'cell normalised': [True],
             'read normalised': [False],
             'transform 1': ['log1p'],
-            # 'transform 2': ['none', 'zscores'],
-            'transform 2': ['zscores'],
+            'transform 2': ['none', 'zscores'],
+            # 'transform 2': ['zscores'],
             'pseudo_bulk': [False],
             'shuffle': [False],
-            'compute differences': [False],
+            'compute differences': [False, True],
             }
 
 
@@ -162,19 +150,19 @@ def configure():
                     *args, **kwargs, target_density=density
                     )
         return f
-
-    # densities = [1, 3, 5, 10, 20, 50]
-    densities = [5, 10, 20, 50]
-    densities = [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 3]
+    densities  = [0.3, 1, 10]
     lassos = [lasso_factory(density) for density in densities]
 
-
     inference_functions: list[InferenceMethod] = [
-            # functions.fast_methods_inference,
-            # functions.random_inference,
-            # functions.correlation_inference,
-            # functions.perfect_inference,
-            *lassos,
+            functions.fast_methods_inference,
+            functions.random_inference,
+            functions.correlation_inference,
+            # This one has a different signature, which is handled in the pipeline.
+            # It cheats by taking the reference networks as input
+            # That's why pyright gets confused about it's signature,
+            # and is ignored
+            functions.perfect_inference,  # pyright: ignore
+            # *lassos,
             # functions.zscore_max_variants,
             # functions.zscore_without_controls,
             # functions.lsco_T_without_controls,
