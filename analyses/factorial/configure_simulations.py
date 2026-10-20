@@ -4,9 +4,9 @@ import anton_util
 
 parameter_values = {
     'negbin_prob': [0.5],
-    'cell_count': [50, 200],
-    'dispersion': [0.1, 20],
-    'snr': [0.03, 0.5],
+    'cell_count': [10, 250],
+    'dispersion': [0.1, 40],
+    'snr': [0.02, 1],
     }
 def recursive_combos(parameter_values, determined):
     from copy import deepcopy
