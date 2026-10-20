@@ -35,6 +35,7 @@ xlims = {
         }
 x_transforms = {
         'snr': [None, 'log'],
+        'cell_count': [None, 'log'],
         }
 x_vars = sorted(controlled_vars | set(dependent_vars.keys()))
 
