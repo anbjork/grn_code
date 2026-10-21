@@ -962,3 +962,234 @@ def inspre_inference_hdf5(data):
 
 
 
+def bigsm_inference(data):
+    """
+    BiGSM inference using MATLAB through an HDF5 interface (inspired by Anton)
+    Python -> HDF5 -> MATLAB -> HDF5 -> Python
+
+    MATLAB only runs bigsm.m with two local changes:
+    The results in A are storted in row j also when the gene
+    converges(typo fix, confirmed by Hang Qin),
+    and genes with an all-zero row in P are skipped
+
+    Input:
+        data['Y'] : expression matrix, samples x genes
+        data['P'] : perturbation matrix, samples x genes
+
+    Output:
+        'bigsm'   : the matrix as read back from the HDF5 file (A_matlab.T)
+        'bigsm_T' : its transpose, i.e. bigsm.m's own matrix (A_matlab).
+                    This is the variant that matches the reference networks.
+
+    Orientation
+    -----------
+    HDF5 transposes 2D data between h5py (row-major) and MATLAB
+    (column-major). Therfore:
+      - Y and P, written as samples x genes, arrive in MATLAB as
+        genes x samples, which is what bigsm.m expects.
+      - run_bigsm_h5.m writes A as bigsm.m computes it, without transposing,
+        so h5py reads it as A_matlab.T. That is 'bigsm'.
+      - 'bigsm_T' = 'bigsm'.T = A_matlab.
+
+    Why bigsm_T is the best variant
+    -------------------------------
+    In the exact, noise-free model, bigsm.m builds row j of A from the
+    equationn of gene j only (P(j, :) is regressed on Y), i.e. it solves
+    P = A Y with A[target, regulator]. One would therefore expect A_matlab to
+    need a transpose to become [regulator, target], and that 'bigsm' (the
+    array as read from the file) would be the one matching the reference
+    networks. This is what the first version of this docstring assumed.
+
+    The benchmark shows the opposite: on the simulated GeneSnake data
+    bigsm_T matches the reference networks (AUROC about 0.85) and bigsm
+    does not (about 0.55), in all dataset configurations. Checked:
+      - No unexpected transpose in the HDF5 round trip, in
+        run_bigsm_h5.m, in get_P / preprocessing or in the benchmark.
+      - bigsm agrees with lsco as returned (rank correlation of absolute
+        values about 0.98), not with lsco.T (about 0.04). So two different
+        implementations, one in MATLAB and one in pure Python, give the same
+        matrix, and bigsm_T lines up with lsco.T, which is also the variant
+        that matches the reference. The effect is shared by the methods and
+        not an artifact of the MATLAB / HDF5 route.
+      - The reference networks are [regulator, target] in the sense of the
+        data. R[j, k] = mean change of gene k in cells where gene j is
+        knocked down (row = perturbed gene), computed directly from the
+        data, matches the reference in position (AUROC about 0.85, against
+        0.50 for the transposed reference).
+
+    Likely reason (hypothesis, not verified): bigsm.m, like lsco, regresses
+    the perturbation of gene j on the expression of all genes. In noisy
+    single-cell data the best predictors of "gene j was knocked down" are
+    the genes that respond to j, so row j of A_matlab carries the targets of
+    j ([regulator, target], like the response matrix R) rather than the
+    regulators of j, as the exact model would give.
+
+    The orientation was chosen from the benchmark against the ground truth,
+    so do not change it without rerunning the benchmark.
+
+    Sign: bigsm.m fits P = +A Y, while GeneSPIDER models P = -A Y, so the
+    weights have the opposite sign to lsco (signed correlation between bigsm
+    and lsco about -0.91). This does not matter for AUROC on absolute
+    values; take it into account if signed weights are used.
+    """
+
+    import subprocess
+    import tempfile
+    import os
+    import copy
+
+    import h5py
+    import numpy as np
+    import pandas as pd
+
+    expression_data = copy.deepcopy(data['Y'])
+    perturbations = data['P']
+
+    # The paths are just strings inside a temporary directory. Nothing is
+    # created up front: Python creates the input file below and MATLAB
+    # creates the output file itself. The directory (and any files in it)
+    # is removed automatically when the with-block ends, also on errors.
+    with tempfile.TemporaryDirectory() as tmpdir:
+
+        input_path = os.path.join(tmpdir, 'bigsm_input.h5')
+        output_path = os.path.join(tmpdir, 'bigsm_output.h5')
+
+        # write input
+        anton_util.log_timestamp(
+            'Preparing HDF5 file for BiGSM...'
+        )
+
+        print(
+            'Python Y shape:',
+            expression_data.shape
+        )
+
+        print(
+            'Python P shape:',
+            perturbations.shape
+        )
+
+        # sanity checks on the input before sending it to MATLAB
+        for name, df in [('Y', expression_data), ('P', perturbations)]:
+            values = df.values
+
+            n_nan = int(np.isnan(values).sum())
+            n_inf = int(np.isinf(values).sum())
+            if n_nan or n_inf:
+                raise ValueError(
+                    f'{name} contains {n_nan} NaN and {n_inf} Inf values.'
+                )
+
+            constant_genes = np.where(values.std(axis=0) == 0)[0]
+            if len(constant_genes) > 0:
+                print(
+                    f'Warning: {len(constant_genes)} constant genes '
+                    f'in {name}: {list(df.columns[constant_genes])}'
+                )
+
+        with h5py.File(input_path, 'w') as hf:
+
+            hf.create_dataset(
+                'Y',
+                data=expression_data.values
+            )
+
+            hf.create_dataset(
+                'P',
+                data=perturbations.values
+            )
+
+            hf.create_dataset(
+                'max_iter',
+                data=20
+            )
+
+        # run matlab
+        anton_util.log_timestamp(
+            'Running BiGSM MATLAB script...'
+        )
+
+        # The repo root comes from paths_anchor rather than from the location
+        # of this script, which is more robust if the file is moved.
+        from grn_code.paths_anchor import repo_root
+        bigsm_dir = repo_root / 'BiGSM_ready'
+
+        cmd = (
+            f"addpath(genpath('{bigsm_dir}')); "
+            f"run_bigsm_h5('{input_path}', '{output_path}');"
+        )
+
+        result = subprocess.run(
+            [
+                'matlab',
+                '-batch',
+                cmd
+            ],
+            capture_output=True,
+            text=True
+        )
+
+        # print matlab output to make debugging easier
+        if result.stdout:
+            print('MATLAB stdout:')
+            print(result.stdout)
+
+        if result.stderr:
+            print('MATLAB stderr:')
+            print(result.stderr)
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                'BiGSM MATLAB script failed.\n'
+                f'MATLAB return code: {result.returncode}'
+            )
+
+        # read result
+        anton_util.log_timestamp(
+            'Reading BiGSM results...'
+        )
+
+        with h5py.File(output_path, 'r') as hf:
+
+            # h5py sees what MATLAB wrote as transposed: A = A_matlab.T
+            # (see docstring)
+            A = hf['A'][:]
+
+        # sanity checks on A
+        n_genes = len(
+            expression_data.columns
+        )
+
+        expected_shape = (
+            n_genes,
+            n_genes
+        )
+
+        if A.shape != expected_shape:
+            raise ValueError(
+                f'Unexpected BiGSM network shape: {A.shape}. '
+                f'Expected: {expected_shape}.'
+            )
+
+        if not np.isfinite(A).all():
+            raise ValueError(
+                'BiGSM returned NaN or Inf values.'
+            )
+
+        # 'bigsm' is the array as read from the HDF5 file (A_matlab.T).
+        # 'bigsm_T' is its transpose, i.e. bigsm.m's own matrix (A_matlab),
+        # and is the variant that matches the reference networks
+        # (see docstring). Both are returned so the benchmark shows both.
+        estimated_network = pd.DataFrame(
+            data=A,
+            index=expression_data.columns,
+            columns=expression_data.columns
+        )
+
+        return {
+            'bigsm': estimated_network,
+            'bigsm_T': estimated_network.T
+        }
+
+
+

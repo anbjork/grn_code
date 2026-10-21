@@ -171,8 +171,6 @@ def benchmark_method_against_reference(
 
 
 
-
-
 def chunk_array(arr, n_chunks):
     # Separated this mostly to avoid index ception, since the arrays
     # I'll be chunking here are arrays of indices
