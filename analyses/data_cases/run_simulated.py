@@ -22,6 +22,6 @@ run_pipeline(
 
 from plot_results import plot_metrics
 plot_metrics(output_path, major_col='metric', minor_col='data_case')
-plot_metrics(output_path, major_col='data_case', minor_col='metric')
+# plot_metrics(output_path, major_col='data_case', minor_col='metric')
 
 

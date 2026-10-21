@@ -3,14 +3,16 @@ import numpy as np
 from pathlib import Path
 
 
-METRICS = ['AUROC', 'AUPR', 'AUPR ratio', 'AUPR gain', 'top_k_accuracy']
+# METRICS = ['AUROC', 'AUPR', 'AUPR ratio', 'AUPR gain', 'top_k_accuracy']
+METRICS = ['AUROC', 'AUPR gain', 'top_k_accuracy', 'precision_at_k']
 DROPOUT_COL = '0_fraction__before_filtering__all'
 VARS_TO_STRATIFY = [
     'cell normalised',
-    'read normalised',
+    # 'read normalised',
     'transform 1',
     'transform 2',
     'pseudo_bulk',
+    'control_delta',
 ]
 
 
@@ -71,10 +73,19 @@ def plot_metrics(output_path, major_col, minor_col):
     import anton_util
     anton_util.log_timestamp('plotting...')
 
-    df_long = to_long(label_data_cases(load_df(output_path)))
+    df_raw = load_df(output_path)
+    # df_raw = df_raw.loc[df_raw['method'] != 'mean_difference_controls_only']
+    df_long = to_long(label_data_cases(df_raw))
     output_dir = Path(output_path) / 'simulated' / 'plots'
     output_dir.mkdir(parents=True, exist_ok=True)
     configs = get_configs(df_long, major_col, minor_col)
+
+    # # tmp setting
+    # configs = [c for c in configs if c['transform 2'] == 'zscores']
+
+    print('configs:')
+    for config in configs:
+        print(config)
 
     for config in configs:
         df_config = subset_df(df_long, config)
@@ -93,7 +104,7 @@ def plot_metrics(output_path, major_col, minor_col):
 def _make_plot(df_long, major_val, config_name, subplot_col, x_col):
     subplot_values = df_long[subplot_col].unique()
     x_values = df_long[x_col].unique()
-    colors = plt.cm.tab20(np.linspace(0, 1, len(x_values)))
+    colors = plt.cm.tab20.colors  # pyright: ignore
     x_positions = np.arange(len(x_values))
 
     fig, axes = plt.subplots(1, len(subplot_values),
@@ -103,7 +114,7 @@ def _make_plot(df_long, major_val, config_name, subplot_col, x_col):
     plt.subplots_adjust(bottom=0.4)
 
     for i, (ax, subplot_val) in enumerate(zip(axes, subplot_values)):
-        df_sub = df_long[df_long[subplot_col] == subplot_val]
+        df_sub = df_long[df_long[subplot_col] == subplot_val].copy()
         y_max = df_sub['value'].max()
         for j, x_val in enumerate(x_values):
             values = df_sub[df_sub[x_col] == x_val]['value']
@@ -112,6 +123,8 @@ def _make_plot(df_long, major_val, config_name, subplot_col, x_col):
                        alpha=0.7, s=50, color=colors[j])
         ax.set_xticks(x_positions)
         ax.set_xticklabels(x_values, rotation=45, ha='right')
+        # Small labels when crowded
+        # ax.set_xticklabels(x_values, rotation=45, ha='right', fontsize=6)
         ax.set_title(f'{subplot_val}')
         ax.set_ylim(-0.1, y_max * 1.1)
         ax.grid(True, alpha=0.3)

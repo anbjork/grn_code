@@ -68,6 +68,8 @@ def main(output_path, simulation_specifications):
                 'dataset_parameters': {
                     **specification['python_global_parameters_for_matlab'],
                     **specification['parameters'],
+                    'simulation_retries': specification['simulation_retries'],
+                    'simulation_succeeded': specification['simulation_succeeded'],
                     }
                 }
         reference_networks.append({'meta': meta, 'data': m['A']})

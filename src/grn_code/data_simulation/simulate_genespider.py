@@ -6,7 +6,7 @@ import subprocess
 import datetime
 from inspect import cleandoc
 import datetime
-
+import time
 
 
 def block_print(s):
@@ -57,6 +57,15 @@ def terminate_process(process):
 
 def check_for_astronomical_results(job_specifications):
 
+    # # Debug
+    # mock_success = True
+    # if mock_success:
+    #     for job in job_specifications:
+    #         job['simulation_succeeded'] = True
+    #     return []
+    # else:
+    #     return job_specifications
+
     import h5py
     import pandas as pd
 
@@ -78,14 +87,27 @@ def check_for_astronomical_results(job_specifications):
         if mean_Y > astronomical_counts_cutoff:
             # print(f"Simulation astronomical, redoing")
             to_redo.append(job)
+        else:
+            job['simulation_succeeded'] = True
 
     s = block_print(f"""
           {len(to_redo)} out of {len(job_specifications)} simulations
           were astronomical and will be rerun
           """)
     anton_util.log_timestamp(s)
+
     return to_redo
 
+
+def split_on_retries(job_specifications):
+    given_up = []
+    retry = []
+    for job in job_specifications:
+        if job['simulation_retries'] < max_retries:
+            retry.append(job)
+        else:
+            given_up.append(job)
+    return given_up, retry
 
 
 
@@ -98,10 +120,10 @@ def job_manager(output_path, job_specifications):
     print(f'Job timeout: {job_timeout}')
     print(f'Termination cleanup timeout: {termination_cleanup_timeout}')
 
+    # job_specifications = job_specifications[:5]  # Debug
 
-    job_specifications = anton_util.unpickle_object(
-        f'{output_path}/simulation_specifications.pkl'
-            )
+    for job in job_specifications:
+        job['simulation_retries'] = 0
 
     chunk_dir = Path(f'{output_path}/simulation/tmp_simulation_input_chunks')
     chunk_dir.mkdir(exist_ok = True, parents = True)
@@ -112,27 +134,39 @@ def job_manager(output_path, job_specifications):
     wip = {}
     timeouts = {}
 
-    jobs_not_started = []
+    job_queue = []
     for job_specification in job_specifications:
         f = job_specification['simulation_completed_flag_file']
         if not Path(f).exists():
-            jobs_not_started.append(job_specification)
+            job_queue.append(job_specification)
     anton_util.log_timestamp(
-            f'Found {len(jobs_not_started)} not yet started jobs, '
+            f'Found {len(job_queue)} not yet started jobs, '
             f'out of {len(job_specifications)} total jobs'
             )
 
-    # jobs_not_started = jobs_not_started[ : 5]
+    def requeue(jobs):
+        given_up, retry = split_on_retries(jobs)
+        for job in given_up:
+            job['simulation_succeeded'] = False
+        for job in retry:
+            job['simulation_retries'] += 1
+        job_queue.extend(retry)
+        anton_util.log_timestamp(
+                f'gave up on {len(given_up)} jobs, requeuing {len(retry)}')
+
+    # job_queue = job_queue[ : 5]
 
     while True:
 
         while len(processes) < max_workers:
-            if len(jobs_not_started) == 0:
+            if len(job_queue) == 0:
                 break
 
-            chunk = jobs_not_started[-chunk_size : ]
-            jobs_not_started = jobs_not_started[ : -chunk_size]
+            chunk = job_queue[-chunk_size : ]
+            job_queue = job_queue[ : -chunk_size]
             cmd = prepare_chunk(chunk = chunk, chunk_dir = chunk_dir)
+            # cmd = ['echo', 'mocked successful run']  # Debug
+
             p = subprocess.Popen(cmd)
             pid = p.pid
 
@@ -141,58 +175,48 @@ def job_manager(output_path, job_specifications):
             wip[pid] = chunk
             anton_util.log_timestamp(f'Started process {pid}')
 
+        # Optional: Sleep before polling, to catch immediately returning processes
+        # in the same update iteration. So far mainly useful when debugging
+        # with mocked jobs that return fast.
+        time.sleep(1)
+
         for pid in list(processes.keys()):
-            # anton_util.log_timestamp(f'Checking process {pid}')
             process = processes[pid]
             status = process.poll()
             anton_util.log_timestamp(f'Process {pid} status: {status}')
-            if status is not None:
-                anton_util.log_timestamp(
-                    f'Process {pid} returned with {status}'
-                    )
-                timeouts[pid] = False
-                process.wait()
-                if status != 0:
-                    jobs_not_started.extend(wip.pop(pid))
-                else:
-                    to_redo = check_for_astronomical_results(
-                            wip[pid]
+            timed_out = datetime.datetime.now() - start_times[pid] > job_timeout
+            if status is None:
+                if not timed_out:
+                    anton_util.log_timestamp(
+                            f'Process {pid} is still running within timeout'
                             )
-                    jobs_not_started.extend(to_redo)
-            elif datetime.datetime.now() - start_times[pid] > job_timeout:
-                terminate_process(process)
-                jobs_not_started.extend(wip.pop(pid))
-                timeouts[pid] = True
+                    continue
+                elif timed_out:
+                    terminate_process(process)
+                    requeue(wip.pop(pid))
+                    timeouts[pid] = True
             else:
+                timeouts[pid] = False
+                time_taken[pid] = datetime.datetime.now() - start_times[pid]
                 anton_util.log_timestamp(
-                        f'Process {pid} is still running within timeout'
-                        )
-                continue
-            # Note the continue statement in the else block above.
-            # Because of that, I can put code common to the
-            # other cases here. I remember failing to notice that once.
-            # It's not the most obvious logic, but does save
-            # procomputing 2 conditions and then checking where to go,
-            # and/or nesting control structures.
-            # Also not seeing any obvious condition inversion that
-            # wouldn't complicate things conceptually. Might be some,
-            # haven't spent that much time trying
-            time_taken[pid] = datetime.datetime.now() - start_times[pid]
-            anton_util.log_timestamp(
                     f'Process {pid} took {time_taken[pid]} to complete'
                     )
+                if status != 0:
+                    requeue(wip.pop(pid))
+                else:
+                    to_redo = check_for_astronomical_results(wip.pop(pid))
+                    requeue(to_redo)
             processes.pop(pid)
 
-        if len(processes) == 0 and len(jobs_not_started) == 0:
+        if len(processes) == 0 and len(job_queue) == 0:
             anton_util.log_timestamp('All simulations completed. Exiting job manager.')
             break
 
         anton_util.log_timestamp(f'Current active processes: {len(processes)}')
-        anton_util.log_timestamp(f'Current jobs not started: {len(jobs_not_started)}')
+        anton_util.log_timestamp(f'Current jobs in queue: {len(job_queue)}')
         # I cannot be fucked waiting for logs to finish buffering
         print('', flush=True)
 
-        import time
         time.sleep(10)
 
 
@@ -210,19 +234,35 @@ def job_manager(output_path, job_specifications):
             f'{output_path}/simulation/simulation_run_metadata.pkl'
             )
 
-    anton_util.log_timestamp('Initial parameter grid simulated')
+    tmp = [job['simulation_succeeded'] for job in job_specifications]
+    anton_util.log_timestamp(f'Successful jobs: {sum(tmp)}')
+    anton_util.log_timestamp(f'Failed jobs:     {len(job_specifications) - sum(tmp)}')
+    anton_util.log_timestamp('Simulations finished')
 
-    return 0
+    # returns the updated job specifications, including the simulation_retries 
+    # count for each job. It would have been cleaner to return a separate
+    # object instead of duplicating and modifying the input. But that would have
+    # required adding simulation IDs to link against, and I chose to not
+    # do that this time. Can consider for the future. IDs probably scale better
+    # when adding things.
+    return job_specifications
 
 
 
 chunk_size = 1
 max_workers = 10
+max_attempts = 5
 job_timeout = datetime.timedelta(minutes = 1)
 termination_cleanup_timeout = 10
 
+max_retries = max_attempts - 1
+
 def main(output_path, job_specifications):
 
-    job_manager(output_path = output_path, job_specifications = job_specifications)
+    updated_jobs_specs = job_manager(
+            output_path = output_path, job_specifications = job_specifications)
+    return updated_jobs_specs
+
+
 
 

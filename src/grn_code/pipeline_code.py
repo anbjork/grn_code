@@ -23,7 +23,6 @@ def save_run_metadata(output_path):
 def run_pipeline(
         config,
         output_base_path,
-        read_simulation_specifications,
         ):
 
     def handle_perfect_inference(config):
@@ -52,33 +51,31 @@ def run_pipeline(
     pipeline_output_path.mkdir(exist_ok=True, parents=True)
 
 
+    save_run_metadata(output_base_path)
 
-
-    if read_simulation_specifications:
-        p = pipeline_output_path / 'simulation_specifications.pkl'
-        try:
-            simulation_specifications = anton_util.unpickle_object(p)
-        except FileNotFoundError:
-            print(f'{p} not found')
-            import sys
-            sys.exit(1)
-    else:
+    p = pipeline_output_path / 'simulation_specifications.pkl'
+    try:
+        simulation_specifications = anton_util.unpickle_object(p)
+        print(f'Reading existing simulation config at \n{p}')
+    except FileNotFoundError:
         from grn_code.data_simulation import configuration_imports as ci
         simulation_specifications = ci.initialise_simulations(
                 parameter_sets = config['parameter_sets'],
                 base_path = pipeline_output_path,
                 )
-        anton_util.pickle_object(
-                simulation_specifications,
-                pipeline_output_path / 'simulation_specifications.pkl'
-                )
+        anton_util.pickle_object(simulation_specifications, p)
+        print(f'Existing config not found at \n{p}\n. Creating a new one')
 
-    save_run_metadata(output_base_path)
+
 
     import grn_code.data_simulation.simulate_genespider as simulate_genespider
-    simulate_genespider.main(
+    simulation_specifications = simulate_genespider.main(
             output_path = pipeline_output_path,
             job_specifications = simulation_specifications,
+            )
+    anton_util.pickle_object(
+            simulation_specifications,
+            pipeline_output_path / 'simulation_specifications.pkl'
             )
 
     import grn_code.data_simulation.gather_simulation_data as gather_simulation_data
@@ -86,6 +83,8 @@ def run_pipeline(
             output_path = pipeline_output_path,
             simulation_specifications = simulation_specifications,
             )
+
+    # raise RuntimeError('Debug: Stop after gathering simulation data')
 
     import grn_code.preprocess_simulated_data_and_networks as psdn
     psdn.main(

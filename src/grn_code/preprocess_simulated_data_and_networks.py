@@ -1,5 +1,5 @@
 
-
+import numpy as np
 from pathlib import Path
 import anton_util
 from grn_code import functions
@@ -50,7 +50,8 @@ def main(output_path, preprocessing_options):
 
     output_path.mkdir(parents = True, exist_ok = True)
 
-    anton_util.log_timestamp('reading..')
+    anton_util.log_timestamp('preprocessing...')
+    anton_util.log_timestamp('reading...')
 
 
     data_raw = anton_util.unpickle_object(output_path / 'simulations.pkl')
@@ -159,8 +160,21 @@ def main(output_path, preprocessing_options):
 
     for dataset in datasets:
         Y = dataset['Y']
-        cols = find_variable_columns(Y)
-        Y = Y.loc[:, cols]
+        shape = Y.shape
+        # Removing genes might orphan some perturbations, and removing
+        # those perturbations might make additional genes flat,
+        # so iterate on the filtering until it stabilises
+        while True:
+            cols = find_variable_columns(Y)
+            Y = Y.loc[:, cols]
+            gene_set = set(Y.columns)
+            perturbations_in_geneset = []
+            for g in Y.index:
+                perturbations_in_geneset.append(g in gene_set)
+            Y = Y.loc[perturbations_in_geneset, :]
+            if Y.shape == shape:
+                break
+            shape = Y.shape
         dataset['Y'] = Y
 
 
@@ -182,6 +196,15 @@ def main(output_path, preprocessing_options):
     ###### A few sanity checks on pre processed data #########
     # Doing this after saving, so that data remains for inspection if crash.
 
+    anton_util.log_timestamp('diagnostics...')
+
+    for dataset in datasets:
+        Y = dataset['Y']
+        P = dataset['P']
+        assert(Y.shape == P.shape)
+        assert(all(Y.index == P.index))
+        assert(all(Y.columns == P.columns))
+
     def throw_if_any_nan_or_inf(datasets):
         import numpy as np
         for dataset in datasets:
@@ -194,10 +217,8 @@ def main(output_path, preprocessing_options):
     throw_if_any_nan_or_inf(datasets)
 
     flat_datasets = find_flat_datasets(datasets)
-    import numpy as np
-    for df in [flat_datasets, flat_datasets_1]:
-        if any(np.array(df)):
-            print('Warning: 0 stds found')
+    if any(np.array(flat_datasets)):
+        raise ValueError('flat datasets found after filtering')
 
     aa = []
     for dd in datasets:
@@ -205,6 +226,8 @@ def main(output_path, preprocessing_options):
     number_of_variable_genes_after_filtering = aa
 
     print(f'{number_of_variable_genes_before_filtering = }')
+    if any(np.array(flat_datasets_1)):
+        print('0 stds found between filterings')
     print(f'{number_of_variable_genes_after_filtering = }')
 
     metas = [d['meta'] for d in datasets]
@@ -215,7 +238,20 @@ def main(output_path, preprocessing_options):
     import pandas as pd
     df = pd.DataFrame(metas)
 
+    for dataset in datasets:
+        Y = dataset['Y']
+        gene_set = set(Y.columns)
+        perturbations_in_geneset = []
+        for g in Y.index:
+            perturbations_in_geneset.append(g in gene_set)
+        if not all(perturbations_in_geneset):
+            raise ValueError('Not all perturbations in gene set')
 
+    for dataset in datasets:
+        Y = dataset['Y']
+        P = dataset['P']
+        perturbed = (P != 0).any(axis = 1)
+        assert(all(Y.index[~perturbed] == 'control'))
 
     def plot_counts(array):
         from collections  import Counter
@@ -234,5 +270,7 @@ def main(output_path, preprocessing_options):
         fig = plot_counts(var)
         fig.savefig(f'{output_path}/unsorted/dataset_counts_against_number_of_{name}.png')
 
+
+    anton_util.log_timestamp('preprocessing done!')
 
 
