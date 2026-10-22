@@ -65,6 +65,11 @@ def main(output_path, preprocessing_options):
     # for dataset in datasets:
     #     dataset['Y'] = dataset['Y'].iloc[:, :10]
     #     dataset['A'] = dataset['A'].iloc[:10, :10]
+    #
+    # Custom subset for debugging
+    # iis = [0, 5, -2, -1]
+    # iis = [0, -1]
+    # datasets = [datasets[ii] for ii in iis]
 
 
     functions.record_dropout_fractions(datasets, 'before_filtering')
@@ -167,7 +172,7 @@ def main(output_path, preprocessing_options):
         while True:
             cols = find_variable_columns(Y)
             Y = Y.loc[:, cols]
-            gene_set = set(Y.columns)
+            gene_set = set(list(Y.columns) + ['control'])
             perturbations_in_geneset = []
             for g in Y.index:
                 perturbations_in_geneset.append(g in gene_set)
@@ -240,7 +245,7 @@ def main(output_path, preprocessing_options):
 
     for dataset in datasets:
         Y = dataset['Y']
-        gene_set = set(Y.columns)
+        gene_set = set(list(Y.columns) + ['control'])
         perturbations_in_geneset = []
         for g in Y.index:
             perturbations_in_geneset.append(g in gene_set)
