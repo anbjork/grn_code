@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import anton_util
 from pathlib import Path
-from grn_code.pipeline_code import output_base_path
+from local_imports import output_path as output_base_path
 
 compiled_results_path = Path(f'{output_base_path}/simulated/compiled_results.pkl')
 output_path = Path(f'{output_base_path}/simulated/plots/auroc_by_method.png')
@@ -12,7 +12,10 @@ df = anton_util.unpickle_object(str(compiled_results_path))
 
 sm = np.array(list(set(df['method'])))
 tmp = ['psgrn_inference' in col for col in sm]
-psgrn_errors_func_name = sm[tmp][0]
+try:
+    psgrn_errors_func_name = sm[tmp][0]
+except IndexError:
+    psgrn_errors_func_name = None
 ms = [
         'zscore_ab_without_controls', 
         'perfect_inference_all_genes',

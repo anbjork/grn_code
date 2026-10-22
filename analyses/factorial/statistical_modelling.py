@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import scipy.stats as stats
 import numpy as np
+import pandas as pd
 from pathlib import Path
 import anton_util
 
-from grn_code.pipeline_code import output_base_path
+from local_imports import output_path as output_base_path
 
 compiled_results_path = Path(f'{output_base_path}/simulated/compiled_results.pkl')
 output_dir = Path(f'{output_base_path}/simulated/statistical_modelling')
@@ -21,7 +22,13 @@ df = anton_util.unpickle_object(str(compiled_results_path))
 # Excluded: perfect_inference_filtered_genes always achieves AUROC=1 by construction,
 # creating a ceiling effect and influential outliers in the residuals vs fitted plot.
 # Excluded: lsco appears to not work correctly, excluded to avoid biasing results.
-df = df[~df['method'].isin(['perfect_inference_all_genes', 'perfect_inference_filtered_genes', 'lsco', 'zscore_ab_without_controls'])].copy()
+excluded_methods = [
+            'perfect_inference_all_genes', 
+            'perfect_inference_filtered_genes', 
+            'lsco', 
+            'zscore_ab_without_controls'
+            ]
+df = df[~df['method'].isin(excluded_methods)].copy()
 anton_util.log_timestamp(f'data loaded, shape: {df.shape}')
 print(f'Columns available: {list(df.columns)}')
 
@@ -35,8 +42,10 @@ CATEGORICAL_PREDICTORS = {
     'transform 1':               'none',
     'transform 2':               'none',
 }
-CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_genes_after_harmonisation', 'ERMA',
-                          '0_fraction__before_filtering__all']
+# CONTINUOUS_PREDICTORS = ['snr', 'cell_count', 'n_genes_after_harmonisation', 'ERMA', '0_fraction__before_filtering__all']
+# excluding n_genes_after_harmonisation and ERMA because they have small effects on
+# inference performance.
+CONTINUOUS_PREDICTORS = ['snr', 'cell_count', '0_fraction__before_filtering__all']
 
 # n_TPs removed: highly correlated with both n_genes_after_harmonisation (r~0.86) and ERMA (VIF ~80).
 # Structurally redundant — n_TPs counts edges in the reference network, ERMA is fully determined
@@ -57,10 +66,6 @@ def print_distributions(cols, header):
         lo, q25, med, q75, hi = df[col].quantile([0, 0.25, 0.5, 0.75, 1.0])
         print(f'  {col}: {lo:.3g}, {q25:.3g}, {med:.3g}, {q75:.3g}, {hi:.3g}')
 
-# Scale continuous predictors by 2 standard deviations (mean ± 1 std).
-# Coefficients then represent the effect of going from mean-1sd to mean+1sd.
-df_model_base = df.copy()
-
 print('\nLevels of categorical predictors:')
 for col, ref_level in CATEGORICAL_PREDICTORS.items():
     levels = sorted(df[col].unique())
@@ -70,6 +75,9 @@ print_distributions(zero_fraction_cols, 'Zero fraction variable distributions')
 
 print_distributions(CONTINUOUS_PREDICTORS, 'Continuous predictor distributions')
 
+# Scale continuous predictors by 2 standard deviations (mean ± 1 std).
+# Coefficients then represent the effect of going from mean-1sd to mean+1sd.
+df_model_base = df.copy()
 print('\nContinuous predictor scaling (mean, sd, mean-1sd, mean+1sd):')
 for col in CONTINUOUS_PREDICTORS:
     mean = df[col].mean()
@@ -79,7 +87,6 @@ for col in CONTINUOUS_PREDICTORS:
     lo, hi = mean - sd, mean + sd
     print(f'  {col}: mean={mean:.3g}, sd={sd:.3g}, range=[{lo:.3g}, {hi:.3g}]')
     df_model_base[col] = (df[col] - mean) / (2 * sd)
-
 print(f'\nContinuous predictors (±1sd-scaled): {CONTINUOUS_PREDICTORS}')
 
 def needs_quoting(name):
@@ -109,7 +116,11 @@ for outcome in OUTCOMES:
 
     # --- Screening: fit full model, drop insignificant predictors ---
     all_terms = (
-        [cat_term(col, ref_level) for col, ref_level in CATEGORICAL_PREDICTORS.items()] +
+        [
+            cat_term(col, ref_level) 
+            for col, ref_level in CATEGORICAL_PREDICTORS.items()
+            ]
+        +
         [cont_term(p) for p in CONTINUOUS_PREDICTORS]
     )
     screen_formula = lhs + ' ~ ' + ' + '.join(all_terms)
@@ -223,22 +234,49 @@ for outcome in OUTCOMES:
         print(f'  {r["predictor"]:<55} {r["coef"]:>8.4f}  [{r["ci_lo"]:.4f}, {r["ci_hi"]:.4f}]  {r["pval"]:>10.4f}')
 
     # --- Coefficient forest plot ---
-    # Plot all individual coefficients (excluding intercept), sorted by |coef|
-    params = model.params.drop('Intercept')
-    ci = model.conf_int().drop('Intercept')
-    order = params.abs().sort_values(ascending=True).index
-    params = params[order]
-    ci = ci.loc[order]
+    # Split into method coefficients vs all other predictors, two stacked subplots.
+    method_prefix = f'C({ref("method")}, Treatment("random"))'
+    params_all = model.params.drop('Intercept')
+    ci_all = model.conf_int().drop('Intercept')
 
-    fig, ax = plt.subplots(figsize=(8, max(4, len(params) * 0.3)))
-    y = range(len(params))
-    ax.barh(list(y), params.values, xerr=[params.values - ci[0].values, ci[1].values - params.values],
-            align='center', height=0.6, color='steelblue', ecolor='black', capsize=3)
-    ax.axvline(0, color='black', linewidth=0.8)
-    ax.set_yticks(list(y))
-    ax.set_yticklabels(params.index, fontsize=7)
-    ax.set_xlabel('Coefficient (AUROC scale, continuous predictors ±1sd-scaled)')
-    ax.set_title(f'Effect sizes: {outcome}')
+    is_method = params_all.index.str.startswith(method_prefix)
+    params_method = params_all[is_method]
+    ci_method = ci_all[is_method]
+    params_other = params_all[~is_method]
+    ci_other = ci_all[~is_method]
+
+    def sort_by_abs(p, c):
+        order = p.abs().sort_values(ascending=True).index
+        return p[order], c.loc[order]
+
+    params_method, ci_method = sort_by_abs(params_method, ci_method)
+    params_other, ci_other = sort_by_abs(params_other, ci_other)
+
+    def draw_forest(ax, params, ci, title):
+        y = range(len(params))
+        ax.barh(list(y), params.values,
+                xerr=[params.values - ci[0].values, ci[1].values - params.values],
+                align='center', height=0.6, color='steelblue', ecolor='black', capsize=3)
+        ax.axvline(0, color='black', linewidth=0.8)
+        ax.set_yticks(list(y))
+        ax.set_yticklabels(params.index, fontsize=7)
+        ax.set_title(title, fontsize=9)
+
+    n_method = len(params_method)
+    n_other = len(params_other)
+    height_method = max(2, n_method * 0.3)
+    height_other = max(2, n_other * 0.3)
+
+    fig, (ax_method, ax_other) = plt.subplots(
+        2, 1,
+        figsize=(8, height_method + height_other),
+        gridspec_kw={'height_ratios': [n_method, max(1, n_other)]},
+        sharex=True,
+    )
+    draw_forest(ax_method, params_method, ci_method, 'Inference methods (vs random reference)')
+    draw_forest(ax_other, params_other, ci_other, 'Other predictors (continuous ±1sd-scaled)')
+    ax_other.set_xlabel('Coefficient (AUROC scale)')
+    fig.suptitle(f'Effect sizes: {outcome}', fontsize=11)
     plt.tight_layout()
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -393,21 +431,23 @@ for outcome in OUTCOMES:
     plt.close()
     print(f'Residuals vs predictors plot saved to {resid_pred_path}')
 
-    # Predictor correlation heatmap (continuous predictors only)
-    cont_cols = active_cont
-    if len(cont_cols) > 1:
-        corr = df_model[cont_cols].corr()
-        fig, ax = plt.subplots(figsize=(max(4, len(cont_cols)), max(3, len(cont_cols))))
+    # Predictor correlation heatmap — continuous predictors only
+    # (categoricals are orthogonal by factorial design, so dummies add nothing)
+    corr_cols = active_cont
+    if len(corr_cols) > 1:
+        corr = df_model[corr_cols].corr()
+        n = len(corr_cols)
+        fig, ax = plt.subplots(figsize=(max(4, n * 0.6), max(3, n * 0.6)))
         im = ax.imshow(corr.values, vmin=-1, vmax=1, cmap='RdBu_r')
-        ax.set_xticks(range(len(cont_cols)))
-        ax.set_yticks(range(len(cont_cols)))
-        ax.set_xticklabels(cont_cols, rotation=45, ha='right', fontsize=8)
-        ax.set_yticklabels(cont_cols, fontsize=8)
-        for i in range(len(cont_cols)):
-            for j in range(len(cont_cols)):
-                ax.text(j, i, f'{corr.values[i, j]:.2f}', ha='center', va='center', fontsize=7)
+        ax.set_xticks(range(n))
+        ax.set_yticks(range(n))
+        ax.set_xticklabels(corr_cols, rotation=45, ha='right', fontsize=7)
+        ax.set_yticklabels(corr_cols, fontsize=7)
+        for i in range(n):
+            for j in range(n):
+                ax.text(j, i, f'{corr.values[i, j]:.2f}', ha='center', va='center', fontsize=6)
         plt.colorbar(im, ax=ax)
-        ax.set_title(f'Continuous predictor correlations: {outcome}')
+        ax.set_title('Continuous predictor correlations')
         plt.tight_layout()
         corr_path = output_dir / f'predictor_correlations_{outcome}.png'
         plt.savefig(corr_path, dpi=150)
