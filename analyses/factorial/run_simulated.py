@@ -1,8 +1,7 @@
 
 import anton_util
 
-from grn_code.paths_anchor import output_base_path
-output_path = output_base_path / 'factorial'
+from local_imports import output_path
 
 config_name = 'configuration.pkl'
 p = output_path / config_name
