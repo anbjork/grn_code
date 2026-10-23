@@ -20,7 +20,7 @@ def get_topK_pairs(expression_matrix: pd.DataFrame, T: float = 0.5):
     # add cache
     obs_expr = {gene: expression_matrix.loc["non-targeting", gene] 
                 for gene in tqdm(expression_matrix.columns, desc="Cache observations")}
-    self_inv_expr = {gene: expression_matrix.loc[gene, gene]
+    self_inv_expr = {gene: expression_matrix.loc[[gene], gene]
                      for gene in tqdm(expression_matrix.columns, desc="Cache self interventions")
                      if gene in expression_matrix.index}
     
@@ -35,7 +35,7 @@ def get_topK_pairs(expression_matrix: pd.DataFrame, T: float = 0.5):
                 exp_obs_gene1 = obs_expr[gene1]
                 exp_inv_gene1 = self_inv_expr[gene1]
                 exp_obs_gene2 = obs_expr[gene2]
-                exp_inv_gene2 = expression_matrix.loc[gene1, gene2]
+                exp_inv_gene2 = expression_matrix.loc[[gene1], gene2]
 
                 exp_gene1 = pd.concat([exp_obs_gene1.sample(exp_inv_gene1.shape[0], random_state=0), exp_inv_gene1])
                 exp_gene2 = pd.concat([exp_obs_gene2.sample(exp_inv_gene2.shape[0], random_state=0), exp_inv_gene2])
