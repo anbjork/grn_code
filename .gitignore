@@ -3,6 +3,8 @@
 /saved_results/
 /tmp/
 
+/analyses/debug/
+
 __*
 *egg-info*
 
