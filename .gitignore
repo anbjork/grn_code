@@ -2,11 +2,10 @@
 /outputs/
 /saved_results/
 /tmp/
-/saved_data/
-/outputs__in_pipeline/
 
 __*
 *egg-info*
+
 *log
 
 /genesnake/
@@ -21,4 +20,5 @@ __*
 
 /archived/not_for_git/
 
-000reallylongfilenamesothatlsonlyshowsonecolumnnnnnnnnnnnnnn
+000reallylongfilenamesothatlsonlyshowsonecolumnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+
