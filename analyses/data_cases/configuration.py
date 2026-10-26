@@ -136,7 +136,8 @@ def configure():
             # 'transform 2': ['zscores'],
             'pseudo_bulk': [False],
             'shuffle': [False],
-            'compute differences': [False, True],
+            # 'compute differences': [False, True],
+            'compute differences': [False],
             }
 
 
