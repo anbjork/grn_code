@@ -152,6 +152,7 @@ def inference(
     from pathlib import Path
     import anton_util
     import copy
+    from grn_code.utilities import make_uuid
 
     f_name = method_function.__name__
 
@@ -180,6 +181,7 @@ def inference(
             meta = copy.deepcopy(data_source['meta'])
             meta['method'] = method_name
             meta['inference error'] = error
+            meta['inference id'] = make_uuid()
             estimated_networks.append({
                 'meta': meta,
                 'estimated_network': estimated_network,

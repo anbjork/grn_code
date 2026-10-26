@@ -189,6 +189,10 @@ def main(output_path, preprocessing_options):
         dataset['P'] = functions.get_P(dataset['Y'])
 
 
+    from grn_code.utilities import make_uuid
+    for dataset in datasets:
+        dataset['meta']['dataset id'] = make_uuid()
+
 
     outfile = Path(output_path / 'preprocessed_data.pkl')
     anton_util.log_timestamp('saving...')

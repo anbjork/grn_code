@@ -1,6 +1,6 @@
 import anton_util
 from grn_code.functions import benchmark_method_against_reference
-
+from grn_code.utilities import make_uuid
 
 def benchmark_simulated(output_path):
 
@@ -56,6 +56,7 @@ def benchmark_simulated(output_path):
         #     estimated_network = estimated_network,
         #     reference_network = reference_network,
         #     )
+        meta['benchmark id'] = make_uuid()
         stats.append({
             'meta': meta,
             'data': mstats,

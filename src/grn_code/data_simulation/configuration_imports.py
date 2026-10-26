@@ -4,10 +4,7 @@ python_global_parameters = {
         'average_network_degree': 3
         }
 
-def get_uuid():
-    import uuid
-    return str(uuid.uuid4())
-
+from grn_code.utilities import make_uuid
 
 def initialise_simulations(parameter_sets, base_path):
 
@@ -23,7 +20,7 @@ def initialise_simulations(parameter_sets, base_path):
 
         tmp = [k + f'_{v}' for k, v in parameters.items()]
         parameter_tag = '__'.join(tmp)
-        parameters['simulation_id'] = get_uuid()
+        parameters['simulation_id'] = make_uuid()
 
         # NOTE: If you change this list, you must make the corresponding change
         # in simulate.m, otherwise mismatch bug.
@@ -38,10 +35,10 @@ def initialise_simulations(parameter_sets, base_path):
         # PosixPath is not JSON serialisable, 
         # so converting paths to strings below
         files = {
-            name: str(sim_data / get_uuid())
+            name: str(sim_data / make_uuid())
             for name in simulation_matrix_names
             }
-        sim_flag_file = str(flag_files / get_uuid())
+        sim_flag_file = str(flag_files / make_uuid())
         job_specification = {
             'parameters': parameters,
             'python_global_parameters_for_matlab': python_global_parameters,
