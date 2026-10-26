@@ -594,27 +594,19 @@ def deepsem_inference(data):
     print(' '.join(cmd))
     subprocess.run(cmd)
 
-    # Read the output - based on collaborator code, it creates "GRN_inference_result.tsv"
     result_file = os.path.join(output_directory, "GRN_inference_result.tsv")
     if os.path.exists(result_file):
         result_df = pd.read_csv(result_file, sep='\t')
     else:
         raise RuntimeError("DeepSEM did not produce expected output file")
 
-    # # finally:
-    # # Restore the original working directory
-    # os.chdir(original_dir)
-    # # Cleanup temp file and temp dir
-
-    # REMOVE unnecessary checks
-    if input_file_path is not None and os.path.exists(input_file_path):
-        os.unlink(input_file_path)
-    if output_directory is not None and os.path.exists(output_directory):
-        shutil.rmtree(output_directory)
+    os.unlink(input_file_path)
+    shutil.rmtree(output_directory)
 
     estimated_network = result_df
 
     return {'deepsem': estimated_network}
+
 
 
 
