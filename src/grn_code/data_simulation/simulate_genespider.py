@@ -250,7 +250,7 @@ def job_manager(output_path, job_specifications):
 
 
 chunk_size = 1
-max_workers = 10
+max_workers = 5
 max_attempts = 5
 job_timeout = datetime.timedelta(minutes = 1)
 termination_cleanup_timeout = 10

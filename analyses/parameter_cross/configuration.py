@@ -36,7 +36,7 @@ def configure():
             data_cases[f'{vn}: {level}'] = dc
 
 
-    repeats = 5
+    repeats = 10
     parameter_sets = []
     from copy import deepcopy
     for data_case, parameters in data_cases.items():
@@ -82,7 +82,7 @@ def configure():
                     *args, **kwargs, target_density=density
                     )
         return f
-    densities = [1, 3, 5, 10, 20, 50]
+    densities = [1, 0.3]
     lassos = [lasso_factory(density) for density in densities]
 
     inference_functions = [
@@ -90,16 +90,18 @@ def configure():
             functions.random_inference,
             functions.correlation_inference,
             functions.perfect_inference,
-            # *lassos,
             # functions.zscore_max_variants,
             # functions.zscore_without_controls,
             # functions.lsco_T_without_controls,
             # functions.inspre_inference,
             # functions.inspre_inference_hdf5,
-            # functions.psgrn_inference,
+            functions.psgrn_inference,
             # functions.deepsem_inference,
+            functions.regdiffusion_inference,
+            functions.bigsm_inference,
             # functions.dspin_inference,
-            # functions.dspin_inference_wrapper,
+            functions.dspin_inference_wrapper,
+            *lassos,
             # functions.genie3_inference,
             ]
 
