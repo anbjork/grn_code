@@ -1201,29 +1201,23 @@ def regdiffusion_inference(data):
    import copy
    import regdiffusion as rd
 
-
    expression_data = copy.deepcopy(data['Y'])
 
-
-   print("DEBUG shape:", expression_data.shape)
-   print("DEBUG describe:", expression_data.describe())
-   print("DEBUG min/max:", expression_data.min().min(), expression_data.max().max())
+   # print("DEBUG shape:", expression_data.shape)
+   # print("DEBUG describe:", expression_data.describe())
+   # print("DEBUG min/max:", expression_data.min().min(), expression_data.max().max())
    X = expression_data.to_numpy()
-
 
    trainer = rd.RegDiffusionTrainer(X)
    trainer.train()
 
-
    adj = trainer.get_adj()
-
 
    estimated_network = pd.DataFrame(
        data=adj,
        index=expression_data.columns,
        columns=expression_data.columns,
    )
-
 
    return {'regdiffusion': estimated_network}
 
