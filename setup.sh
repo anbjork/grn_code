@@ -18,3 +18,6 @@ pip install numpy pandas matplotlib anton_util h5py
 
 pip install -e .
 
+
+git clone git@github.com:HantaoShu/DeepSEM.git
+
