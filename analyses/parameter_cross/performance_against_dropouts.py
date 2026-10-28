@@ -4,6 +4,36 @@ import anton_util
 import matplotlib.pyplot as plt
 from local_imports import output_path
 
+
+
+drop_methods = [
+        'mean_difference_controls_only',
+        'bigsm',
+        'lsco',
+        'perfect_inference_all_genes',
+        'perfect_inference_filtered_genes',
+        'zscore_ab',
+        ]
+verbose_dspin_label = 'dspin__use_perturbation_matrix_True__perturbation_knockdown_value_-0.9__use_prior_h_True'
+method_label_translations = {
+    verbose_dspin_label: 'D-SPIN',
+    'lsco.T': 'LSCO',
+    'zscore_dream3': 'Zscore',
+    'bigsm_T': 'BiGSM',
+    'correlation': 'Correlation',
+    'deepsem': 'DeepSEM',
+    'lasso_density_T_density_0.3': 'LASSO, density 0.3',
+    'lasso_density_T_density_1': 'LASSO, density 1',
+    'lasso_density_T_density_10': 'LASSO, density 10',
+    'mean_difference': 'Mean Difference',
+    'psgrn': 'PSGRN',
+    'random': 'Random',
+    'regdiffusion': 'RegDiffusion',
+    }
+
+
+
+
 anton_util.log_timestamp('plotting...')
 anton_util.log_timestamp('reading data...')
 
@@ -12,6 +42,16 @@ df = anton_util.unpickle_object(
 df['controlled_var'] = [elem.split(':')[0] for elem in df.data_case]
 
 anton_util.log_timestamp('the rest...')
+
+
+methods = set(df['method'])
+for method in drop_methods:
+    if method in methods:
+        df = df[df['method'] != method]
+for before, after in method_label_translations.items():
+    if before in methods:
+        df.loc[df['method'] == before, 'method'] = after
+
 
 from pathlib import Path
 output_dir = Path(f'{output_path}/simulated/plots')
@@ -22,6 +62,7 @@ dropout_cols = [
         '0_fraction__after_filtering__all',
         ]
 y_vars = ['AUROC', 'AUPR gain', 'top_k_accuracy']
+# y_vars = ['AUROC']  # Debug
 
 controlled_vars = {'snr', 'cell_count'}
 dependent_vars = {'dispersion': dropout_cols}
@@ -77,8 +118,8 @@ def plot(y_var, x_var, x_transform, dependent_var):
             ax.errorbar(means.index, means, yerr=sds, label=method, capsize=3, color=colors[i % len(colors)])
         else:
             x = np.array(df_method[x_disp])
-            smooth_auroc = np.array(df_method[y_var].rolling(window=10, center=True).mean())
-            ax.plot(x, smooth_auroc, label=method, color=colors[i % len(colors)])
+            smooth = np.array(df_method[y_var].rolling(window=15, center=True).mean())
+            ax.plot(x, smooth, label=method, color=colors[i % len(colors)])
     # ax.set_xlim(0.75, 1)
     ax.set_xlabel(x_disp)
     ax.set_ylabel(y_var)
