@@ -603,7 +603,13 @@ def deepsem_inference(data):
     os.unlink(input_file_path)
     shutil.rmtree(output_directory)
 
-    estimated_network = result_df
+    edgelist = result_df
+
+    estimated_network = gs.util.edgelist_to_matrix(
+        regulators = edgelist['TF'],
+        targets = edgelist['Target'],
+        values = edgelist['EdgeWeight'],
+        )
 
     return {'deepsem': estimated_network}
 
