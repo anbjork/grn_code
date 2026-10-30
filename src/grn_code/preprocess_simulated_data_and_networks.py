@@ -170,13 +170,22 @@ def main(output_path, preprocessing_options):
         # those perturbations might make additional genes flat,
         # so iterate on the filtering until it stabilises
         while True:
+
             cols = find_variable_columns(Y)
             Y = Y.loc[:, cols]
+
+            perturbation_set = set(Y.index)
+            genes_in_perturbation_set = []
+            for g in Y.columns:
+                genes_in_perturbation_set.append(g in perturbation_set)
+            Y = Y.loc[:, genes_in_perturbation_set]
+
             gene_set = set(list(Y.columns) + ['control'])
             perturbations_in_geneset = []
             for g in Y.index:
                 perturbations_in_geneset.append(g in gene_set)
             Y = Y.loc[perturbations_in_geneset, :]
+
             if Y.shape == shape:
                 break
             shape = Y.shape
