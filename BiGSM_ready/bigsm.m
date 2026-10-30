@@ -68,11 +68,12 @@ for j = 1:target_size(1)
     
     if converged
         n_converged = n_converged + 1;
-        fprintf('Gene %d: converged after %d iterations\n', j, i);
+        % fprintf('Gene %d: converged after %d iterations\n', j, i);
     else
-        fprintf('Gene %d: did NOT converge (max_iter = %d reached)\n', j, max_iter);
+        % fprintf('Gene %d: did NOT converge (max_iter = %d reached)\n', j, max_iter);
     end
 end
 
 fprintf('BiGSM: %d of %d genes converged (%d skipped)\n', ...
     n_converged, target_size(1), n_skipped);
+
