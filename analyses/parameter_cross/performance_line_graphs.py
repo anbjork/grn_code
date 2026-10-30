@@ -13,6 +13,7 @@ drop_methods = [
         'perfect_inference_all_genes',
         'perfect_inference_filtered_genes',
         'zscore_ab',
+        'dspin_inference_wrapper',
         ]
 verbose_dspin_label = 'dspin__use_perturbation_matrix_True__perturbation_knockdown_value_-0.9__use_prior_h_True'
 method_label_translations = {
