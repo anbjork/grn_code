@@ -49,10 +49,18 @@ def find_flat_datasets(datasets):
 def main(output_path, preprocessing_options):
 
     output_path.mkdir(parents = True, exist_ok = True)
+    outfile = Path(output_path / 'preprocessed_data.pkl')
 
     anton_util.log_timestamp('preprocessing...')
     anton_util.log_timestamp('reading...')
 
+    # # Debug
+    # if outfile.exists():
+    #     anton_util.log_timestamp('Debug: reading back already preprocessed data...')
+    #     datasets = anton_util.unpickle_object(outfile)
+    #     anton_util.log_timestamp('Debug: embedding ipython session')
+    #     from IPython import embed; embed(colors = 'Linux')
+    #     import sys; sys.exit(0)
 
     data_raw = anton_util.unpickle_object(output_path / 'simulations.pkl')
     datasets = data_raw
@@ -203,7 +211,6 @@ def main(output_path, preprocessing_options):
         dataset['meta']['dataset id'] = make_uuid()
 
 
-    outfile = Path(output_path / 'preprocessed_data.pkl')
     anton_util.log_timestamp('saving...')
     anton_util.pickle_object(datasets, outfile)
 
@@ -216,12 +223,26 @@ def main(output_path, preprocessing_options):
 
     anton_util.log_timestamp('diagnostics...')
 
-    for dataset in datasets:
+    for ii, dataset in enumerate(datasets):
         Y = dataset['Y']
         P = dataset['P']
         assert(Y.shape == P.shape)
         assert(all(Y.index == P.index))
         assert(all(Y.columns == P.columns))
+        genes = set(Y.columns)
+        perturbations = set(Y.index)
+        assert(genes <= perturbations)
+        assert(perturbations <= genes | {'control'})
+        # We can have control cells, which makes 0 rows of P.
+        # But we should not have 0 columns of P.
+        # Hence just checking row sums
+        assert(all(np.abs(P).sum(axis = 0) > 0))
+        for axis in [0, 1]:
+            assert(all(np.abs(Y).sum(axis = axis) > 0))
+
+
+    # # Debug
+    # from IPython import embed; embed(colors = 'Linux')
 
     def throw_if_any_nan_or_inf(datasets):
         import numpy as np
@@ -248,6 +269,7 @@ def main(output_path, preprocessing_options):
         print('0 stds found between filterings')
     print(f'{number_of_variable_genes_after_filtering = }')
 
+    # Just for interactive debugging, otherwise not used
     metas = [d['meta'] for d in datasets]
     for meta in metas:
         for k, v in meta['dataset_parameters'].items():
