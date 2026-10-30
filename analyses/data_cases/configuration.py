@@ -163,19 +163,19 @@ def configure():
             # That's why pyright gets confused about it's signature,
             # and is ignored
             functions.perfect_inference,  # pyright: ignore
-            *lassos,
             # functions.zscore_max_variants,
             # functions.zscore_without_controls,
             # functions.lsco_T_without_controls,
             # functions.inspre_inference,
             # functions.inspre_inference_hdf5,
             functions.psgrn_inference,
+            functions.regdiffusion_inference,
             # functions.deepsem_inference,
             # functions.dspin_inference,
             functions.dspin_inference_wrapper,
             functions.bigsm_inference,
-            functions.regdiffusion_inference,
-            functions.genie3_inference,
+            *lassos,
+            # functions.genie3_inference,
             ]
 
 
