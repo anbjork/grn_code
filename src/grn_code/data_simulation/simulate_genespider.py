@@ -150,6 +150,8 @@ def job_manager(output_path, job_specifications):
             job['simulation_succeeded'] = False
         for job in retry:
             job['simulation_retries'] += 1
+            anton_util.log_timestamp(
+                    f'Requeuing job for retry {job["simulation_retries"]}')
         job_queue.extend(retry)
         anton_util.log_timestamp(
                 f'gave up on {len(given_up)} jobs, requeuing {len(retry)}')
