@@ -183,7 +183,7 @@ def lasso_T_density(data, target_density):
     Y = data['Y']
 
     m = 'lasso_density'
-    anton_util.log_timestamp(f'Running {m}...')
+    anton_util.log_timestamp(f'Running {m}_{target_density}...')
     en = gs.inference.infer_networks(
         Y=Y, P=P,
         method=m,
