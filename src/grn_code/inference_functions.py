@@ -354,7 +354,6 @@ def dspin_inference(
         ):
     import anndata as ad
     from dspin import DSPIN
-    from copy import deepcopy
 
     # Recreating an anndata object to fit with the rest of the code
     # from previously.
@@ -391,39 +390,60 @@ def dspin_inference(
 
     save_path = Path('tmp/dspin_save_path')
     save_path.mkdir(exist_ok=True, parents=True)
-    num_spin = len(adata.var)
+
     additional_params = {
             # 'discretize_params' : {
             #     'clip_percentile': 100,
             #     },
             'filter_threshold' : 0.06,
             }
-    model = DSPIN(
-            deepcopy(adata), str(save_path), num_spin=num_spin,
-            **additional_params,  # pyright: ignore
+
+    filtering_iterations = 0
+    filtering_stabilised = False
+    while filtering_iterations < 10 and not filtering_stabilised:
+        filtering_iterations += 1
+        print(f'Filtering iteration {filtering_iterations}')
+        data_shape_before_filtering = adata.shape
+
+        num_spin = len(adata.var)
+        anton_util.log_timestamp(f'data into initialisation, shape {adata.shape}')
+        model = DSPIN(
+                adata.copy(), str(save_path), num_spin=num_spin,
+                **additional_params,  # pyright: ignore
+                )
+
+        # # Data is filtered in the model creation, so extract the updated
+        # # data to continue with
+        # adata = model.adata
+        # num_spin = model.num_spin
+
+        # In case dspins internal preprocessing applied something that is not
+        # idempotent, let's actually filter the original data, and go from
+        # that again.
+        #
+        # Also, try filtering out cells where a gene was perturbed that is not
+        # among the genes in the data (columns).
+        #
+        # Didn't seem to improve results.
+        genes_left = model.adata.var.gene_name
+        print(f'{genes_left = }')
+        to_keep = list(genes_left) + ['control']
+        # Since genes are not in adata.obs_names
+        anton_util.log_timestamp(f'before filtering, adata is \n{adata}')
+        to_keep_bool = adata.obs['gene_name'].isin(to_keep)
+        adata = adata[to_keep_bool, genes_left]  # pyright: ignore
+        num_spin = len(adata.var)
+        anton_util.log_timestamp(f'after filtering, adata is \n{adata}')
+
+        if adata.shape == data_shape_before_filtering:
+            filtering_stabilised = True
+
+    if not filtering_stabilised:
+        raise RuntimeError(
+            f'dspin filtering did not stabilise in {filtering_iterations} iterations'
             )
+    print(f'finished filtering')
 
-    # # Data is filtered in the model creation, so extract the updated
-    # # data to continue with
-    # adata = model.adata
-    # num_spin = model.num_spin
-
-    # In case dspins internal preprocessing applied something that is not
-    # idempotent, let's actually filter the original data, and go from
-    # that again.
-    #
-    # Also, try filtering out cells where a gene was perturbed that is not
-    # among the genes in the data (columns).
-    #
-    # Didn't seem to improve results.
-    genes_left = model.adata.var.gene_name
-    print(f'{genes_left = }')
-    to_keep = list(genes_left) + ['control']
-    # Since genes are not in adata.obs_names
-    to_keep_bool = adata.obs['gene_name'].isin(to_keep)
-    adata = adata[to_keep_bool, genes_left]  # pyright: ignore
-    num_spin = len(adata.var)
-    print(adata)
 
     # perturbation_list: Created similarly by getting unique elements from
     # a full list of samples in raw_data_state -> sample_states
@@ -494,13 +514,17 @@ def dspin_inference(
 
     params={'stepsz': 0.05, 'lambda_l1_j': 0.01, 'lambda_l2_h': 3}
     all_params = {**params, **extra_params}
+    num_spin = len(adata.var)
 
     anton_util.log_timestamp(f'{all_params = }')
 
+    anton_util.log_timestamp(f'before fitting initialisation, adata is \n{adata}')
     model = DSPIN(
             adata, str(save_path), num_spin=num_spin,
             **additional_params,  # pyright: ignore
             )
+    genes_left = model.adata.var.gene_name
+    print(f'{genes_left = }')
     model.network_inference(
         sample_id_key = 'gene_name',
         method = 'pseudo_likelihood',
