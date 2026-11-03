@@ -9,7 +9,12 @@ data = aa
 methods = [elem['meta']['method'] for elem in data]
 print()
 print(f'{sorted(set(methods)) = }')
+
 m = 'bigsm_T'
+# m = 'bigsm'
+
+print()
+print(f'{m = }')
 ms = [elem for elem in data if elem['meta']['method'] == m]
 print()
 print(f'{len(ms) = }')
@@ -33,6 +38,7 @@ densities = [(net == 0).sum().sum() / net.size for net in nets]
 print()
 print(f'{densities = }')
 
-
+print()
+print(f'{any(densities) = }')
 
 
