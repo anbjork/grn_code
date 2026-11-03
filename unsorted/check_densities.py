@@ -34,11 +34,11 @@ nets = [elem['estimated_network'] for elem in ms]
 print()
 print(f'{len(nets) = }')
 nets[0]
-densities = [(net == 0).sum().sum() / net.size for net in nets]
+densities = [(net != 0).sum().sum() / net.size for net in nets]
 print()
 print(f'{densities = }')
 
 print()
-print(f'{any(densities) = }')
+print(f'{min(densities) = }')
 
 
