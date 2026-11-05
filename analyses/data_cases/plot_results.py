@@ -4,7 +4,13 @@ from pathlib import Path
 
 
 # METRICS = ['AUROC', 'AUPR', 'AUPR ratio', 'AUPR gain', 'top_k_accuracy']
-METRICS = ['AUROC', 'AUPR gain', 'top_k_accuracy', 'precision_at_k']
+METRICS = [
+        'AUROC', 
+        'AUPR gain', 
+        'top_k_accuracy', 
+        'precision_at_k', 
+        'AUPR ratio', 
+        'epr']
 DROPOUT_COL = '0_fraction__before_filtering__all'
 VARS_TO_STRATIFY = [
     'cell normalised',
