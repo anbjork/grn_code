@@ -20,6 +20,7 @@ ms = [
         'zscore_ab_without_controls', 
         'perfect_inference_all_genes',
         psgrn_errors_func_name,
+        'f',
         ]
 cs = [df['method'] != m for m in ms]
 cs2 = np.array([list(c) for c in cs]).T
@@ -43,7 +44,8 @@ ax.set_xticks(range(len(methods)))
 ax.set_xticklabels(methods, rotation=45, ha='right')
 ax.set_ylabel(yvar)
 ax.set_title(f'{yvar} by method')
-ax.axhline(0.5, color='grey', linestyle='--', linewidth=0.8, label='random baseline (0.5)')
+ax.axhline(0.5, color='grey', linestyle='--', linewidth=1, label='random baseline (0.5)')
+ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 ax.legend()
 
 plt.tight_layout()
