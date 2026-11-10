@@ -43,6 +43,7 @@ method_label_translations = {
     'psgrn': 'PSGRN',
     'random': 'Random',
     'regdiffusion': 'RegDiffusion',
+    'genie3.T': 'GENIE3',
     }
 
 
