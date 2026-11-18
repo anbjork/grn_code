@@ -1,12 +1,12 @@
 set -e
 
-git clone git@bitbucket.org:sonnhammergrni/genesnake.git
+git clone git@ssh.bitbucket.org:sonnhammergrni/genesnake.git
 
 cd genesnake
 pip install -e .
 cd -
 
-git clone git@bitbucket.org:sonnhammergrni/genespider.git
+git clone git@ssh.bitbucket.org:sonnhammergrni/genespider.git
 cd genespider
 # Changes to suitable commit;
 # The one for the publication, before sneak noise change
